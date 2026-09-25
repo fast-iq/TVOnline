@@ -16,7 +16,7 @@ class AppPreferences(context: Context) {
 
         // epgservice.ru API token (получается через https://t.me/EPGServiceSupportBot)
         // Пустая строка = EPG-сервис отключён, используется фолбэк
-        const val EPG_SERVICE_TOKEN = ""
+        const val EPG_SERVICE_TOKEN = "987c6312-e354-4abe-b964-6862ab29175"
     }
 
     var lastChannelId: String?

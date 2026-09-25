@@ -51,31 +51,29 @@ class EPGRepository {
             val epgChannelId = index[channelId] ?: return null
             val weekMonday = getWeekMonday(date)
             val url = "$epgApiBase/v1/schedule/$epgChannelId?week=$weekMonday"
-            val jsonStr = httpGet(url, authHeader = "Bearer $epgToken") ?: return null
-            val json = JSONObject(jsonStr)
-            val programms = json.optJSONArray("programms") ?: return emptyList()
+            val xmlStr = httpGet(url, authHeader = "Bearer $epgToken") ?: return null
 
             val result = mutableListOf<Program>()
-            for (i in 0 until programms.length()) {
-                val item = programms.getJSONObject(i)
-                val startUt = item.optLong("start_ut", 0L)
-                val stopUt = item.optLong("stop_ut", 0L)
-                if (startUt == 0L || stopUt == 0L) continue
+            val progRegex = Regex("<programme\\s+start=\"([^\"]+)\"\\s+stop=\"([^\"]+)\"[^>]*>(.*?)</programme>", RegexOption.DOT_MATCHES_ALL)
+            for (match in progRegex.findAll(xmlStr)) {
+                val startStr = match.groupValues[1]
+                val stopStr = match.groupValues[2]
+                val body = match.groupValues[3]
+                val startMs = parseXmltvTime(startStr) ?: continue
+                val stopMs = parseXmltvTime(stopStr) ?: continue
 
-                val iconArray = item.optJSONArray("icon")
-                var iconUrl: String? = null
-                if (iconArray != null && iconArray.length() > 0) {
-                    iconUrl = iconArray.getJSONObject(0).optString("src", "")
-                    if (iconUrl.isBlank()) iconUrl = null
-                }
+                val title = Regex("<title[^>]*>([^<]*)</title>").find(body)?.groupValues?.get(1)?.trim() ?: ""
+                val descShort = Regex("<desc\\s+size=\"short\"[^>]*>([^<]*)</desc>").find(body)?.groupValues?.get(1)?.trim()
+                    ?: Regex("<desc[^>]*>([^<]*)</desc>").find(body)?.groupValues?.get(1)?.trim()
+                val iconUrl = Regex("<icon\\s+src=\"([^\"]+)\"").find(body)?.groupValues?.get(1)
 
                 result.add(
                     Program(
                         channelId = channelId,
-                        title = item.optString("title", ""),
-                        description = item.optString("desc_short", "").ifBlank { item.optString("desc", "") }.ifBlank { null },
-                        startTime = startUt * 1000,
-                        endTime = stopUt * 1000,
+                        title = title,
+                        description = descShort?.ifBlank { null },
+                        startTime = startMs,
+                        endTime = stopMs,
                         iconUrl = iconUrl
                     )
                 )
@@ -89,18 +87,16 @@ class EPGRepository {
     private fun loadChannelIndex(): Map<String, String>? {
         channelIndexCache?.let { return it }
         val url = "$epgApiBase/v1/index"
-        val jsonStr = httpGet(url, authHeader = "Bearer $epgToken") ?: return null
+        val xmlStr = httpGet(url, authHeader = "Bearer $epgToken") ?: return null
         try {
-            val json = JSONObject(jsonStr)
-            val channels = json.optJSONArray("channel") ?: return null
             val nameToId = mutableMapOf<String, String>()
-
-            for (i in 0 until channels.length()) {
-                val item = channels.getJSONObject(i)
-                val epgId = item.optString("id", "")
-                val name = item.optString("display_name", "")
+            val chRegex = Regex("<channel\\s+id=\"([^\"]+)\"[^>]*>(.*?)</channel>", RegexOption.DOT_MATCHES_ALL)
+            for (match in chRegex.findAll(xmlStr)) {
+                val epgId = match.groupValues[1]
+                val body = match.groupValues[2]
+                val name = Regex("<display-name[^>]*>([^<]*)</display-name>").find(body)?.groupValues?.get(1)?.trim() ?: ""
                 if (epgId.isBlank() || name.isBlank()) continue
-                nameToId[name.trim().lowercase()] = epgId
+                nameToId[name.lowercase()] = epgId
             }
 
             val cache = mutableMapOf<String, String>()
@@ -124,6 +120,27 @@ class EPGRepository {
         } catch (e: Exception) {
             return null
         }
+    }
+
+    private fun parseXmltvTime(timeStr: String): Long? {
+        val match = Regex("^(\\d{8})(\\d{2})(\\d{2})(\\d{2})\\s*([+-]\\d{4})").find(timeStr) ?: return null
+        val (datePart, hh, mm, ss, tzPart) = match.destructured
+        val year = datePart.substring(0, 4).toInt()
+        val month = datePart.substring(4, 6).toInt()
+        val day = datePart.substring(6, 8).toInt()
+        val hour = hh.toInt()
+        val minute = mm.toInt()
+        val second = ss.toInt()
+        val tzSign = if (tzPart.startsWith("+")) 1 else -1
+        val tzHours = tzPart.substring(1, 3).toInt()
+        val tzMinutes = tzPart.substring(3, 5).toInt()
+
+        val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+            clear()
+            set(year, month - 1, day, hour, minute, second)
+        }
+        val utcMillis = cal.timeInMillis - (tzSign * (tzHours * 3600 + tzMinutes * 60) * 1000L)
+        return utcMillis
     }
 
     private fun getWeekMonday(date: Date): String {
@@ -202,7 +219,7 @@ class EPGRepository {
         return try {
             connection.requestMethod = "GET"
             connection.setRequestProperty("User-Agent", userAgent)
-            connection.setRequestProperty("Accept", "application/json, text/html")
+            connection.setRequestProperty("Accept", "application/json")
             if (authHeader != null) {
                 connection.setRequestProperty("Authorization", authHeader)
             }
