@@ -175,10 +175,10 @@ class EPGActivity : AppCompatActivity() {
 
         val startCal = Calendar.getInstance(moscowTz).apply { timeInMillis = program.startTime }
         val endCal = Calendar.getInstance(moscowTz).apply { timeInMillis = program.endTime }
-        val timeStr = "${dateFormat.format(startCal.time)} - ${dateFormat.format(endCal.time)}"
+        val timeStr = getString(R.string.time_range, dateFormat.format(startCal.time), dateFormat.format(endCal.time))
 
         val programText = TextView(this).apply {
-            text = "$timeStr ${program.title}"
+            text = getString(R.string.epg_program_text, timeStr, program.title)
             textSize = 12f
             setTextColor(getColor(R.color.white))
             maxLines = 1

@@ -59,7 +59,7 @@ class EPGAdapter(
 
             fun bind(program: Program) {
                 programTitle.text = program.title
-                programTime.text = "${dateFormat.format(Date(program.startTime))} - ${dateFormat.format(Date(program.endTime))}"
+                programTime.text = itemView.context.getString(R.string.time_range, dateFormat.format(Date(program.startTime)), dateFormat.format(Date(program.endTime)))
                 
                 // Подсветка текущей программы
                 val moscowTz = TimeZone.getTimeZone("Europe/Moscow")

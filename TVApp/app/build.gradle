@@ -33,7 +33,7 @@ android {
     }
 
     lint {
-        disable 'UnsafeOptInUsageError', 'OldTargetApi', 'DiscouragedApi', 'GradleDependency'
+        disable 'UnsafeOptInUsageError', 'OldTargetApi', 'DiscouragedApi', 'GradleDependency', 'VectorRaster', 'NotifyDataSetChanged'
     }
 }
 

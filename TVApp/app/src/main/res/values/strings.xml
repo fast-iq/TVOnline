@@ -6,7 +6,6 @@
     <string name="settings">Настройки</string>
     <string name="epg">Программа передач</string>
     <string name="channels">Каналы</string>
-    <string name="channel">Канал</string>
     <string name="unknown_channel">Неизвестный канал</string>
     <string name="press_to_change">Нажмите для смены</string>
 
@@ -37,7 +36,7 @@
     <string name="time_msk">Время (МСК): %1$s</string>
     <string name="offset_default">Смещение: 0ч</string>
     <string name="offset_value">Смещение: %1$sч</string>
-    <string name="time_placeholder">Время: --:--</string>
+    <string name="time_placeholder">Время: —:—</string>
     <string name="max_offset_error">Максимальное смещение: +12 часов</string>
     <string name="min_offset_error">Минимальное смещение: -12 часов</string>
 
@@ -56,11 +55,10 @@
     <string name="quality_maximum">Максимальное</string>
     <string name="quality_auto">Авто</string>
 
-    <!-- Languages -->
-    <string name="lang_russian">Русский</string>
-    <string name="lang_english">English</string>
-
     <!-- EPG program item -->
-    <string name="program_time_placeholder">12:00 - 14:00</string>
+    <string name="epg_program_text">%1$s %2$s</string>
+    <string name="time_range">%1$s – %2$s</string>
+
+    <string name="program_time_placeholder">12:00 – 14:00</string>
     <string name="program_name_placeholder">Название программы</string>
 </resources>
