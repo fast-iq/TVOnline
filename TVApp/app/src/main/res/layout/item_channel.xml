@@ -23,13 +23,13 @@
             android:layout_width="60dp"
             android:layout_height="45dp"
             android:scaleType="fitCenter"
-            android:contentDescription="Логотип канала" />
+            android:contentDescription="@string/channel_logo_desc" />
 
         <TextView
             android:id="@+id/channelName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Название канала"
+            android:text="@string/channel_name_placeholder"
             android:textSize="12sp"
             android:textStyle="bold"
             android:textColor="@color/white"
@@ -42,8 +42,8 @@
             android:id="@+id/programTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Название передачи"
-            android:textSize="10sp"
+            android:text="@string/program_title_placeholder"
+            android:textSize="11sp"
             android:textColor="@color/text_secondary"
             android:gravity="center"
             android:layout_marginTop="2dp"

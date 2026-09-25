@@ -43,7 +43,7 @@ class ChannelAdapter(
             
             // Отображение названия передачи
             val programTitleText = currentProgramsMap[channel.id]
-            programTitle.text = programTitleText ?: "Название передачи"
+            programTitle.text = programTitleText ?: itemView.context.getString(R.string.program_title_placeholder)
             
             // Обработка выбора канала с пульта
             itemView.setOnClickListener {
@@ -67,7 +67,7 @@ class ChannelAdapter(
         private val settingsText: TextView = itemView.findViewById(R.id.settingsText)
 
         fun bind() {
-            settingsText.text = "Настройки"
+            settingsText.text = itemView.context.getString(R.string.settings)
             
             itemView.setOnClickListener {
                 onSettingsClicked()
@@ -89,7 +89,7 @@ class ChannelAdapter(
         private val epgText: TextView = itemView.findViewById(R.id.epgText)
 
         fun bind() {
-            epgText.text = "Программа передач"
+            epgText.text = itemView.context.getString(R.string.epg)
             
             itemView.setOnClickListener {
                 onEPGClicked()

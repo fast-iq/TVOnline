@@ -6,8 +6,12 @@
         <item name="android:colorPrimaryDark">@color/background_dark</item>
         <item name="android:colorAccent">@color/accent</item>
         <item name="android:windowDisablePreview">true</item>
-        
+
         <!-- TV оптимизации -->
         <item name="android:defaultFocusHighlightEnabled">true</item>
+    </style>
+
+    <style name="Theme.TVApp.Black" parent="Theme.TVApp">
+        <item name="android:windowBackground">@color/black</item>
     </style>
 </resources>

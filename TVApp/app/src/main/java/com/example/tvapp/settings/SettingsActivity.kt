@@ -104,7 +104,7 @@ class SettingsActivity : AppCompatActivity() {
                 preferences.timezoneOffset = selectedOffset
                 Toast.makeText(
                     this@SettingsActivity,
-                    "Часовой пояс: ${timezones[currentTimezoneIndex].second}",
+                    getString(R.string.timezone_value, timezones[currentTimezoneIndex].second),
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -117,7 +117,7 @@ class SettingsActivity : AppCompatActivity() {
             currentQualityIndex = (currentQualityIndex + 1) % qualityModes.size
             preferences.qualityMode = qualityModes[currentQualityIndex]
             updateQualityDisplay()
-            Toast.makeText(this, "Качество: ${getQualityName(qualityModes[currentQualityIndex])}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.quality_value, getQualityName(qualityModes[currentQualityIndex])), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -127,28 +127,28 @@ class SettingsActivity : AppCompatActivity() {
             currentLanguageIndex = (currentLanguageIndex + 1) % languages.size
             preferences.language = languages[currentLanguageIndex].first
             updateLanguageDisplay()
-            Toast.makeText(this, "Язык: ${languages[currentLanguageIndex].second}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.language_value, languages[currentLanguageIndex].second), Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun updateTimezoneDisplay() {
-        timezoneValueText.text = "Часовой пояс: ${timezones[currentTimezoneIndex].second}"
+        timezoneValueText.text = getString(R.string.timezone_value, timezones[currentTimezoneIndex].second)
     }
 
     private fun updateQualityDisplay() {
-        qualityModeText.text = "Качество: ${getQualityName(qualityModes[currentQualityIndex])}"
+        qualityModeText.text = getString(R.string.quality_value, getQualityName(qualityModes[currentQualityIndex]))
     }
 
     private fun updateLanguageDisplay() {
-        languageText.text = "Язык: ${languages[currentLanguageIndex].second}"
+        languageText.text = getString(R.string.language_value, languages[currentLanguageIndex].second)
     }
 
     private fun getQualityName(mode: AppPreferences.QualityMode): String {
         return when (mode) {
-            AppPreferences.QualityMode.MINIMUM -> "Минимальное (240p)"
-            AppPreferences.QualityMode.MEDIUM -> "Среднее (576p)"
-            AppPreferences.QualityMode.MAXIMUM -> "Максимальное"
-            AppPreferences.QualityMode.AUTO -> "Авто"
+            AppPreferences.QualityMode.MINIMUM -> getString(R.string.quality_minimum)
+            AppPreferences.QualityMode.MEDIUM -> getString(R.string.quality_medium)
+            AppPreferences.QualityMode.MAXIMUM -> getString(R.string.quality_maximum)
+            AppPreferences.QualityMode.AUTO -> getString(R.string.quality_auto)
         }
     }
 

@@ -1,19 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ТВ Приставка</string>
+
+    <!-- Common -->
     <string name="settings">Настройки</string>
     <string name="epg">Программа передач</string>
-    <string name="loading">Загрузка...</string>
-    <string name="error_playback">Ошибка воспроизведения</string>
+    <string name="channels">Каналы</string>
     <string name="channel">Канал</string>
-    <string name="current_program">Сейчас в эфире</string>
-    <string name="quality">Качество</string>
-    <string name="timezone">Часовой пояс</string>
-    <string name="language">Язык</string>
-    <string name="russian">Русский</string>
-    <string name="english">English</string>
-    <string name="auto">Авто</string>
-    <string name="minimum">Минимальное</string>
-    <string name="medium">Среднее</string>
-    <string name="maximum">Максимальное</string>
+    <string name="unknown_channel">Неизвестный канал</string>
+    <string name="press_to_change">Нажмите для смены</string>
+
+    <!-- Main screen -->
+    <string name="select_channel">Выберите канал</string>
+    <string name="now_playing">Сейчас: %1$s</string>
+    <string name="epg_load_error">Ошибка загрузки программы передач</string>
+
+    <!-- Channel card -->
+    <string name="channel_logo_desc">Логотип канала</string>
+    <string name="channel_name_placeholder">Название канала</string>
+    <string name="program_title_placeholder">Название передачи</string>
+
+    <!-- Channel info -->
+    <string name="start_watching">▶ НАЧАТЬ ПРОСМОТР ◀</string>
+    <string name="channel_image_desc">Изображение канала</string>
+    <string name="press_ok_to_start">Нажмите ОК для начала просмотра</string>
+
+    <!-- Player -->
+    <string name="loading_channel">Загрузка канала: %1$s…</string>
+    <string name="playback_error">Ошибка воспроизведения:\n%1$s</string>
+    <string name="error_prefix">Ошибка: %1$s</string>
+    <string name="buffering">Буферизация…</string>
+    <string name="switching_source">Переключение на резервный источник…</string>
+    <string name="no_stream_url">Ошибка: URL потока не указан</string>
+
+    <!-- EPG -->
+    <string name="time_msk">Время (МСК): %1$s</string>
+    <string name="offset_default">Смещение: 0ч</string>
+    <string name="offset_value">Смещение: %1$sч</string>
+    <string name="time_placeholder">Время: --:--</string>
+    <string name="max_offset_error">Максимальное смещение: +12 часов</string>
+    <string name="min_offset_error">Минимальное смещение: -12 часов</string>
+
+    <!-- Settings -->
+    <string name="timezone_label">Часовой пояс:</string>
+    <string name="timezone_value">Часовой пояс: %1$s</string>
+    <string name="quality_label">Качество видео:</string>
+    <string name="quality_value">Качество: %1$s</string>
+    <string name="language_label">Язык интерфейса:</string>
+    <string name="language_value">Язык: %1$s</string>
+    <string name="settings_help">Используйте пульт для навигации. Нажмите OK для выбора опции.</string>
+
+    <!-- Quality modes -->
+    <string name="quality_minimum">Минимальное (240p)</string>
+    <string name="quality_medium">Среднее (576p)</string>
+    <string name="quality_maximum">Максимальное</string>
+    <string name="quality_auto">Авто</string>
+
+    <!-- Languages -->
+    <string name="lang_russian">Русский</string>
+    <string name="lang_english">English</string>
+
+    <!-- EPG program item -->
+    <string name="program_time_placeholder">12:00 - 14:00</string>
+    <string name="program_name_placeholder">Название программы</string>
 </resources>

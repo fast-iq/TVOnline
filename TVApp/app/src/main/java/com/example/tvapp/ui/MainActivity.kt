@@ -77,7 +77,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, "Ошибка загрузки программы передач", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, R.string.epg_load_error, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -104,20 +104,20 @@ class MainActivity : AppCompatActivity() {
         val channelIdToShow = lastSelectedChannelId ?: preferences.lastChannelId
         if (channelIdToShow != null) {
             currentProgramsMap[channelIdToShow]?.let {
-                currentProgramText.text = "Сейчас: $it"
+                currentProgramText.text = getString(R.string.now_playing, it)
             } ?: run {
-                currentProgramText.text = "Выберите канал"
+                currentProgramText.text = getString(R.string.select_channel)
             }
         } else {
             val firstChannelId = ChannelList.channels.firstOrNull()?.id
             if (firstChannelId != null) {
                 currentProgramsMap[firstChannelId]?.let {
-                    currentProgramText.text = "Сейчас: $it"
+                    currentProgramText.text = getString(R.string.now_playing, it)
                 } ?: run {
-                    currentProgramText.text = "Выберите канал"
+                    currentProgramText.text = getString(R.string.select_channel)
                 }
             } else {
-                currentProgramText.text = "Выберите канал"
+                currentProgramText.text = getString(R.string.select_channel)
             }
         }
     }

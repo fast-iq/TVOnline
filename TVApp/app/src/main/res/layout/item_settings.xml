@@ -22,14 +22,14 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:src="@drawable/ic_settings"
-            android:contentDescription="Настройки"
+            android:contentDescription="@string/settings"
             app:tint="@color/accent" />
 
         <TextView
             android:id="@+id/settingsText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Настройки"
+            android:text="@string/settings"
             android:textSize="12sp"
             android:textStyle="bold"
             android:textColor="@color/white"

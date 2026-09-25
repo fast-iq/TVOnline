@@ -35,12 +35,14 @@
         <activity
             android:name=".ui.PlayerActivity"
             android:exported="false"
-            android:screenOrientation="landscape" />
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.TVApp.Black" />
 
         <activity
             android:name=".ui.ChannelInfoActivity"
             android:exported="false"
-            android:screenOrientation="landscape" />
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.TVApp.Black" />
             
         <activity
             android:name=".settings.SettingsActivity"

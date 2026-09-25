@@ -98,7 +98,7 @@ class EPGActivity : AppCompatActivity() {
             }
             val hour = calendar.get(Calendar.HOUR_OF_DAY)
             val timeText = TextView(this).apply {
-                text = String.format("%02d:00", hour)
+                text = String.format(Locale.US, "%02d:00", hour)
                 textSize = 14f
                 setTextColor(getColor(R.color.text_secondary))
                 width = pixelsPerHour.toInt()
@@ -219,7 +219,7 @@ class EPGActivity : AppCompatActivity() {
                 renderPrograms(programs)
                 epgGridContainer.post { scrollToCurrentTime() }
             } catch (e: Exception) {
-                Toast.makeText(this@EPGActivity, "Ошибка загрузки программы передач", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@EPGActivity, R.string.epg_load_error, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -232,10 +232,10 @@ class EPGActivity : AppCompatActivity() {
     private fun updateCurrentTimeDisplay() {
         val moscowCal = Calendar.getInstance(moscowTz)
         val dateFormat = SimpleDateFormat("HH:mm dd.MM.yyyy", Locale.getDefault())
-        currentTimeText.text = "Время (МСК): ${dateFormat.format(moscowCal.time)}"
+        currentTimeText.text = getString(R.string.time_msk, dateFormat.format(moscowCal.time))
 
         val offsetText = if (timeOffsetHours >= 0) "+$timeOffsetHours" else "$timeOffsetHours"
-        timeOffsetText.text = "Смещение: ${offsetText}ч"
+        timeOffsetText.text = getString(R.string.offset_value, offsetText)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -260,11 +260,11 @@ class EPGActivity : AppCompatActivity() {
         timeOffsetHours += hours
         if (timeOffsetHours > 12) {
             timeOffsetHours = 12
-            Toast.makeText(this, "Максимальное смещение: +12 часов", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.max_offset_error, Toast.LENGTH_SHORT).show()
         }
         if (timeOffsetHours < -12) {
             timeOffsetHours = -12
-            Toast.makeText(this, "Минимальное смещение: -12 часов", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.min_offset_error, Toast.LENGTH_SHORT).show()
         }
         createTimeScale()
         loadEPGForDate()

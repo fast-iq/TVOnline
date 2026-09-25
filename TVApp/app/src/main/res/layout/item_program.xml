@@ -13,7 +13,7 @@
         android:id="@+id/programTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="12:00 - 14:00"
+        android:text="@string/program_time_placeholder"
         android:textSize="12sp"
         android:textColor="@color/text_secondary" />
 
@@ -21,7 +21,7 @@
         android:id="@+id/programTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Название программы"
+        android:text="@string/program_name_placeholder"
         android:textSize="14sp"
         android:textStyle="bold"
         android:textColor="@color/white"

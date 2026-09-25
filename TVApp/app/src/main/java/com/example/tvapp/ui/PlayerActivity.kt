@@ -47,16 +47,16 @@ class PlayerActivity : AppCompatActivity() {
 
             override fun onPlaybackError(error: String) {
                 runOnUiThread {
-                    infoText.text = "Ошибка воспроизведения:\n$error"
+                    infoText.text = getString(R.string.playback_error, error)
                     infoText.visibility = View.VISIBLE
-                    Toast.makeText(this@PlayerActivity, "Ошибка: $error", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@PlayerActivity, getString(R.string.error_prefix, error), Toast.LENGTH_LONG).show()
                 }
             }
 
             override fun onBuffering(isBuffering: Boolean) {
                 runOnUiThread {
                     if (isBuffering) {
-                        infoText.text = "Буферизация..."
+                        infoText.text = getString(R.string.buffering)
                         infoText.visibility = View.VISIBLE
                     } else {
                         infoText.visibility = View.GONE
@@ -66,30 +66,30 @@ class PlayerActivity : AppCompatActivity() {
 
             override fun onFallbackUsed(fallbackUrl: String) {
                 runOnUiThread {
-                    infoText.text = "Переключение на резервный источник..."
+                    infoText.text = getString(R.string.switching_source)
                     infoText.visibility = View.VISIBLE
                 }
             }
         })
 
         if (currentChannel != null) {
-            infoText.text = "Загрузка канала: $channelName..."
+            infoText.text = getString(R.string.loading_channel, channelName)
             infoText.visibility = View.VISIBLE
             playerManager.playChannel(currentChannel!!, streamUrl)
         } else if (!streamUrl.isNullOrEmpty()) {
             val url = streamUrl!!
-            infoText.text = "Загрузка канала: $channelName..."
+            infoText.text = getString(R.string.loading_channel, channelName)
             infoText.visibility = View.VISIBLE
             val tempChannel = Channel(
                 id = channelId ?: "unknown",
-                name = channelName ?: "Неизвестный канал",
+                name = channelName ?: getString(R.string.unknown_channel),
                 logoUrl = "",
                 streamUrl = url
             )
             currentChannel = tempChannel
             playerManager.playChannel(tempChannel, url)
         } else {
-            infoText.text = "Ошибка: URL потока не указан"
+            infoText.text = getString(R.string.no_stream_url)
             infoText.visibility = View.VISIBLE
         }
     }

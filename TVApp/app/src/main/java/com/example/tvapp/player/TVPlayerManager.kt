@@ -42,7 +42,7 @@ class TVPlayerManager(private val context: Context) {
                         when (state) {
                             Player.STATE_READY -> callback?.onPlaybackReady()
                             Player.STATE_BUFFERING -> callback?.onBuffering(true)
-                            Player.STATE_IDLE -> callback?.onBuffering(false)
+                            Player.STATE_IDLE, Player.STATE_ENDED -> callback?.onBuffering(false)
                         }
                     }
 

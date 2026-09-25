@@ -30,7 +30,7 @@ class ChannelInfoActivity : AppCompatActivity() {
         val channelImage: ImageView = findViewById(R.id.channelImage)
         val startButton: TextView = findViewById(R.id.startButton)
 
-        channelNameText.text = channelName ?: "Неизвестный канал"
+        channelNameText.text = channelName ?: getString(R.string.unknown_channel)
 
         if (!logoUrl.isNullOrEmpty()) {
             Glide.with(this)
@@ -41,7 +41,7 @@ class ChannelInfoActivity : AppCompatActivity() {
         }
 
         startButton.setOnClickListener { startPlayback() }
-        Toast.makeText(this, "Нажмите ОК для начала просмотра", Toast.LENGTH_LONG).show()
+        Toast.makeText(this, R.string.press_ok_to_start, Toast.LENGTH_LONG).show()
     }
 
     private fun startPlayback() {

@@ -130,6 +130,31 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 - Added `.gitattributes` (`* text=auto eol=lf`) to fix CRLF warnings
 - CI now passes: lint clean, build successful
 
+### 2026-09-25 Session 5 — Lint cleanup & i18n preparation
+**Goal:** Fix all 83 lint warnings, prepare app for multi-language support.
+
+**i18n (HardcodedText + SetTextI18n, ~37 warnings):**
+- Extracted ALL hardcoded Russian text from 10 layout XMLs and 6 Kotlin files into `strings.xml`
+- All layouts now use `@string/...` references, all Kotlin `setText()` uses `getString(R.string...)`
+- Format strings with placeholders: `now_playing`, `loading_channel`, `playback_error`, `timezone_value`, `quality_value`, `language_value`, `time_msk`, `offset_value`
+- Removed 14 unused string resources (old `settings`, `epg`, `loading`, etc. replaced by new ones)
+- Ready for translation: add `values-en/strings.xml` to support English
+
+**Other lint fixes:**
+- `DefaultLocale` — `String.format("%02d:00", hour)` → `String.format(Locale.US, "%02d:00", hour)` in EPGActivity.kt
+- `SwitchIntDef` — added `Player.STATE_ENDED` case to `when(state)` in TVPlayerManager.kt
+- `Overdraw` (5) — removed `android:background` from root layouts; created `Theme.TVApp.Black` for Player/ChannelInfo activities (black windowBackground in theme instead of layout)
+- `SmallSp` — `10sp` → `11sp` in item_channel.xml programTitle
+- `TypographyEllipsis` — replaced `...` with `…` in string resources
+- `ContentDescription` — added `android:contentDescription="@string/channel_image_desc"` to ImageView in activity_channel_info.xml
+- `UnusedResources` — removed unused `focus_highlight` color from colors.xml
+
+**Remaining warnings (non-blocking, by design):**
+- `OldTargetApi` — targetSdk 35 is latest stable
+- `GradleDependency` (8) — newer library versions available but current ones work
+- `DiscouragedApi` (5) — `screenOrientation="landscape"` required for TV app
+- `NotifyDataSetChanged` (2) — acceptable for small RecyclerViews
+
 ## Do NOT
 - Do not use `via.placeholder.com` (dead service)
 - Do not use `static.wikia.nocookie.net` for channel logos (unreliable)
