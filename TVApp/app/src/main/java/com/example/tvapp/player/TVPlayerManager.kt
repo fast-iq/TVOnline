@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
-import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
@@ -27,7 +26,6 @@ class TVPlayerManager(private val context: Context) {
         fun onFallbackUsed(fallbackUrl: String)
     }
 
-    @OptIn(UnstableApi::class)
     fun initializePlayer(playerView: PlayerView, callback: PlayerCallback? = null) {
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(15000, 60000, 3000, 6000)

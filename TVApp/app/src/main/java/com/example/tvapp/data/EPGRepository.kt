@@ -168,10 +168,10 @@ class EPGRepository {
                         Program(
                             channelId = "c1r",
                             title = item.optString("title", ""),
-                            description = item.optString("lead", null),
+                            description = item.optString("lead", ""),
                             startTime = startSec * 1000,
                             endTime = endSec * 1000,
-                            iconUrl = item.optString("photo", null)
+                            iconUrl = item.optString("photo", "")
                         )
                     )
                 }
