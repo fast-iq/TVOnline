@@ -199,7 +199,7 @@ class EPGRepository {
 
     private fun httpGet(url: String, authHeader: String? = null): String? {
         val connection = URL(url).openConnection() as HttpURLConnection
-        try {
+        return try {
             connection.requestMethod = "GET"
             connection.setRequestProperty("User-Agent", userAgent)
             connection.setRequestProperty("Accept", "application/json, text/html")
@@ -211,6 +211,8 @@ class EPGRepository {
             val code = connection.responseCode
             if (code != 200) return null
             connection.inputStream.bufferedReader().use { it.readText() }
+        } catch (e: Exception) {
+            null
         } finally {
             connection.disconnect()
         }

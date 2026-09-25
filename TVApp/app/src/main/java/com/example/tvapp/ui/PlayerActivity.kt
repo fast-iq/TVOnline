@@ -77,16 +77,17 @@ class PlayerActivity : AppCompatActivity() {
             infoText.visibility = View.VISIBLE
             playerManager.playChannel(currentChannel!!, streamUrl)
         } else if (!streamUrl.isNullOrEmpty()) {
+            val url = streamUrl
             infoText.text = "Загрузка канала: $channelName..."
             infoText.visibility = View.VISIBLE
             val tempChannel = Channel(
                 id = channelId ?: "unknown",
                 name = channelName ?: "Неизвестный канал",
                 logoUrl = "",
-                streamUrl = streamUrl
+                streamUrl = url
             )
             currentChannel = tempChannel
-            playerManager.playChannel(tempChannel, streamUrl)
+            playerManager.playChannel(tempChannel, url)
         } else {
             infoText.text = "Ошибка: URL потока не указан"
             infoText.visibility = View.VISIBLE

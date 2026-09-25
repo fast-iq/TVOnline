@@ -89,7 +89,7 @@ class TVPlayerManager(private val context: Context) {
             AppPreferences.QualityMode.AUTO -> Int.MAX_VALUE
         }
         trackSelector?.let { ts ->
-            val params = ts.parametersBuilder.setMaxVideoBitrate(maxBitrate).build()
+            val params = ts.buildUponParameters().setMaxVideoBitrate(maxBitrate).build()
             ts.setParameters(params)
         }
     }

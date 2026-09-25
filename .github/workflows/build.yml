@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -34,18 +34,27 @@ jobs:
 
       - name: Run Lint
         run: cd TVApp && ./gradlew lintDebug --no-daemon --stacktrace
-        continue-on-error: true
 
-      - name: Clean Gradle Cache
-        run: cd TVApp && ./gradlew clean --no-daemon
+      - name: Show Lint Report (on failure)
+        if: failure()
+        run: |
+          echo "=== Lint XML report ==="
+          cat TVApp/app/build/reports/lint-results-debug.txt 2>/dev/null || echo "(no txt report)"
+          echo "=== Lint HTML report path ==="
+          ls -la TVApp/app/build/reports/ 2>/dev/null || echo "(no reports dir)"
 
       - name: Upload Lint Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: lint-report
-          path: TVApp/app/build/reports/lint-results-debug.html
+          path: |
+            TVApp/app/build/reports/lint-results-debug.html
+            TVApp/app/build/reports/lint-results-debug.txt
           retention-days: 7
+
+      - name: Clean Gradle Cache
+        run: cd TVApp && ./gradlew clean --no-daemon
 
   # Job для сборки и тестирования
   build:
@@ -58,7 +67,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -115,7 +124,7 @@ jobs:
           echo "Built version: $VERSION"
 
       - name: Upload Debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: debug-apk
           path: TVApp/app/build/outputs/apk/debug/*.apk
@@ -123,7 +132,7 @@ jobs:
 
       - name: Upload Release APK
         if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: release-apk
           path: TVApp/app/build/outputs/apk/release/*.apk
@@ -131,7 +140,7 @@ jobs:
 
       - name: Upload Release Bundle
         if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: release-bundle
           path: TVApp/app/build/outputs/bundle/release/*.aab
@@ -149,13 +158,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download Release APK
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: release-apk
           path: ./artifacts/apk
 
       - name: Download Release Bundle
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: release-bundle
           path: ./artifacts/bundle
