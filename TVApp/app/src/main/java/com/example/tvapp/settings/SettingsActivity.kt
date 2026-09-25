@@ -2,24 +2,22 @@ package com.example.tvapp.settings
 
 import android.os.Bundle
 import android.view.KeyEvent
-import android.widget.ArrayAdapter
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.tvapp.R
 import com.example.tvapp.data.AppPreferences
-import java.util.*
 
 class SettingsActivity : AppCompatActivity() {
-    
+
     private lateinit var timezoneSeekBar: SeekBar
     private lateinit var timezoneValueText: TextView
     private lateinit var qualityModeText: TextView
     private lateinit var languageText: TextView
-    
+
     private val preferences by lazy { AppPreferences(applicationContext) }
-    
+
     private val timezones = listOf(
         -12 to "-12 (UTC-12)",
         -11 to "-11 (UTC-11)",
@@ -35,8 +33,8 @@ class SettingsActivity : AppCompatActivity() {
         -1 to "-1 (UTC-1)",
         0 to "0 (UTC)",
         1 to "+1 (UTC+1)",
-        2 to "+2 (UTC+2 - Москва)",
-        3 to "+3 (UTC+3)",
+        2 to "+2 (UTC+2)",
+        3 to "+3 (UTC+3 - Москва)",
         4 to "+4 (UTC+4)",
         5 to "+5 (UTC+5)",
         6 to "+6 (UTC+6)",
@@ -47,55 +45,50 @@ class SettingsActivity : AppCompatActivity() {
         11 to "+11 (UTC+11)",
         12 to "+12 (UTC+12)"
     )
-    
+
     private val qualityModes = listOf(
         AppPreferences.QualityMode.MINIMUM,
         AppPreferences.QualityMode.MEDIUM,
         AppPreferences.QualityMode.MAXIMUM,
         AppPreferences.QualityMode.AUTO
     )
-    
+
     private val languages = listOf("ru" to "Русский", "en" to "English")
-    
-    private var currentTimezoneIndex = 14 // UTC+2 по умолчанию
-    private var currentQualityIndex = 3 // AUTO по умолчанию
-    private var currentLanguageIndex = 0 // Русский по умолчанию
-    
+
+    private var currentTimezoneIndex = 15
+    private var currentQualityIndex = 3
+    private var currentLanguageIndex = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
-        
+
         timezoneSeekBar = findViewById(R.id.timezoneSeekBar)
         timezoneValueText = findViewById(R.id.timezoneValueText)
         qualityModeText = findViewById(R.id.qualityModeText)
         languageText = findViewById(R.id.languageText)
-        
+
         loadCurrentSettings()
         setupTimezoneSelector()
         setupQualitySelector()
         setupLanguageSelector()
     }
-    
+
     private fun loadCurrentSettings() {
-        // Загружаем текущие настройки
         val currentOffset = preferences.timezoneOffset
-        currentTimezoneIndex = timezones.indexOfFirst { it.first == currentOffset }.takeIf { it != -1 } ?: 14
-        
+        currentTimezoneIndex = timezones.indexOfFirst { it.first == currentOffset }.takeIf { it != -1 } ?: 15
         currentQualityIndex = qualityModes.indexOf(preferences.qualityMode).takeIf { it != -1 } ?: 3
-        
         currentLanguageIndex = languages.indexOfFirst { it.first == preferences.language }.takeIf { it != -1 } ?: 0
-        
         updateTimezoneDisplay()
         updateQualityDisplay()
         updateLanguageDisplay()
     }
-    
+
     private fun setupTimezoneSelector() {
         timezoneSeekBar.max = timezones.size - 1
         timezoneSeekBar.progress = currentTimezoneIndex
-        
         updateTimezoneDisplay()
-        
+
         timezoneSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
@@ -103,77 +96,66 @@ class SettingsActivity : AppCompatActivity() {
                     updateTimezoneDisplay()
                 }
             }
-            
+
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            
+
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                // Сохраняем настройку часового пояса
                 val selectedOffset = timezones[currentTimezoneIndex].first
                 preferences.timezoneOffset = selectedOffset
-                
                 Toast.makeText(
                     this@SettingsActivity,
-                    "Часовой пояс установлен: ${timezones[currentTimezoneIndex].second}",
+                    "Часовой пояс: ${timezones[currentTimezoneIndex].second}",
                     Toast.LENGTH_SHORT
                 ).show()
             }
         })
     }
-    
+
     private fun setupQualitySelector() {
         updateQualityDisplay()
-        
         findViewById<TextView>(R.id.qualityModeButton).setOnClickListener {
             currentQualityIndex = (currentQualityIndex + 1) % qualityModes.size
             preferences.qualityMode = qualityModes[currentQualityIndex]
             updateQualityDisplay()
-            
-            Toast.makeText(
-                this,
-                "Качество: ${getQualityName(qualityModes[currentQualityIndex])}",
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(this, "Качество: ${getQualityName(qualityModes[currentQualityIndex])}", Toast.LENGTH_SHORT).show()
         }
     }
-    
+
     private fun setupLanguageSelector() {
         updateLanguageDisplay()
-        
         findViewById<TextView>(R.id.languageButton).setOnClickListener {
             currentLanguageIndex = (currentLanguageIndex + 1) % languages.size
             preferences.language = languages[currentLanguageIndex].first
             updateLanguageDisplay()
-            
-            Toast.makeText(
-                this,
-                "Язык: ${languages[currentLanguageIndex].second}",
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(this, "Язык: ${languages[currentLanguageIndex].second}", Toast.LENGTH_SHORT).show()
         }
     }
-    
+
     private fun updateTimezoneDisplay() {
         timezoneValueText.text = "Часовой пояс: ${timezones[currentTimezoneIndex].second}"
     }
-    
+
     private fun updateQualityDisplay() {
         qualityModeText.text = "Качество: ${getQualityName(qualityModes[currentQualityIndex])}"
     }
-    
+
     private fun updateLanguageDisplay() {
         languageText.text = "Язык: ${languages[currentLanguageIndex].second}"
     }
-    
+
     private fun getQualityName(mode: AppPreferences.QualityMode): String {
         return when (mode) {
             AppPreferences.QualityMode.MINIMUM -> "Минимальное (240p)"
-            AppPreferences.QualityMode.MEDIUM -> "Среднее (480p)"
-            AppPreferences.QualityMode.MAXIMUM -> "Максимальное (1080p)"
+            AppPreferences.QualityMode.MEDIUM -> "Среднее (576p)"
+            AppPreferences.QualityMode.MAXIMUM -> "Максимальное"
             AppPreferences.QualityMode.AUTO -> "Авто"
         }
     }
-    
-    override fun onKeyMultiple(keyCode: Int, repeatCount: Int, event: KeyEvent?): Boolean {
-        return false
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        return when (keyCode) {
+            KeyEvent.KEYCODE_BACK -> { finish(); true }
+            else -> super.onKeyDown(keyCode, event)
+        }
     }
 }

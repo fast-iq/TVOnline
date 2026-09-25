@@ -11,6 +11,7 @@ import com.example.tvapp.data.Channel
 import com.example.tvapp.data.Program
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.TimeZone
 
 class EPGAdapter(
     private var channels: List<Channel>,
@@ -61,7 +62,9 @@ class EPGAdapter(
                 programTime.text = "${dateFormat.format(Date(program.startTime))} - ${dateFormat.format(Date(program.endTime))}"
                 
                 // Подсветка текущей программы
-                val currentTime = System.currentTimeMillis() + (timezoneOffset * 60 * 60 * 1000L)
+                val moscowTz = TimeZone.getTimeZone("Europe/Moscow")
+                val cal = Calendar.getInstance(moscowTz)
+                val currentTime = cal.timeInMillis - moscowTz.getOffset(cal.timeInMillis).toLong()
                 if (program.isLive(currentTime)) {
                     itemView.setBackgroundResource(R.drawable.live_indicator)
                 } else {

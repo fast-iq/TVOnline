@@ -2,7 +2,6 @@ package com.example.tvapp.ui
 
 import android.os.Bundle
 import android.view.KeyEvent
-import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
@@ -15,40 +14,35 @@ import com.example.tvapp.data.ChannelList
 import com.example.tvapp.data.EPGRepository
 import com.example.tvapp.data.AppPreferences
 import kotlinx.coroutines.*
-import java.text.SimpleDateFormat
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
-    
+
     private lateinit var channelsRecyclerView: RecyclerView
     private lateinit var currentProgramText: TextView
     private lateinit var channelAdapter: ChannelAdapter
-    
+
     private val epgRepository = EPGRepository()
     private val preferences by lazy { AppPreferences(applicationContext) }
-    
+
     private var allPrograms = mapOf<String, List<com.example.tvapp.data.Program>>()
-    private var currentTimeZoneOffset = 0
     private var lastSelectedChannelId: String? = null
-    
+
     private val scope = CoroutineScope(Dispatchers.Main + Job())
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        
-        currentTimeZoneOffset = preferences.timezoneOffset
-        
+
         channelsRecyclerView = findViewById(R.id.channelsRecyclerView)
         currentProgramText = findViewById(R.id.currentProgramText)
-        
+
         setupChannelsGrid()
         loadEPG()
         restoreLastChannel()
     }
-    
+
     private fun setupChannelsGrid() {
-        // Для TV используем сетку 4-5 колонок
         val spanCount = 5
         channelAdapter = ChannelAdapter(
             channels = ChannelList.channels,
@@ -57,26 +51,17 @@ class MainActivity : AppCompatActivity() {
                 preferences.lastChannelId = channel.id
                 openPlayer(channel)
             },
-            onSettingsClicked = {
-                openSettings()
-            },
-            onEPGClicked = {
-                openEPG()
-            }
+            onSettingsClicked = { openSettings() },
+            onEPGClicked = { openEPG() }
         )
-        
+
         channelsRecyclerView.apply {
             layoutManager = GridLayoutManager(this@MainActivity, spanCount)
             adapter = channelAdapter
-            
-            // Навигация с пульта
             descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
         }
-        
-        // Восстанавливаем последний выбранный канал и обновляем информацию о программе
-        restoreLastChannel()
     }
-    
+
     private fun loadEPG() {
         scope.launch {
             try {
@@ -84,14 +69,10 @@ class MainActivity : AppCompatActivity() {
                 allPrograms = withContext(Dispatchers.IO) {
                     epgRepository.getProgramsForAllChannels(date)
                 }
-                
-                // Обновляем адаптер с текущими программами
                 updateCurrentPrograms()
-                
-                // Периодически обновляем информацию о текущей программе
                 launch {
                     while (isActive) {
-                        delay(60000) // Каждую минуту
+                        delay(60000)
                         updateCurrentPrograms()
                     }
                 }
@@ -100,22 +81,26 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-    
+
+    private fun getMoscowTime(): Long {
+        val tz = TimeZone.getTimeZone("Europe/Moscow")
+        val cal = Calendar.getInstance(tz)
+        return cal.timeInMillis - (tz.getOffset(cal.timeInMillis) - 0L)
+    }
+
     private fun updateCurrentPrograms() {
-        val adjustedTime = System.currentTimeMillis() + (currentTimeZoneOffset * 60 * 60 * 1000L)
-        
+        val moscowNow = getMoscowTime()
         val currentProgramsMap = mutableMapOf<String, String>()
-        
+
         for ((channelId, programs) in allPrograms) {
-            val currentProgram = epgRepository.getCurrentProgram(programs, adjustedTime)
+            val currentProgram = epgRepository.getCurrentProgram(programs, moscowNow)
             currentProgram?.let {
                 currentProgramsMap[channelId] = it.title
             }
         }
-        
+
         channelAdapter.updateCurrentPrograms(currentProgramsMap)
-        
-        // Обновляем текст текущей программы для последнего выбранного канала
+
         val channelIdToShow = lastSelectedChannelId ?: preferences.lastChannelId
         if (channelIdToShow != null) {
             currentProgramsMap[channelIdToShow]?.let {
@@ -123,76 +108,67 @@ class MainActivity : AppCompatActivity() {
             } ?: run {
                 currentProgramText.text = "Выберите канал"
             }
-        } else if (ChannelList.channels.isNotEmpty()) {
-            // Если нет сохраненного канала, показываем программу первого канала
-            val firstChannelId = ChannelList.channels[0].id
-            currentProgramsMap[firstChannelId]?.let {
-                currentProgramText.text = "Сейчас: $it"
-            } ?: run {
+        } else {
+            val firstChannelId = ChannelList.channels.firstOrNull()?.id
+            if (firstChannelId != null) {
+                currentProgramsMap[firstChannelId]?.let {
+                    currentProgramText.text = "Сейчас: $it"
+                } ?: run {
+                    currentProgramText.text = "Выберите канал"
+                }
+            } else {
                 currentProgramText.text = "Выберите канал"
             }
         }
     }
-    
+
     private fun restoreLastChannel() {
         val lastChannelId = preferences.lastChannelId
         if (lastChannelId != null) {
             val channel = ChannelList.channels.find { it.id == lastChannelId }
             channel?.let {
-                // Прокручиваем к последнему каналу
                 val position = ChannelList.channels.indexOf(it)
                 if (position != -1) {
-                    channelsRecyclerView.scrollToPosition(position + 2) // +2 для настроек и EPG
+                    channelsRecyclerView.scrollToPosition(position + 2)
                 }
-                // Сохраняем как последний выбранный для отображения программы
                 lastSelectedChannelId = lastChannelId
             }
         }
     }
-    
+
     override fun onResume() {
         super.onResume()
-        // Обновляем часовой пояс при возврате из настроек
-        currentTimeZoneOffset = preferences.timezoneOffset
         loadEPG()
     }
-    
+
     private fun openPlayer(channel: Channel) {
-        // Сначала открываем активность с информацией о канале
         val intent = android.content.Intent(this, ChannelInfoActivity::class.java).apply {
             putExtra("channel_id", channel.id)
             putExtra("channel_name", channel.name)
             putExtra("stream_url", channel.streamUrl)
             putExtra("logo_url", channel.logoUrl)
-            putExtra("channel_image_url", channel.channelImageUrl)
         }
         startActivity(intent)
     }
-    
+
     private fun openSettings() {
         val intent = android.content.Intent(this, com.example.tvapp.settings.SettingsActivity::class.java)
         startActivity(intent)
     }
-    
+
     private fun openEPG() {
         val intent = android.content.Intent(this, EPGActivity::class.java)
         startActivity(intent)
     }
-    
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         return when (keyCode) {
-            KeyEvent.KEYCODE_MENU -> {
-                openSettings()
-                true
-            }
-            KeyEvent.KEYCODE_INFO -> {
-                openEPG()
-                true
-            }
+            KeyEvent.KEYCODE_MENU -> { openSettings(); true }
+            KeyEvent.KEYCODE_INFO -> { openEPG(); true }
             else -> super.onKeyDown(keyCode, event)
         }
     }
-    
+
     override fun onDestroy() {
         super.onDestroy()
         scope.cancel()

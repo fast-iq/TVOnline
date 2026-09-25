@@ -11,52 +11,39 @@ import com.example.tvapp.R
 import com.bumptech.glide.Glide
 
 class ChannelInfoActivity : AppCompatActivity() {
-    
+
     private var channelId: String? = null
     private var streamUrl: String? = null
     private var channelName: String? = null
     private var logoUrl: String? = null
-    private var channelImageUrl: String? = null
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_channel_info)
-        
-        // Получаем данные о канале
+
         channelId = intent.getStringExtra("channel_id")
         streamUrl = intent.getStringExtra("stream_url")
         channelName = intent.getStringExtra("channel_name")
         logoUrl = intent.getStringExtra("logo_url")
-        channelImageUrl = intent.getStringExtra("channel_image_url")
-        
-        // Отображаем информацию
+
         val channelNameText: TextView = findViewById(R.id.channelNameText)
         val channelImage: ImageView = findViewById(R.id.channelImage)
         val startButton: TextView = findViewById(R.id.startButton)
-        
+
         channelNameText.text = channelName ?: "Неизвестный канал"
-        
-        // Загружаем изображение канала
-        if (!channelImageUrl.isNullOrEmpty()) {
-            Glide.with(this)
-                .load(channelImageUrl)
-                .placeholder(android.R.drawable.ic_menu_gallery)
-                .into(channelImage)
-        } else if (!logoUrl.isNullOrEmpty()) {
+
+        if (!logoUrl.isNullOrEmpty()) {
             Glide.with(this)
                 .load(logoUrl)
-                .placeholder(android.R.drawable.ic_menu_gallery)
+                .placeholder(R.drawable.ic_channel_placeholder)
+                .error(R.drawable.ic_channel_placeholder)
                 .into(channelImage)
         }
-        
-        // Кнопка запуска
-        startButton.setOnClickListener {
-            startPlayback()
-        }
-        
+
+        startButton.setOnClickListener { startPlayback() }
         Toast.makeText(this, "Нажмите ОК для начала просмотра", Toast.LENGTH_LONG).show()
     }
-    
+
     private fun startPlayback() {
         val intent = Intent(this, PlayerActivity::class.java).apply {
             putExtra("channel_id", channelId)
@@ -66,17 +53,11 @@ class ChannelInfoActivity : AppCompatActivity() {
         }
         startActivity(intent)
     }
-    
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         return when (keyCode) {
-            KeyEvent.KEYCODE_BACK -> {
-                finish()
-                true
-            }
-            KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_DPAD_CENTER -> {
-                startPlayback()
-                true
-            }
+            KeyEvent.KEYCODE_BACK -> { finish(); true }
+            KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_DPAD_CENTER -> { startPlayback(); true }
             else -> super.onKeyDown(keyCode, event)
         }
     }
