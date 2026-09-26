@@ -14,22 +14,20 @@ try {
 } catch (Exception ignored) {
 }
 
-def versionFromTag = null
+def versionName = "1.0"
+def versionCode = 1
 if (gitTags != null && gitTags) {
     def m = (gitTags =~ /v?(\d+)\.(\d+)(?:\.(\d+))?/)
     if (m.find()) {
         def major = m.group(1).toInteger()
         def minor = m.group(2).toInteger()
         def patch = m.group(3) != null ? m.group(3).toInteger() : 0
-        versionFromTag = "${major}.${minor}.${patch}"
+        versionName = "${major}.${minor}.${patch}"
+        versionCode = (major * 10000) + (minor * 100) + patch
     } else {
-        versionFromTag = gitTags
+        versionName = gitTags
     }
 }
-
-def parsedVersionName = versionFromTag ?: "1.0"
-def parsedVersionCode = versionFromTag != null ?
-    (versionFromTag.split('.').withIndex().sum { v, i -> v.toInteger() * (10000 ** (2 - i)) }) : 1
 
 android {
     namespace 'com.example.tvapp'
@@ -39,8 +37,8 @@ android {
         applicationId "com.example.tvapp"
         minSdk 28
         targetSdk 35
-        versionCode parsedVersionCode
-        versionName parsedVersionName
+        versionCode versionCode
+        versionName versionName
     }
 
     signingConfigs {
