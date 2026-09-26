@@ -3,21 +3,27 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
-def gitTags = null
+def rawVersion = null
 try {
     def stdout = new ByteArrayOutputStream()
     rootProject.exec {
         commandLine 'git', 'describe', '--tags', '--abbrev=0'
         standardOutput = stdout
     }
-    gitTags = stdout.toString().trim()
+    rawVersion = stdout.toString().trim()
 } catch (Exception ignored) {
+}
+if (!rawVersion) {
+    def ciRef = System.getenv("GITHUB_REF_NAME")
+    if (ciRef != null && ciRef) {
+        rawVersion = ciRef
+    }
 }
 
 def versionName = "1.0"
 def versionCode = 1
-if (gitTags != null && gitTags) {
-    def m = (gitTags =~ /v?(\d+)\.(\d+)(?:\.(\d+))?/)
+if (rawVersion != null && rawVersion) {
+    def m = (rawVersion =~ /v?(\d+)\.(\d+)(?:\.(\d+))?/)
     if (m.find()) {
         def major = m.group(1).toInteger()
         def minor = m.group(2).toInteger()
@@ -25,7 +31,7 @@ if (gitTags != null && gitTags) {
         versionName = "${major}.${minor}.${patch}"
         versionCode = (major * 10000) + (minor * 100) + patch
     } else {
-        versionName = gitTags
+        versionName = rawVersion
     }
 }
 
