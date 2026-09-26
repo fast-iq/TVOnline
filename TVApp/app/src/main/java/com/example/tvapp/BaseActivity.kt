@@ -8,9 +8,9 @@ import java.util.Locale
 
 abstract class BaseActivity : AppCompatActivity() {
 
-    override fun attachBaseContext(newBase: Context): Context {
+    override fun attachBaseContext(newBase: Context) {
         val lang = AppPreferences(newBase.applicationContext).language
-        return super.attachBaseContext(localeContext(newBase, lang))
+        super.attachBaseContext(localeContext(newBase, lang))
     }
 
     private fun localeContext(context: Context, languageCode: String): Context {

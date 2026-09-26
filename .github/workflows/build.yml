@@ -12,7 +12,7 @@ env:
 jobs:
   # Job для проверки качества кода
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     name: Lint Check
     
     steps:
@@ -58,7 +58,7 @@ jobs:
 
   # Job для сборки и тестирования
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     name: Build & Test
     needs: lint
     
@@ -148,7 +148,7 @@ jobs:
 
   # Job для создания релиза на GitHub
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     name: Create GitHub Release
     needs: build
     if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
