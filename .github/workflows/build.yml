@@ -88,6 +88,21 @@ jobs:
           rm -rf ~/.gradle/caches/build-cache-1
           echo "Build cache cleared"
 
+      - name: Set versionCode/versionName from tag
+        if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          MAJOR=$(echo "$TAG" | cut -d. -f1)
+          MINOR=$(echo "$TAG" | cut -d. -f2)
+          PATCH=$(echo "$TAG" | cut -d. -f3)
+          [ -z "$PATCH" ] && PATCH=0
+          VC=$((MAJOR * 10000 + MINOR * 100 + PATCH))
+          VN="${MAJOR}.${MINOR}.${PATCH}"
+          echo "Setting versionCode=$VC versionName=$VN"
+          sed -i "s/android:versionCode=\"[0-9]*\"/android:versionCode=\"$VC\"/" TVApp/app/src/main/AndroidManifest.xml
+          sed -i "s/android:versionName=\"[^\"]*\"/android:versionName=\"$VN\"/" TVApp/app/src/main/AndroidManifest.xml
+          grep "versionCode\|versionName" TVApp/app/src/main/AndroidManifest.xml
+
       - name: Decode Keystore (for release builds)
         if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
         env:
