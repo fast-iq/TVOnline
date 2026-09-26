@@ -3,6 +3,34 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+def gitTags = null
+try {
+    def stdout = new ByteArrayOutputStream()
+    rootProject.exec {
+        commandLine 'git', 'describe', '--tags', '--abbrev=0'
+        standardOutput = stdout
+    }
+    gitTags = stdout.toString().trim()
+} catch (Exception ignored) {
+}
+
+def versionFromTag = null
+if (gitTags != null && gitTags) {
+    def m = (gitTags =~ /v?(\d+)\.(\d+)(?:\.(\d+))?/)
+    if (m.find()) {
+        def major = m.group(1).toInteger()
+        def minor = m.group(2).toInteger()
+        def patch = m.group(3) != null ? m.group(3).toInteger() : 0
+        versionFromTag = "${major}.${minor}.${patch}"
+    } else {
+        versionFromTag = gitTags
+    }
+}
+
+def parsedVersionName = versionFromTag ?: "1.0"
+def parsedVersionCode = versionFromTag != null ?
+    (versionFromTag.split('.').withIndex().sum { v, i -> v.toInteger() * (10000 ** (2 - i)) }) : 1
+
 android {
     namespace 'com.example.tvapp'
     compileSdk 36
@@ -11,14 +39,30 @@ android {
         applicationId "com.example.tvapp"
         minSdk 28
         targetSdk 35
-        versionCode 1
-        versionName "1.0"
+        versionCode parsedVersionCode
+        versionName parsedVersionName
+    }
+
+    signingConfigs {
+        release {
+            def ksFile = file("release-key.jks")
+            if (ksFile.exists() && System.getenv("RELEASE_KEYSTORE_PASSWORD")) {
+                storeFile ksFile
+                storePassword System.getenv("RELEASE_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("RELEASE_KEY_ALIAS")
+                keyPassword System.getenv("RELEASE_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            def ksFile = file("release-key.jks")
+            if (ksFile.exists() && System.getenv("RELEASE_KEYSTORE_PASSWORD")) {
+                signingConfig signingConfigs.release
+            }
         }
     }
     compileOptions {

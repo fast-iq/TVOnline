@@ -196,7 +196,7 @@ jobs:
             - `app-release.aab` - Для публикации в Google Play Store
             
             ### 🔧 Требования:
-            - Android 7.0 (API 24) или выше
+            - Android 9.0 (API 28) или выше
             - Устройство с поддержкой Android TV или пульт ДУ
             
             ### 📝 Установка:
