@@ -37,8 +37,8 @@ android {
         applicationId "com.example.tvapp"
         minSdk 28
         targetSdk 35
-        versionCode versionCode
-        versionName versionName
+        versionCode = versionCode
+        versionName = versionName
     }
 
     signingConfigs {
