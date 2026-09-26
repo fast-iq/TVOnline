@@ -38,7 +38,7 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.core:core-ktx:1.19.1'
+    implementation 'androidx.core:core-ktx:1.18.0'
     implementation 'androidx.appcompat:appcompat:1.8.0'
     implementation 'com.google.android.material:material:1.14.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.2.2'
@@ -46,8 +46,8 @@ dependencies {
     implementation 'androidx.leanback:leanback:1.2.0-alpha04'
 
     // Media3 (новый ExoPlayer) для воспроизведения видео
-    implementation 'androidx.media3:media3-exoplayer:1.11.1'
-    implementation 'androidx.media3:media3-ui:1.11.1'
+    implementation 'androidx.media3:media3-exoplayer:1.11.0'
+    implementation 'androidx.media3:media3-ui:1.11.0'
 
     // Для работы с JSON
     implementation 'com.squareup.retrofit2:retrofit:3.0.0'
