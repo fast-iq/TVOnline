@@ -2,6 +2,7 @@ package com.example.tvapp.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 
 class AppPreferences(context: Context) {
@@ -21,22 +22,30 @@ class AppPreferences(context: Context) {
 
     var lastChannelId: String?
         get() = prefs.getString(KEY_LAST_CHANNEL, null)
-        set(value) = prefs.edit().putString(KEY_LAST_CHANNEL, value).apply()
+        set(value) {
+            prefs.edit { putString(KEY_LAST_CHANNEL, value) }
+        }
 
     var timezoneOffset: Int
         get() = prefs.getInt(KEY_TIMEZONE_OFFSET, DEFAULT_MOSCOW_OFFSET)
-        set(value) = prefs.edit().putInt(KEY_TIMEZONE_OFFSET, value).apply()
+        set(value) {
+            prefs.edit { putInt(KEY_TIMEZONE_OFFSET, value) }
+        }
 
     var qualityMode: QualityMode
         get() {
             val idx = prefs.getInt(KEY_QUALITY_MODE, QualityMode.AUTO.ordinal)
             return if (idx in QualityMode.values().indices) QualityMode.values()[idx] else QualityMode.AUTO
         }
-        set(value) = prefs.edit().putInt(KEY_QUALITY_MODE, value.ordinal).apply()
+        set(value) {
+            prefs.edit { putInt(KEY_QUALITY_MODE, value.ordinal) }
+        }
 
     var language: String
         get() = prefs.getString(KEY_LANGUAGE, "ru") ?: "ru"
-        set(value) = prefs.edit().putString(KEY_LANGUAGE, value).apply()
+        set(value) {
+            prefs.edit { putString(KEY_LANGUAGE, value) }
+        }
 
     enum class QualityMode {
         MINIMUM,

@@ -13,6 +13,7 @@ abstract class BaseActivity : AppCompatActivity() {
         super.attachBaseContext(localeContext(newBase, lang))
     }
 
+    @Suppress("AppBundleLocaleChanges")
     private fun localeContext(context: Context, languageCode: String): Context {
         val locale = Locale(languageCode)
         Locale.setDefault(locale)
