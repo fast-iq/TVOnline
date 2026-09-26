@@ -30,12 +30,18 @@ class MainActivity : BaseActivity() {
 
     private val scope = CoroutineScope(Dispatchers.Main + Job())
 
+    private var epgLoadJob: Job? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         channelsRecyclerView = findViewById(R.id.channelsRecyclerView)
         currentProgramText = findViewById(R.id.currentProgramText)
+        val settingsButton: android.widget.ImageView = findViewById(R.id.settingsButton)
+        settingsButton.setOnClickListener { openSettings() }
+        val epgButton: android.widget.ImageView = findViewById(R.id.epgButton)
+        epgButton.setOnClickListener { openEPG() }
 
         setupChannelsGrid()
         loadEPG()
@@ -50,9 +56,7 @@ class MainActivity : BaseActivity() {
                 lastSelectedChannelId = channel.id
                 preferences.lastChannelId = channel.id
                 openPlayer(channel)
-            },
-            onSettingsClicked = { openSettings() },
-            onEPGClicked = { openEPG() }
+            }
         )
 
         channelsRecyclerView.apply {
@@ -63,7 +67,8 @@ class MainActivity : BaseActivity() {
     }
 
     private fun loadEPG() {
-        scope.launch {
+        epgLoadJob?.cancel()
+        epgLoadJob = scope.launch {
             try {
                 val date = Date()
                 allPrograms = withContext(Dispatchers.IO) {
@@ -83,9 +88,7 @@ class MainActivity : BaseActivity() {
     }
 
     private fun getMoscowTime(): Long {
-        val tz = TimeZone.getTimeZone("Europe/Moscow")
-        val cal = Calendar.getInstance(tz)
-        return cal.timeInMillis - (tz.getOffset(cal.timeInMillis) - 0L)
+        return System.currentTimeMillis()
     }
 
     private fun updateCurrentPrograms() {
@@ -129,7 +132,7 @@ class MainActivity : BaseActivity() {
             channel?.let {
                 val position = ChannelList.channels.indexOf(it)
                 if (position != -1) {
-                    channelsRecyclerView.scrollToPosition(position + 2)
+                    channelsRecyclerView.scrollToPosition(position)
                 }
                 lastSelectedChannelId = lastChannelId
             }
@@ -142,7 +145,7 @@ class MainActivity : BaseActivity() {
     }
 
     private fun openPlayer(channel: Channel) {
-        val intent = android.content.Intent(this, ChannelInfoActivity::class.java).apply {
+        val intent = android.content.Intent(this, PlayerActivity::class.java).apply {
             putExtra("channel_id", channel.id)
             putExtra("channel_name", channel.name)
             putExtra("stream_url", channel.streamUrl)

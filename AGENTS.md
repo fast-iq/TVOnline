@@ -155,6 +155,49 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 - `DiscouragedApi` (5) — `screenOrientation="landscape"` required for TV app
 - `NotifyDataSetChanged` (2) — acceptable for small RecyclerViews
 
+### 2026-09-25 Session 6 — TV device testing fixes
+**Goal:** Fix 4 issues found during real Android TV testing.
+
+**1. Channel icons not showing (CRITICAL):**
+- All `logoUrl` values in Models.kt were fake/non-existent URLs (e.g. `https://www.ntv.ru/upload/images/logo_ntv.png`)
+- FIX: Replaced with verified working URLs from two sources:
+  - **ivi.ru CDN**: `https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/{hash}.jpg/x240/`
+  - **premier.one CDN (rtbcn)**: `https://uma-static.rtbcdn.ru/cwebp/pic/cardimage/{2ch}/{2ch}/{md5}.png?size=240&quality=95`
+- All URLs verified via HTTP HEAD → 200 + correct Content-Type
+- Channels with ivi logos: c1r, rossiya1, ntv, 5tv, zvezda, pz, sts, domashniy, tnt, ren, karusel, match, rossiya24, tvc, spas, tv3, mir, muztv
+- Channels with premier.one logos: kultura, otv, che (and others where available)
+
+**2. "Название передачи" placeholder instead of real program:**
+- **Bug 1:** `getMoscowTime()` in MainActivity subtracted Moscow timezone offset from `System.currentTimeMillis()` — WRONG. EPG times are UTC epoch millis, so just use `System.currentTimeMillis()` directly.
+- **Bug 2:** `generateFallbackEPG()` had same offset bug: `calendar.timeInMillis - moscowTz.getOffset(...)` → fixed to just `calendar.timeInMillis`
+- **Bug 3 (MAJOR):** EPG API integration was completely broken. Code called `/v1/schedule/{channelId}?week=YYYYMMDD` which doesn't exist. The actual API flow:
+  1. `GET /v1/index` → XML with `<channel>` entries, each containing `<href>http://xmldata.epgservice.ru/...?week=...</href>`
+  2. `GET <href>` (with week param) → full XMLTV schedule for that channel
+- FIX: Rewrote `EPGRepository` to use `loadChannelHrefs()` which caches `channelId → href` mapping from `/v1/index`, then fetches schedule from the href URL directly
+- Changed `http://xmldata.epgservice.ru` → `https://xmldata.epgservice.ru` (Android blocks cleartext HTTP)
+- EPG token is set in `AppPreferences.EPG_SERVICE_TOKEN`
+
+**3. "Нажмите ОК для просмотра" dialog blocking playback:**
+- **Root cause:** Flow was Grid → ChannelInfoActivity (intermediate screen with Toast "Нажмите ОК") → PlayerActivity. The intermediate screen added unnecessary friction and if OK was pressed at wrong time or stream failed, user got stuck/returned to grid.
+- FIX: Removed ChannelInfoActivity from the flow. Grid now goes directly to PlayerActivity. Playback starts immediately on entry.
+- Also fixed `TVPlayerManager`: `isAutoFallback` flag was never set to `true`, so multi-source fallback could never trigger. Removed the flag — fallback now always works when multiple URLs exist.
+
+**4. Settings tile in channel grid → gear icon in top-right corner:**
+- **Before:** Settings and EPG were 160×120dp cards occupying positions 0 and 1 in the 5-column grid, pushing all channels down by 2 slots
+- **After:** 
+  - Settings: 48×48dp gear icon (`ic_settings`) in top-right corner of activity_main.xml, aligned with title
+  - EPG: 48×48dp icon (`ic_epg`) next to settings button
+  - ChannelAdapter simplified: no more multi-type view holders, just channels
+  - `restoreLastChannel()` scroll offset removed (no more +2 for special tiles)
+
+**Files modified:**
+- `TVApp/app/src/main/java/com/example/tvapp/data/Models.kt` — logo URLs
+- `TVApp/app/src/main/java/com/example/tvapp/data/EPGRepository.kt` — complete rewrite of EPG fetch logic
+- `TVApp/app/src/main/java/com/example/tvapp/ui/MainActivity.kt` — direct player launch, settings/EPG buttons, time fix
+- `TVApp/app/src/main/java/com/example/tvapp/ui/ChannelAdapter.kt` — simplified to channels-only
+- `TVApp/app/src/main/java/com/example/tvapp/player/TVPlayerManager.kt` — fallback fix
+- `TVApp/app/src/main/res/layout/activity_main.xml` — added settings/EPG icon buttons
+
 ## Do NOT
 - Do not use `via.placeholder.com` (dead service)
 - Do not use `static.wikia.nocookie.net` for channel logos (unreliable)
@@ -162,3 +205,10 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 - Do not use simple millisecond offset math for timezone conversion
 - Do not hardcode fake EPG data as primary source
 - Do NOT run `git add .` — it stages `.gradle/` build artifacts and other junk. Always stage files explicitly by name: `git add <file1> <file2> ...`
+
+## Channel Logo Sources (verified working)
+- **ivi.ru CDN**: `https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/{hash}.jpg/x240/`
+  - Source page: https://www.ivi.ru/tvplus/tvchannels/federalnye-kanaly
+- **premier.one CDN**: `https://uma-static.rtbcdn.ru/cwebp/pic/cardimage/{2ch}/{2ch}/{md5}.png?size=240&quality=95`
+  - Source page: https://premier.one/tv/categories/besplatnye
+- **EPG Service API**: `https://api.epgservice.ru/v1/index` → channel list with hrefs to XMLTV schedules

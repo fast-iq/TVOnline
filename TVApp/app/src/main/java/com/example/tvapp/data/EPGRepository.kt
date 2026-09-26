@@ -14,15 +14,12 @@ class EPGRepository {
     private val epgApiBase = "https://api.epgservice.ru"
     private val epgToken = AppPreferences.EPG_SERVICE_TOKEN
 
-    private var channelIndexCache: Map<String, String>? = null
+    private var channelHrefCache: Map<String, String>? = null
 
     suspend fun getProgramForChannel(channelId: String, date: Date): List<Program> {
         return withContext(Dispatchers.IO) {
             try {
-                when (channelId) {
-                    "c1r" -> fetchC1RSchedule(date).ifEmpty { fetchEpgServiceSchedule(channelId, date) ?: generateFallbackEPG(channelId, date) }
-                    else -> fetchEpgServiceSchedule(channelId, date) ?: generateFallbackEPG(channelId, date)
-                }
+                fetchEpgServiceSchedule(channelId, date) ?: generateFallbackEPG(channelId, date)
             } catch (e: Exception) {
                 generateFallbackEPG(channelId, date)
             }
@@ -47,10 +44,13 @@ class EPGRepository {
     private fun fetchEpgServiceSchedule(channelId: String, date: Date): List<Program>? {
         if (epgToken.isBlank()) return null
         try {
-            val index = loadChannelIndex() ?: return null
-            val epgChannelId = index[channelId] ?: return null
-            val weekMonday = getWeekMonday(date)
-            val url = "$epgApiBase/v1/schedule/$epgChannelId?week=$weekMonday"
+            val hrefs = loadChannelHrefs() ?: return null
+            val href = hrefs[channelId] ?: return null
+
+            val weekMonday = getWeekMondayDate(date)
+            val weekStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(weekMonday)
+            val url = href.replace("http://", "https://") + "?week=$weekStr"
+
             val xmlStr = httpGet(url, authHeader = "Bearer $epgToken") ?: return null
 
             val result = mutableListOf<Program>()
@@ -84,38 +84,38 @@ class EPGRepository {
         }
     }
 
-    private fun loadChannelIndex(): Map<String, String>? {
-        channelIndexCache?.let { return it }
+    private fun loadChannelHrefs(): Map<String, String>? {
+        channelHrefCache?.let { return it }
         val url = "$epgApiBase/v1/index"
         val xmlStr = httpGet(url, authHeader = "Bearer $epgToken") ?: return null
         try {
-            val nameToId = mutableMapOf<String, String>()
+            val nameToHref = mutableMapOf<String, String>()
             val chRegex = Regex("<channel\\s+id=\"([^\"]+)\"[^>]*>(.*?)</channel>", RegexOption.DOT_MATCHES_ALL)
             for (match in chRegex.findAll(xmlStr)) {
-                val epgId = match.groupValues[1]
                 val body = match.groupValues[2]
                 val name = Regex("<display-name[^>]*>([^<]*)</display-name>").find(body)?.groupValues?.get(1)?.trim() ?: ""
-                if (epgId.isBlank() || name.isBlank()) continue
-                nameToId[name.lowercase()] = epgId
+                val href = Regex("<href>([^<]+)</href>").find(body)?.groupValues?.get(1)?.trim() ?: ""
+                if (name.isBlank() || href.isBlank()) continue
+                nameToHref[name.lowercase()] = href
             }
 
             val cache = mutableMapOf<String, String>()
             for (channel in ChannelList.channels) {
                 val key = channel.name.trim().lowercase()
-                val exactHit = nameToId[key]
+                val exactHit = nameToHref[key]
                 if (exactHit != null) {
                     cache[channel.id] = exactHit
                     continue
                 }
-                for ((displayName, id) in nameToId) {
+                for ((displayName, href) in nameToHref) {
                     if (key.contains(displayName) || displayName.contains(key)) {
-                        cache[channel.id] = id
+                        cache[channel.id] = href
                         break
                     }
                 }
             }
 
-            channelIndexCache = cache
+            channelHrefCache = cache
             return cache
         } catch (e: Exception) {
             return null
@@ -155,6 +155,20 @@ class EPGRepository {
             set(Calendar.MILLISECOND, 0)
         }
         return SimpleDateFormat("yyyyMMdd", Locale.US).format(calendar.time)
+    }
+
+    private fun getWeekMondayDate(date: Date): Date {
+        val calendar = Calendar.getInstance(TimeZone.getTimeZone("Europe/Moscow")).apply {
+            time = date
+            while (get(Calendar.DAY_OF_WEEK) != Calendar.MONDAY) {
+                add(Calendar.DAY_OF_MONTH, -1)
+            }
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        return calendar.time
     }
 
     private fun fetchC1RSchedule(date: Date): List<Program> {
@@ -248,7 +262,7 @@ class EPGRepository {
 
         val templates = getChannelTemplates(channelId)
         val programs = mutableListOf<Program>()
-        var currentTime = calendar.timeInMillis - moscowTz.getOffset(calendar.timeInMillis).toLong()
+        var currentTime = calendar.timeInMillis
 
         for (i in 0 until templates.size) {
             val durationMs = templates[i].second * 60L * 1000L

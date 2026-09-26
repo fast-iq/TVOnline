@@ -35,7 +35,7 @@ object ChannelList {
         Channel(
             id = "c1r",
             name = "Первый канал",
-            logoUrl = "https://static.1tv.ru/uploads/project/partners_logo_image/2025/12/29/6481/optimized_original/6481_optimized_original_fb42539bd4.jpg",
+            logoUrl = "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/bfe633c124309302e71fda2d3e9fe84f.jpg/x240/",
             streamUrl = "https://streaming.goodstream.icu/live/210.m3u8",
             category = "federal",
             epgId = "c1r"
@@ -43,7 +43,7 @@ object ChannelList {
         Channel(
             id = "rossiya1",
             name = "Россия 1",
-            logoUrl = "https://smotrim.ru/images/2023/05/18/logo_rossiya1.png",
+            logoUrl = "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/d8fae7cfd00bea0824ef9b31c171d39c.jpg/x240/",
             streamUrl = "https://streaming.goodstream.icu/live/211.m3u8",
             category = "federal",
             epgId = "rossiya1"
@@ -51,7 +51,7 @@ object ChannelList {
         Channel(
             id = "ntv",
             name = "НТВ",
-            logoUrl = "https://www.ntv.ru/upload/images/logo_ntv.png",
+            logoUrl = "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/ddfb3e3d87a0561ba0aba5938f7bc541.jpg/x240/",
             streamUrl = "https://streaming.goodstream.icu/live/213.m3u8",
             category = "federal",
             epgId = "ntv"
@@ -59,7 +59,7 @@ object ChannelList {
         Channel(
             id = "5tv",
             name = "5 Канал",
-            logoUrl = "https://www.5channel.ru/images/logo.png",
+            logoUrl = "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/566b4321fbe64f815a095c0ac5abdd60.jpg/x240/",
             streamUrl = "https://streaming.goodstream.icu/live/8.m3u8",
             category = "federal",
             epgId = "5tv"
@@ -67,7 +67,7 @@ object ChannelList {
         Channel(
             id = "kultura",
             name = "Культура",
-            logoUrl = "https://smotrim.ru/images/2023/05/18/logo_kultura.png",
+            logoUrl = "https://uma-static.rtbcdn.ru/cwebp/pic/cardimage/31/ef/31ef8cd591b4cbbdaed8088922e80971.png?size=240&quality=95",
             streamUrl = "https://streaming.goodstream.icu/live/9.m3u8",
             category = "culture",
             epgId = "kultura"
@@ -75,7 +75,7 @@ object ChannelList {
         Channel(
             id = "zvezda",
             name = "Звезда",
-            logoUrl = "https://smotrim.ru/images/2023/05/18/logo_zvezda.png",
+            logoUrl = "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/2f144b0b169431328bcf93adfaa6318f.jpg/x240/",
             streamUrl = "https://streaming.goodstream.icu/live/10.m3u8",
             category = "federal",
             epgId = "zvezda"
@@ -83,7 +83,7 @@ object ChannelList {
         Channel(
             id = "pz",
             name = "Пятница!",
-            logoUrl = "https://www.piatnitsa.ru/images/logo.png",
+            logoUrl = "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/16405c0a5a5e0ddbfbbc0cc07223432f.jpg/x240/",
             streamUrl = "https://streaming.goodstream.icu/live/19.m3u8",
             category = "entertainment",
             epgId = "pz"
@@ -91,7 +91,7 @@ object ChannelList {
         Channel(
             id = "sts",
             name = "СТС",
-            logoUrl = "https://www.sts.ru/images/logo_sts.png",
+            logoUrl = "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/4af38baf4d33cd65fbb531e10fe04853.jpg/x240/",
             streamUrl = "https://streaming.goodstream.icu/live/296.m3u8",
             category = "entertainment",
             epgId = "sts"
@@ -99,7 +99,7 @@ object ChannelList {
         Channel(
             id = "domashniy",
             name = "Домашний",
-            logoUrl = "https://www.domashniy.ru/images/logo.png",
+            logoUrl = "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/3cbd856d0056a56737c500a0b0c35fe6.jpg/x240/",
             streamUrl = "https://streaming.goodstream.icu/live/17.m3u8",
             category = "entertainment",
             epgId = "domashniy"
@@ -107,7 +107,7 @@ object ChannelList {
         Channel(
             id = "tnt",
             name = "ТНТ",
-            logoUrl = "https://www.tnt.ru/images/logo_tnt.png",
+            logoUrl = "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/3290b7b34d44bce3dd6ad7d21f627a26.jpg/x240/",
             streamUrl = "https://streaming.goodstream.icu/live/21.m3u8",
             category = "entertainment",
             epgId = "tnt"
@@ -115,7 +115,7 @@ object ChannelList {
         Channel(
             id = "ren",
             name = "РЕН ТВ",
-            logoUrl = "https://www.ren.tv/images/logo.png",
+            logoUrl = "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/eda9e7b046ab960211253a4c2c184894.jpg/x240/",
             streamUrl = "https://streaming.goodstream.icu/live/14.m3u8",
             category = "federal",
             epgId = "ren"
@@ -123,7 +123,7 @@ object ChannelList {
         Channel(
             id = "karusel",
             name = "Карусель",
-            logoUrl = "https://smotrim.ru/images/2023/05/18/logo_karusel.png",
+            logoUrl = "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/56f48702828de52c360d184e67d3a929.jpg/x240/",
             streamUrl = "https://streaming.goodstream.icu/live/232.m3u8",
             category = "kids",
             epgId = "karusel"
@@ -131,7 +131,7 @@ object ChannelList {
         Channel(
             id = "match",
             name = "Матч ТВ",
-            logoUrl = "https://www.matchtv.ru/images/logo.png",
+            logoUrl = "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/b3f85e30a68115b50ed8c0da3fddf986.jpg/x240/",
             streamUrl = "https://streaming.goodstream.icu/live/6.m3u8",
             category = "sport",
             epgId = "match"
@@ -139,7 +139,7 @@ object ChannelList {
         Channel(
             id = "rossiya24",
             name = "Россия 24",
-            logoUrl = "https://smotrim.ru/images/2023/05/18/logo_rossiya24.png",
+            logoUrl = "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/1c04982637b89cc88b711c72e0fa682e.jpg/x240/",
             streamUrl = "https://streaming.goodstream.icu/live/30.m3u8",
             category = "news",
             epgId = "rossiya24"
@@ -147,7 +147,7 @@ object ChannelList {
         Channel(
             id = "tvc",
             name = "ТВ Центр",
-            logoUrl = "https://www.tvc.ru/images/logo.png",
+            logoUrl = "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/58f76d130f36333da764317576b3e648.jpg/x240/",
             streamUrl = "https://streaming.goodstream.icu/live/13.m3u8",
             category = "federal",
             epgId = "tvc"
@@ -155,7 +155,7 @@ object ChannelList {
         Channel(
             id = "spas",
             name = "СПАС",
-            logoUrl = "https://smotrim.ru/images/2023/05/18/logo_spas.png",
+            logoUrl = "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/9b93cae084d12203cbc9ddcfa6af6ed1.jpg/x240/",
             streamUrl = "https://streaming.goodstream.icu/live/15.m3u8",
             category = "religious",
             epgId = "spas"
@@ -163,7 +163,7 @@ object ChannelList {
         Channel(
             id = "tv3",
             name = "ТВ-3",
-            logoUrl = "https://www.tv3.ru/images/logo.png",
+            logoUrl = "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/eb511e94654ecd565a8f3aa3cd06d4a9.jpg/x240/",
             streamUrl = "https://streaming.goodstream.icu/live/18.m3u8",
             category = "entertainment",
             epgId = "tv3"
@@ -171,7 +171,7 @@ object ChannelList {
         Channel(
             id = "2x2",
             name = "2х2",
-            logoUrl = "https://www.2x2.tv/images/logo.png",
+            logoUrl = "https://uma-static.rtbcdn.ru/cwebp/pic/cardimage/fa/3d/fa3da72a76f79ed22bbbe06b17c3729b.png?size=240&quality=95",
             streamUrl = "https://streaming.goodstream.icu/live/20.m3u8",
             category = "entertainment",
             epgId = "2x2"
@@ -179,7 +179,7 @@ object ChannelList {
         Channel(
             id = "mir",
             name = "МИР",
-            logoUrl = "https://smotrim.ru/images/2023/05/18/logo_mir.png",
+            logoUrl = "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/504aa8acd11b3a39e374e9edc1a8bc75.jpg/x240/",
             streamUrl = "https://streaming.goodstream.icu/live/22.m3u8",
             category = "news",
             epgId = "mir"
@@ -187,7 +187,7 @@ object ChannelList {
         Channel(
             id = "otv",
             name = "ОТВ",
-            logoUrl = "https://www.otv.ru/images/logo.png",
+            logoUrl = "https://uma-static.rtbcdn.ru/cwebp/pic/cardimage/61/4c/614cd7a162e697751a87fef05f82703b.png?size=240&quality=95",
             streamUrl = "https://streaming.goodstream.icu/live/12.m3u8",
             category = "regional",
             epgId = "otv"
@@ -195,7 +195,7 @@ object ChannelList {
         Channel(
             id = "che",
             name = "Че",
-            logoUrl = "https://www.che.tv/images/logo.png",
+            logoUrl = "https://uma-static.rtbcdn.ru/cwebp/pic/cardimage/7e/de/7ede7ab4fd8d0539cf4ecd4f8b49a7a1.png?size=240&quality=95",
             streamUrl = "https://streaming.goodstream.icu/live/23.m3u8",
             category = "entertainment",
             epgId = "che"
@@ -227,7 +227,7 @@ object ChannelList {
         Channel(
             id = "muztv",
             name = "МУЗ-ТВ",
-            logoUrl = "https://www.muz.tv/images/logo.png",
+            logoUrl = "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_thumb/db74d0889767bf974b84dbe702d4387e.jpg/x240/",
             streamUrl = "https://streaming.goodstream.icu/live/618.m3u8",
             category = "music",
             epgId = "muztv"

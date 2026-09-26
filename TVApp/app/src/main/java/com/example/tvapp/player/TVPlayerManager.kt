@@ -17,7 +17,6 @@ class TVPlayerManager(private val context: Context) {
     private val preferences = AppPreferences(context)
     private var currentChannel: Channel? = null
     private var fallbackIndex = 0
-    private var isAutoFallback = false
 
     interface PlayerCallback {
         fun onPlaybackReady()
@@ -47,7 +46,7 @@ class TVPlayerManager(private val context: Context) {
                     }
 
                     override fun onPlayerError(error: PlaybackException) {
-                        if (isAutoFallback && fallbackIndex < getCurrentStreamUrls().size - 1) {
+                        if (fallbackIndex < getCurrentStreamUrls().size - 1) {
                             fallbackIndex++
                             val nextUrl = getCurrentStreamUrls()[fallbackIndex]
                             callback?.onFallbackUsed(nextUrl)
