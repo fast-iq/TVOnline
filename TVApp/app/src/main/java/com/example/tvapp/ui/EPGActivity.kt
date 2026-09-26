@@ -8,8 +8,8 @@ import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.NestedScrollView
+import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
@@ -19,7 +19,7 @@ import kotlinx.coroutines.*
 import java.text.SimpleDateFormat
 import java.util.*
 
-class EPGActivity : AppCompatActivity() {
+class EPGActivity : BaseActivity() {
 
     private lateinit var currentTimeText: TextView
     private lateinit var timeOffsetText: TextView

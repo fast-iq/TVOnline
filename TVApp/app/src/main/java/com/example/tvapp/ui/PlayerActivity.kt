@@ -4,15 +4,15 @@ import android.os.Bundle
 import android.view.KeyEvent
 import android.view.View
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.ui.PlayerView
+import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
 import com.example.tvapp.player.TVPlayerManager
 import android.widget.TextView
 
-class PlayerActivity : AppCompatActivity() {
+class PlayerActivity : BaseActivity() {
 
     private var channelId: String? = null
     private var streamUrl: String? = null

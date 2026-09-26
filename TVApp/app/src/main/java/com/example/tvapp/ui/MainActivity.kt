@@ -5,9 +5,9 @@ import android.view.KeyEvent
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
@@ -16,7 +16,7 @@ import com.example.tvapp.data.AppPreferences
 import kotlinx.coroutines.*
 import java.util.*
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity() {
 
     private lateinit var channelsRecyclerView: RecyclerView
     private lateinit var currentProgramText: TextView

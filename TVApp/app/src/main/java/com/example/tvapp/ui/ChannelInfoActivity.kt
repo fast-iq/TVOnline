@@ -6,11 +6,11 @@ import android.view.KeyEvent
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
+import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
 import com.bumptech.glide.Glide
 
-class ChannelInfoActivity : AppCompatActivity() {
+class ChannelInfoActivity : BaseActivity() {
 
     private var channelId: String? = null
     private var streamUrl: String? = null

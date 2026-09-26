@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TV Box</string>
+
+    <!-- Common -->
+    <string name="settings">Settings</string>
+    <string name="epg">TV Guide</string>
+    <string name="channels">Channels</string>
+    <string name="unknown_channel">Unknown channel</string>
+    <string name="press_to_change">Press to change</string>
+
+    <!-- Main screen -->
+    <string name="select_channel">Select a channel</string>
+    <string name="now_playing">Now: %1$s</string>
+    <string name="epg_load_error">Failed to load TV guide</string>
+
+    <!-- Channel card -->
+    <string name="channel_logo_desc">Channel logo</string>
+    <string name="channel_name_placeholder">Channel name</string>
+    <string name="program_title_placeholder">Program title</string>
+
+    <!-- Channel info -->
+    <string name="start_watching">▶ START WATCHING ◀</string>
+    <string name="channel_image_desc">Channel image</string>
+    <string name="press_ok_to_start">Press OK to start watching</string>
+
+    <!-- Player -->
+    <string name="loading_channel">Loading channel: %1$s…</string>
+    <string name="playback_error">Playback error:\n%1$s</string>
+    <string name="error_prefix">Error: %1$s</string>
+    <string name="buffering">Buffering…</string>
+    <string name="switching_source">Switching to backup source…</string>
+    <string name="no_stream_url">Error: stream URL not specified</string>
+
+    <!-- EPG -->
+    <string name="time_msk">Time (MSK): %1$s</string>
+    <string name="offset_default">Offset: 0h</string>
+    <string name="offset_value">Offset: %1$sh</string>
+    <string name="time_placeholder">Time: —:—</string>
+    <string name="max_offset_error">Maximum offset: +12 hours</string>
+    <string name="min_offset_error">Minimum offset: -12 hours</string>
+
+    <!-- Settings -->
+    <string name="timezone_label">Timezone:</string>
+    <string name="timezone_value">Timezone: %1$s</string>
+    <string name="quality_label">Video quality:</string>
+    <string name="quality_value">Quality: %1$s</string>
+    <string name="language_label">Interface language:</string>
+    <string name="language_value">Language: %1$s</string>
+    <string name="settings_help">Use remote to navigate. Press OK to select an option.</string>
+
+    <!-- Quality modes -->
+    <string name="quality_minimum">Minimum (240p)</string>
+    <string name="quality_medium">Medium (576p)</string>
+    <string name="quality_maximum">Maximum</string>
+    <string name="quality_auto">Auto</string>
+
+    <!-- EPG program item -->
+    <string name="epg_program_text">%1$s %2$s</string>
+    <string name="time_range">%1$s – %2$s</string>
+
+    <string name="program_time_placeholder">12:00 – 14:00</string>
+    <string name="program_name_placeholder">Program name</string>
+</resources>
