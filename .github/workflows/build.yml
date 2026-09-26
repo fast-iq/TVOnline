@@ -105,19 +105,21 @@ jobs:
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: cd TVApp && ./gradlew assembleRelease --no-daemon --stacktrace
+        run: cd TVApp && ./gradlew assembleRelease -PAPP_VERSION=${{ github.ref_name }} --no-daemon --stacktrace
 
       - name: Debug versionCode in manifest
         if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
         run: |
-          echo "=== git describe ==="
-          cd TVApp && git describe --tags --abbrev=0 2>&1 || echo "(git describe failed)"
-          echo "=== GITHUB_REF_NAME ==="
-          echo "$GITHUB_REF_NAME"
+          echo "=== APP_VERSION ==="
+          echo "${{ github.ref_name }}"
           echo "=== Merged manifest (versionCode/versionName) ==="
           grep -i "versionCode\|versionName" TVApp/app/build/intermediates/merged_manifest/release/AndroidManifest.xml 2>/dev/null || echo "(manifest not found or no versionCode)"
-          echo "=== Base manifest ==="
-          grep -i "versionCode\|versionName" TVApp/app/src/main/AndroidManifest.xml 2>/dev/null || echo "(no versionCode in base manifest)"
+          echo "=== Processed manifest ==="
+          find TVApp/app/build/intermediates -name "AndroidManifest.xml" -path "*release*" 2>/dev/null | head -5
+          for f in $(find TVApp/app/build/intermediates -name "AndroidManifest.xml" -path "*release*" 2>/dev/null | head -3); do
+            echo "--- $f ---"
+            grep -i "versionCode\|versionName" "$f" 2>/dev/null || echo "(no versionCode)"
+          done
 
       - name: Build Release Bundle (AAB)
         if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
@@ -125,7 +127,7 @@ jobs:
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: cd TVApp && ./gradlew bundleRelease --no-daemon --stacktrace
+        run: cd TVApp && ./gradlew bundleRelease -PAPP_VERSION=${{ github.ref_name }} --no-daemon --stacktrace
 
       - name: Run Tests (if any)
         run: cd TVApp && ./gradlew test --no-daemon

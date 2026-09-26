@@ -3,27 +3,18 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
-def rawVersion = null
-try {
-    def stdout = new ByteArrayOutputStream()
-    rootProject.exec {
-        commandLine 'git', 'describe', '--tags', '--abbrev=0'
-        standardOutput = stdout
-    }
-    rawVersion = stdout.toString().trim()
-} catch (Exception ignored) {
-}
-if (!rawVersion) {
+def appVersion = project.hasProperty('APP_VERSION') ? project.APP_VERSION : null
+if (!appVersion) {
     def ciRef = System.getenv("GITHUB_REF_NAME")
     if (ciRef != null && ciRef) {
-        rawVersion = ciRef
+        appVersion = ciRef
     }
 }
 
 def versionName = "1.0"
 def versionCode = 1
-if (rawVersion != null && rawVersion) {
-    def m = (rawVersion =~ /v?(\d+)\.(\d+)(?:\.(\d+))?/)
+if (appVersion != null && appVersion) {
+    def m = (appVersion =~ /v?(\d+)\.(\d+)(?:\.(\d+))?/)
     if (m.find()) {
         def major = m.group(1).toInteger()
         def minor = m.group(2).toInteger()
@@ -31,7 +22,7 @@ if (rawVersion != null && rawVersion) {
         versionName = "${major}.${minor}.${patch}"
         versionCode = (major * 10000) + (minor * 100) + patch
     } else {
-        versionName = rawVersion
+        versionName = appVersion
     }
 }
 
