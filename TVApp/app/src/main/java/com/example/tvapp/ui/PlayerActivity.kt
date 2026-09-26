@@ -25,72 +25,77 @@ class PlayerActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_player)
+        try {
+            setContentView(R.layout.activity_player)
 
-        channelId = intent.getStringExtra("channel_id")
-        streamUrl = intent.getStringExtra("stream_url")
-        channelName = intent.getStringExtra("channel_name")
+            channelId = intent.getStringExtra("channel_id")
+            streamUrl = intent.getStringExtra("stream_url")
+            channelName = intent.getStringExtra("channel_name")
 
-        currentChannel = ChannelList.channels.find { it.id == channelId }
+            currentChannel = ChannelList.channels.find { it.id == channelId }
 
-        playerView = findViewById(R.id.playerView)
-        infoText = findViewById(R.id.infoText)
+            playerView = findViewById(R.id.playerView)
+            infoText = findViewById(R.id.infoText)
 
-        playerManager = TVPlayerManager(this)
+            playerManager = TVPlayerManager(this)
 
-        playerManager.initializePlayer(playerView, object : TVPlayerManager.PlayerCallback {
-            override fun onPlaybackReady() {
-                runOnUiThread {
-                    infoText.visibility = View.GONE
-                }
-            }
-
-            override fun onPlaybackError(error: String) {
-                runOnUiThread {
-                    infoText.text = getString(R.string.playback_error, error)
-                    infoText.visibility = View.VISIBLE
-                    Toast.makeText(this@PlayerActivity, getString(R.string.error_prefix, error), Toast.LENGTH_LONG).show()
-                }
-            }
-
-            override fun onBuffering(isBuffering: Boolean) {
-                runOnUiThread {
-                    if (isBuffering) {
-                        infoText.text = getString(R.string.buffering)
-                        infoText.visibility = View.VISIBLE
-                    } else {
+            playerManager.initializePlayer(playerView, object : TVPlayerManager.PlayerCallback {
+                override fun onPlaybackReady() {
+                    runOnUiThread {
                         infoText.visibility = View.GONE
                     }
                 }
-            }
 
-            override fun onFallbackUsed(fallbackUrl: String) {
-                runOnUiThread {
-                    infoText.text = getString(R.string.switching_source)
-                    infoText.visibility = View.VISIBLE
+                override fun onPlaybackError(error: String) {
+                    runOnUiThread {
+                        infoText.text = getString(R.string.playback_error, error)
+                        infoText.visibility = View.VISIBLE
+                    }
                 }
-            }
-        })
 
-        if (currentChannel != null) {
-            infoText.text = getString(R.string.loading_channel, channelName)
-            infoText.visibility = View.VISIBLE
-            playerManager.playChannel(currentChannel!!, streamUrl)
-        } else if (!streamUrl.isNullOrEmpty()) {
-            val url = streamUrl!!
-            infoText.text = getString(R.string.loading_channel, channelName)
-            infoText.visibility = View.VISIBLE
-            val tempChannel = Channel(
-                id = channelId ?: "unknown",
-                name = channelName ?: getString(R.string.unknown_channel),
-                logoUrl = "",
-                streamUrl = url
-            )
-            currentChannel = tempChannel
-            playerManager.playChannel(tempChannel, url)
-        } else {
-            infoText.text = getString(R.string.no_stream_url)
-            infoText.visibility = View.VISIBLE
+                override fun onBuffering(isBuffering: Boolean) {
+                    runOnUiThread {
+                        if (isBuffering) {
+                            infoText.text = getString(R.string.buffering)
+                            infoText.visibility = View.VISIBLE
+                        } else {
+                            infoText.visibility = View.GONE
+                        }
+                    }
+                }
+
+                override fun onFallbackUsed(fallbackUrl: String) {
+                    runOnUiThread {
+                        infoText.text = getString(R.string.switching_source)
+                        infoText.visibility = View.VISIBLE
+                    }
+                }
+            })
+
+            if (currentChannel != null) {
+                infoText.text = getString(R.string.loading_channel, channelName)
+                infoText.visibility = View.VISIBLE
+                playerManager.playChannel(currentChannel!!, streamUrl)
+            } else if (!streamUrl.isNullOrEmpty()) {
+                val url = streamUrl!!
+                infoText.text = getString(R.string.loading_channel, channelName)
+                infoText.visibility = View.VISIBLE
+                val tempChannel = Channel(
+                    id = channelId ?: "unknown",
+                    name = channelName ?: getString(R.string.unknown_channel),
+                    logoUrl = "",
+                    streamUrl = url
+                )
+                currentChannel = tempChannel
+                playerManager.playChannel(tempChannel, url)
+            } else {
+                infoText.text = getString(R.string.no_stream_url)
+                infoText.visibility = View.VISIBLE
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("PlayerActivity", "Crash in onCreate", e)
+            Toast.makeText(this, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
+            finish()
         }
     }
 
