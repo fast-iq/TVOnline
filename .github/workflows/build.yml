@@ -107,6 +107,18 @@ jobs:
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: cd TVApp && ./gradlew assembleRelease --no-daemon --stacktrace
 
+      - name: Debug versionCode in manifest
+        if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
+        run: |
+          echo "=== git describe ==="
+          cd TVApp && git describe --tags --abbrev=0 2>&1 || echo "(git describe failed)"
+          echo "=== GITHUB_REF_NAME ==="
+          echo "$GITHUB_REF_NAME"
+          echo "=== Merged manifest (versionCode/versionName) ==="
+          grep -i "versionCode\|versionName" TVApp/app/build/intermediates/merged_manifest/release/AndroidManifest.xml 2>/dev/null || echo "(manifest not found or no versionCode)"
+          echo "=== Base manifest ==="
+          grep -i "versionCode\|versionName" TVApp/app/src/main/AndroidManifest.xml 2>/dev/null || echo "(no versionCode in base manifest)"
+
       - name: Build Release Bundle (AAB)
         if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
         env:
