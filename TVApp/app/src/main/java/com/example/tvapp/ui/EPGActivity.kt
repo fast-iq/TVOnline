@@ -39,7 +39,7 @@ class EPGActivity : BaseActivity() {
     private val pixelsPerHour = 150f
     private val pixelsPerMinute = pixelsPerHour / 60f
     private val rowHeight = 70
-    private val totalHours = 24
+    private val totalMinutes = 90
     private val leadMinutes = 30
 
     private lateinit var displayTz: TimeZone
@@ -91,7 +91,7 @@ class EPGActivity : BaseActivity() {
         channels = ChannelList.channels
         createTimeScale()
         createChannelLabels()
-        val totalWidth = (totalHours * pixelsPerHour).toInt()
+        val totalWidth = (totalMinutes * pixelsPerMinute).toInt()
         val totalHeight = channels.size * rowHeight
         epgGridContainer.layoutParams = FrameLayout.LayoutParams(totalWidth, totalHeight)
     }
@@ -99,10 +99,12 @@ class EPGActivity : BaseActivity() {
     private fun createTimeScale() {
         timeScaleContainer.removeAllViews()
         val baseTime = getStartTimeMillis()
-        for (hour in 0 until totalHours) {
-            val hourStart = baseTime + hour * 3600_000L
+        val firstHourMark = (baseTime / 3600_000L * 3600_000L)
+        for (hourStart in firstHourMark..(baseTime + totalMinutes * 60_000L) step 3600_000L) {
             val calendar = Calendar.getInstance(displayTz).apply { timeInMillis = hourStart }
             val hourVal = calendar.get(Calendar.HOUR_OF_DAY)
+            val offsetMin = (hourStart - baseTime) / 60_000L
+            if (offsetMin < 0 || offsetMin > totalMinutes) continue
             val timeText = TextView(this).apply {
                 text = String.format(Locale.US, "%02d:00", hourVal)
                 textSize = 14f
@@ -110,7 +112,9 @@ class EPGActivity : BaseActivity() {
                 width = pixelsPerHour.toInt()
                 gravity = android.view.Gravity.CENTER
             }
-            timeScaleContainer.addView(timeText)
+            val params = LinearLayout.LayoutParams(pixelsPerHour.toInt(), LinearLayout.LayoutParams.MATCH_PARENT)
+            params.marginStart = ((offsetMin * pixelsPerMinute) - pixelsPerHour / 2).toInt().coerceAtLeast(0)
+            timeScaleContainer.addView(timeText, params)
         }
     }
 
@@ -143,7 +147,7 @@ class EPGActivity : BaseActivity() {
                 val endTimeOffset = (program.endTime - baseTime) / 1000f / 60f
                 val duration = (program.endTime - program.startTime) / 1000f / 60f
 
-                if (endTimeOffset < 0f || startTimeOffset > totalHours * 60f) return@forEach
+                if (endTimeOffset < 0f || startTimeOffset > totalMinutes) return@forEach
 
                 val leftMargin = (startTimeOffset * pixelsPerMinute).toInt().coerceAtLeast(0)
                 val width = (duration * pixelsPerMinute).toInt().coerceAtLeast(40)
@@ -205,9 +209,7 @@ class EPGActivity : BaseActivity() {
 
     private fun getStartTimeMillis(): Long {
         val calendar = Calendar.getInstance(displayTz).apply {
-            timeInMillis = System.currentTimeMillis()
-            add(Calendar.HOUR_OF_DAY, -12)
-            set(Calendar.MINUTE, 0)
+            timeInMillis = System.currentTimeMillis() - leadMinutes * 60_000L
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
@@ -234,7 +236,6 @@ class EPGActivity : BaseActivity() {
         val targetX = ((nowOffsetMin - leadMinutes) * pixelsPerMinute).toInt().coerceAtLeast(0)
         epgHorizontalScroll.scrollTo(targetX, 0)
     }
-
     private fun updateCurrentTimeDisplay() {
         val cal = Calendar.getInstance(displayTz)
         val dateFormat = SimpleDateFormat("HH:mm dd.MM.yyyy", Locale.getDefault())
