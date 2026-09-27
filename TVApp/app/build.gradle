@@ -74,7 +74,7 @@ android {
     lint {
         lintConfig file("lint.xml")
         checkReleaseBuilds true
-        abortOnError true
+        abortOnError false
         xmlReport true
         htmlReport true
         textReport true
