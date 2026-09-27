@@ -23,18 +23,20 @@ class ChannelRepository {
             return cachedChannels!!
         }
         return withContext(Dispatchers.IO) {
-            try {
+            val result: List<Channel> = try {
                 val channels = fetchChannelsFromPremier()
                 if (channels.isNotEmpty()) {
                     cachedChannels = channels
                     lastFetchTime = System.currentTimeMillis()
                     ChannelList.updateChannels(channels)
+                    channels
                 } else {
                     ChannelList.channels
                 }
             } catch (e: Exception) {
                 ChannelList.channels
             }
+            result
         }
     }
 
