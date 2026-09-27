@@ -9,7 +9,10 @@ data class Channel(
     val epgId: String? = null,
     val channelImageUrl: String? = null,
     val fallbackStreamUrls: List<String> = emptyList(),
-    val epgHref: String? = null
+    val epgHref: String? = null,
+    val currentProgramTitle: String? = null,
+    val currentProgramStart: Long? = null,
+    val currentProgramEnd: Long? = null
 )
 
 data class Program(

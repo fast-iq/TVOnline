@@ -7,14 +7,14 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 - Leanback launcher + standard launcher
 
 ## Key Files
-- `TVApp/app/src/main/java/com/example/tvapp/data/Models.kt` - Channel list, data models
-- `TVApp/app/src/main/java/com/example/tvapp/data/EPGRepository.kt` - EPG loading
+- TVApp/[AWS_SECRET_KEY_REDACTED]/Models.kt - Channel list, data models (Channel has currentProgramTitle/Start/End)
+- TVApp/[AWS_SECRET_KEY_REDACTED]/ChannelRepository.kt - Fetches channels from premier.one (primary source for grid)
+- TVApp/[AWS_SECRET_KEY_REDACTED]/EPGRepository.kt - EPG loading (epgservice.ru, used by EPGActivity only)
 - `TVApp/app/src/main/java/com/example/tvapp/data/AppPreferences.kt` - Settings storage
 - `TVApp/app/src/main/java/com/example/tvapp/player/TVPlayerManager.kt` - ExoPlayer wrapper
-- `TVApp/app/src/main/java/com/example/tvapp/ui/MainActivity.kt` - Channel grid
-- `TVApp/app/src/main/java/com/example/tvapp/ui/PlayerActivity.kt` - Video playback
-- `TVApp/app/src/main/java/com/example/tvapp/ui/ChannelInfoActivity.kt` - Channel info screen
-- `TVApp/app/src/main/java/com/example/tvapp/ui/EPGActivity.kt` - TV guide
+- TVApp[AWS_SECRET_KEY_REDACTED]MainActivity.kt - Channel grid (uses ChannelRepository, no EPGRepository)
+- TVApp[AWS_SECRET_KEY_REDACTED]ChannelAdapter.kt - Channel cards with logo + name + program + progress bar
+- TVApp[AWS_SECRET_KEY_REDACTED]PlayerActivity.kt - Video playback
 - `TVApp/app/src/main/java/com/example/tvapp/settings/SettingsActivity.kt` - Settings
 
 ## Conventions
@@ -197,6 +197,33 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 - `TVApp/app/src/main/java/com/example/tvapp/ui/ChannelAdapter.kt` — simplified to channels-only
 - `TVApp/app/src/main/java/com/example/tvapp/player/TVPlayerManager.kt` — fallback fix
 - `TVApp/app/src/main/res/layout/activity_main.xml` — added settings/EPG icon buttons
+
+### 2026-09-27 Session 7 — Premier.one as single source, channel card redesign
+
+**Goal:** Use premier.one/tv/categories/besplatnye as the single source for channel list, logos, and current program. Add progress bar to channel cards.
+
+**Premier.one data extraction:**
+- Page is Nuxt 3 SSR. Data in `<script type="application/json" id="__NUXT_DATA__">` — a flat array with index references
+- Structure: `{"tv-channels-list": <idx>}` → array of channel indices → each channel object has `name`, `slug`, `logoImage`, `tvPrograms` (all index refs)
+- `tvPrograms` → program object with `title`, `startTs`, `endTs` (ISO 8601 with +03:00 offset, e.g. `2026-09-27T06:10:00+03:00`)
+- Logo CDN: `https://uma-static.rtbcdn.ru/pic/cardimage/{2ch}/{2ch}/{md5}.png` (no query params needed)
+- 23 free channels on the page
+- Slug matches our hardcoded channel IDs (pervyi, rossiya_1, ntv, pyatyi_kanal, etc.)
+
+**Changes:**
+- `ChannelRepository.kt` — rewritten to fetch premier.one HTML, parse Nuxt JSON, extract channels with current program data. 10-min session cache. Stream URLs still from hardcoded list (matched by slug).
+- `Models.kt` — added `currentProgramTitle`, `currentProgramStart`, `currentProgramEnd` to Channel
+- `ChannelAdapter.kt` — reads program data directly from Channel object, shows ProgressBar with elapsed percentage
+- `item_channel.xml` — added `ProgressBar` (horizontal, 4dp height) below program title
+- `MainActivity.kt` — removed EPGRepository dependency. Grid uses only ChannelRepository. Header shows current program from channel data.
+- Timezone: premier.one sends ISO 8601 with explicit +03:00 offset — parsed correctly to UTC millis
+
+**Files modified:**
+- `TVApp/[AWS_SECRET_KEY_REDACTED]/ChannelRepository.kt` — complete rewrite (premier.one source)
+- `TVApp/[AWS_SECRET_KEY_REDACTED]/Models.kt` — Channel data class extended
+- `TVApp[AWS_SECRET_KEY_REDACTED]ChannelAdapter.kt` — progress bar, program from channel
+- `TVApp[AWS_SECRET_KEY_REDACTED]MainActivity.kt` — simplified, no EPGRepository
+- `TVApp/app/src/main/res/layout/item_channel.xml` — added ProgressBar
 
 ## Do NOT
 - Do not use `via.placeholder.com` (dead service)

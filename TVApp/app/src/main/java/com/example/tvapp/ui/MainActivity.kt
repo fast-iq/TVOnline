@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.KeyEvent
 import android.view.ViewGroup
 import android.widget.TextView
-import android.widget.Toast
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.tvapp.BaseActivity
@@ -12,10 +11,8 @@ import com.example.tvapp.R
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
 import com.example.tvapp.data.ChannelRepository
-import com.example.tvapp.data.EPGRepository
 import com.example.tvapp.data.AppPreferences
 import kotlinx.coroutines.*
-import java.util.*
 
 class MainActivity : BaseActivity() {
 
@@ -23,16 +20,12 @@ class MainActivity : BaseActivity() {
     private lateinit var currentProgramText: TextView
     private lateinit var channelAdapter: ChannelAdapter
 
-    private val epgRepository = EPGRepository()
     private val channelRepository = ChannelRepository()
     private val preferences by lazy { AppPreferences(applicationContext) }
 
-    private var allPrograms = mapOf<String, List<com.example.tvapp.data.Program>>()
     private var lastSelectedChannelId: String? = null
 
     private val scope = CoroutineScope(Dispatchers.Main + Job())
-
-    private var epgLoadJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,7 +40,6 @@ class MainActivity : BaseActivity() {
 
         setupChannelsGrid()
         loadChannels()
-        loadEPG()
     }
 
     private fun loadChannels() {
@@ -59,6 +51,7 @@ class MainActivity : BaseActivity() {
                 if (channels.isNotEmpty()) {
                     channelAdapter.updateChannels(channels)
                     restoreLastChannel()
+                    updateHeaderProgram(channels)
                 }
             } catch (e: Exception) {
             }
@@ -83,62 +76,19 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    private fun loadEPG() {
-        epgLoadJob?.cancel()
-        epgLoadJob = scope.launch {
-            try {
-                val date = Date()
-                allPrograms = withContext(Dispatchers.IO) {
-                    epgRepository.getProgramsForAllChannels(date)
-                }
-                updateCurrentPrograms()
-                launch {
-                    while (isActive) {
-                        delay(60000)
-                        updateCurrentPrograms()
-                    }
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, R.string.epg_load_error, Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    private fun getMoscowTime(): Long {
-        return System.currentTimeMillis()
-    }
-
-    private fun updateCurrentPrograms() {
-        val moscowNow = getMoscowTime()
-        val currentProgramsMap = mutableMapOf<String, String>()
-
-        for ((channelId, programs) in allPrograms) {
-            val currentProgram = epgRepository.getCurrentProgram(programs, moscowNow)
-            currentProgram?.let {
-                currentProgramsMap[channelId] = it.title
-            }
-        }
-
-        channelAdapter.updateCurrentPrograms(currentProgramsMap)
-
+    private fun updateHeaderProgram(channels: List<Channel>) {
         val channelIdToShow = lastSelectedChannelId ?: preferences.lastChannelId
-        if (channelIdToShow != null) {
-            currentProgramsMap[channelIdToShow]?.let {
-                currentProgramText.text = getString(R.string.now_playing, it)
-            } ?: run {
-                currentProgramText.text = getString(R.string.select_channel)
-            }
-        } else {
-            val firstChannelId = ChannelList.channels.firstOrNull()?.id
-            if (firstChannelId != null) {
-                currentProgramsMap[firstChannelId]?.let {
-                    currentProgramText.text = getString(R.string.now_playing, it)
-                } ?: run {
-                    currentProgramText.text = getString(R.string.select_channel)
-                }
+        val channel = channels.find { it.id == channelIdToShow }
+            ?: channels.firstOrNull()
+        if (channel != null) {
+            val title = channel.currentProgramTitle
+            if (title != null && title.isNotBlank()) {
+                currentProgramText.text = getString(R.string.now_playing, title)
             } else {
                 currentProgramText.text = getString(R.string.select_channel)
             }
+        } else {
+            currentProgramText.text = getString(R.string.select_channel)
         }
     }
 
@@ -159,7 +109,6 @@ class MainActivity : BaseActivity() {
     override fun onResume() {
         super.onResume()
         loadChannels()
-        loadEPG()
     }
 
     private fun openPlayer(channel: Channel) {

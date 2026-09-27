@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -15,12 +16,11 @@ class ChannelAdapter(
     private val onChannelSelected: (Channel) -> Unit
 ) : RecyclerView.Adapter<ChannelAdapter.ChannelViewHolder>() {
 
-    private var currentProgramsMap = mapOf<String, String>()
-
     inner class ChannelViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val channelLogo: ImageView = itemView.findViewById(R.id.channelLogo)
         private val channelName: TextView = itemView.findViewById(R.id.channelName)
         private val programTitle: TextView = itemView.findViewById(R.id.programTitle)
+        private val programProgress: ProgressBar = itemView.findViewById(R.id.programProgress)
 
         fun bind(channel: Channel) {
             channelName.text = channel.name
@@ -31,8 +31,16 @@ class ChannelAdapter(
                 .error(R.drawable.ic_channel_placeholder)
                 .into(channelLogo)
 
-            val programTitleText = currentProgramsMap[channel.id]
-            programTitle.text = programTitleText ?: itemView.context.getString(R.string.program_title_placeholder)
+            val title = channel.currentProgramTitle
+            if (title != null && title.isNotBlank()) {
+                programTitle.text = title
+                programTitle.visibility = View.VISIBLE
+                updateProgress(channel)
+            } else {
+                programTitle.text = itemView.context.getString(R.string.program_title_placeholder)
+                programTitle.visibility = View.VISIBLE
+                programProgress.visibility = View.GONE
+            }
 
             itemView.setOnClickListener {
                 onChannelSelected(channel)
@@ -46,6 +54,19 @@ class ChannelAdapter(
                     view.scaleX = 1.0f
                     view.scaleY = 1.0f
                 }
+            }
+        }
+
+        private fun updateProgress(channel: Channel) {
+            val start = channel.currentProgramStart
+            val end = channel.currentProgramEnd
+            if (start != null && end != null && end > start) {
+                val now = System.currentTimeMillis()
+                val progress = ((now - start).coerceIn(0, end - start) * 100 / (end - start)).toInt()
+                programProgress.progress = progress
+                programProgress.visibility = View.VISIBLE
+            } else {
+                programProgress.visibility = View.GONE
             }
         }
     }
@@ -63,11 +84,6 @@ class ChannelAdapter(
     }
 
     override fun getItemCount(): Int = channels.size
-
-    fun updateCurrentPrograms(programsMap: Map<String, String>) {
-        currentProgramsMap = programsMap
-        notifyDataSetChanged()
-    }
 
     fun updateChannels(newChannels: List<Channel>) {
         channels = newChannels
