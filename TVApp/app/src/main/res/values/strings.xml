@@ -27,18 +27,13 @@
     <!-- Player -->
     <string name="loading_channel">Загрузка канала: %1$s…</string>
     <string name="playback_error">Ошибка воспроизведения:\n%1$s</string>
-    <string name="error_prefix">Ошибка: %1$s</string>
     <string name="buffering">Буферизация…</string>
     <string name="switching_source">Переключение на резервный источник…</string>
     <string name="no_stream_url">Ошибка: URL потока не указан</string>
 
     <!-- EPG -->
     <string name="time_msk">Время (МСК): %1$s</string>
-    <string name="offset_default">Смещение: 0ч</string>
-    <string name="offset_value">Смещение: %1$sч</string>
     <string name="time_placeholder">Время: —:—</string>
-    <string name="max_offset_error">Максимальное смещение: +12 часов</string>
-    <string name="min_offset_error">Минимальное смещение: -12 часов</string>
 
     <!-- Settings -->
     <string name="timezone_label">Часовой пояс:</string>
