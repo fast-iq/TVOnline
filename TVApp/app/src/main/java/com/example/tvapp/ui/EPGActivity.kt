@@ -237,7 +237,7 @@ class EPGActivity : BaseActivity() {
         epgHorizontalScroll.scrollTo(targetX, 0)
     }
     private fun updateCurrentTimeDisplay() {
-        val cal = Calendar.getInstance(displayTz)
+        val cal = Calendar.getInstance(displayTz).apply { timeInMillis = System.currentTimeMillis() }
         val dateFormat = SimpleDateFormat("HH:mm dd.MM.yyyy", Locale.getDefault())
         currentTimeText.text = getString(R.string.time_msk, dateFormat.format(cal.time))
     }

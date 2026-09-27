@@ -150,7 +150,8 @@ class PlayerActivity : BaseActivity() {
         if (title == null || title.isBlank()) return
 
         val tzOffset = AppPreferences(applicationContext).timezoneOffset
-        val tz = TimeZone.getTimeZone("GMT" + (if (tzOffset >= 0) "+" else "") + String.format(Locale.US, "%02d:00", tzOffset))
+        val tzId = "GMT" + (if (tzOffset >= 0) "+" else "-") + String.format(Locale.US, "%02d:00", Math.abs(tzOffset))
+        val tz = TimeZone.getTimeZone(tzId)
         val sdf = SimpleDateFormat("HH:mm", Locale.getDefault()).apply { timeZone = tz }
 
         val start = channel.currentProgramStart
