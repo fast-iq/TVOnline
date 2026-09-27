@@ -72,7 +72,12 @@ android {
     }
 
     lint {
-        disable 'UnsafeOptInUsageError', 'OldTargetApi', 'DiscouragedApi', 'GradleDependency', 'VectorRaster', 'NotifyDataSetChanged'
+        lintConfig file("lint.xml")
+        checkReleaseBuilds true
+        abortOnError true
+        xmlReport true
+        htmlReport true
+        textReport true
     }
 }
 

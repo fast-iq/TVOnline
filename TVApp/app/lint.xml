@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <issue id="UnsafeOptInUsageError">
+        <ignore path="**/*.kt" />
+    </issue>
+    <issue id="OldTargetApi">
+        <ignore path="**/AndroidManifest.xml" />
+    </issue>
+    <issue id="DiscouragedApi">
+        <ignore path="**/AndroidManifest.xml" />
+    </issue>
+    <issue id="GradleDependency">
+        <ignore path="**/*.gradle" />
+    </issue>
+    <issue id="VectorRaster">
+        <ignore path="**/*.xml" />
+    </issue>
+    <issue id="NotifyDataSetChanged">
+        <ignore path="**/*.kt" />
+    </issue>
+
+    <issue id="UnusedResources" severity="error" />
+    <issue id="MissingTranslation" severity="error" />
+    <issue id="PluralsCandidate" severity="warning" />
+    <issue id="TypographyEllipsis" severity="warning" />
+    <issue id="DefaultLocale" severity="error" />
+    <issue id="SetTextI18n" severity="error" />
+    <issue id="HardcodedText" severity="error" />
+    <issue id="SmallSp" severity="error" />
+    <issue id="Overdraw" severity="warning" />
+    <issue id="SwitchIntDef" severity="error" />
+    <issue id="ContentDescription" severity="error" />
+    <issue id="ButtonCase" severity="warning" />
+    <issue id="Typos" severity="warning" />
+    <issue id="StringFormatInvalid" severity="error" />
+    <issue id="StringFormatMatches" severity="error" />
+    <issue id="MissingDefaultResource" severity="error" />
+    <issue id="DuplicateIds" severity="error" />
+    <issue id="DuplicateStrings" severity="warning" />
+    <issue id="UnusedAttribute" severity="warning" />
+    <issue id="UnusedIds" severity="error" />
+    <issue id="BackButton" severity="warning" />
+    <issue id="InconsistentLayout" severity="error" />
+    <issue id="RtlHardcoded" severity="warning" />
+    <issue id="PrivateResource" severity="error" />
+    <issue id="ExportedContentProvider" severity="error" />
+    <issue id="ExportedReceiver" severity="error" />
+    <issue id="ExportedService" severity="error" />
+    <issue id="AllowBackup" severity="warning" />
+    <issue id="MissingApplicationIcon" severity="error" />
+    <issue id="MissingPrefix" severity="warning" />
+    <issue id="ExtraTranslation" severity="warning" />
+    <issue id="ImpliedQuantity" severity="error" />
+    <issue id="StringFormatCount" severity="error" />
+    <issue id="TypographyDashes" severity="warning" />
+    <issue id="TypographyQuotes" severity="warning" />
+    <issue id="TypographyFractions" severity="warning" />
+    <issue id="TypographyAmpersand" severity="warning" />
+    <issue id="WrongViewCast" severity="error" />
+    <issue id="ViewConstructor" severity="error" />
+    <issue id="UnusedAnimation" severity="warning" />
+    <issue id="UnusedColors" severity="error" />
+    <issue id="UnusedDrawables" severity="error" />
+    <issue id="UnusedQuantity" severity="error" />
+    <issue id="UnusedRxJava" severity="warning" />
+</lint>
