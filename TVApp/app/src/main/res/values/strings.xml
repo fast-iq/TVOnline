@@ -44,6 +44,11 @@
     <string name="quality_value">Качество: %1$s</string>
     <string name="language_label">Язык интерфейса:</string>
     <string name="language_value">Язык: %1$s</string>
+    <string name="source_label">Источник каналов:</string>
+    <string name="source_value">Источник: %1$s</string>
+    <string name="source_premier">Premier.one</string>
+    <string name="source_ivi">IVI</string>
+    <string name="source_smotreshka">Смотрешка</string>
     <string name="settings_help">Используйте пульт для навигации. Нажмите OK для выбора опции.</string>
 
     <!-- Quality modes -->

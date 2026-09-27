@@ -19,7 +19,7 @@ class MainActivity : BaseActivity() {
     private lateinit var currentProgramText: TextView
     private lateinit var channelAdapter: ChannelAdapter
 
-    private val channelRepository = ChannelRepository()
+    private val channelRepository by lazy { ChannelRepository(applicationContext) }
     private val preferences by lazy { AppPreferences(applicationContext) }
 
     private var lastSelectedChannelId: String? = null

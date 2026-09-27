@@ -13,6 +13,7 @@ class AppPreferences(context: Context) {
         private const val KEY_TIMEZONE_OFFSET = "timezone_offset"
         private const val KEY_QUALITY_MODE = "quality_mode"
         private const val KEY_LANGUAGE = "language"
+        private const val KEY_CONTENT_SOURCE = "content_source"
         const val DEFAULT_MOSCOW_OFFSET = 3
 
         // epgservice.ru API token (получается через https://t.me/EPGServiceSupportBot)
@@ -47,10 +48,25 @@ class AppPreferences(context: Context) {
             prefs.edit { putString(KEY_LANGUAGE, value) }
         }
 
+    var contentSource: ContentSource
+        get() {
+            val idx = prefs.getInt(KEY_CONTENT_SOURCE, ContentSource.PREMIER.ordinal)
+            return if (idx in ContentSource.values().indices) ContentSource.values()[idx] else ContentSource.PREMIER
+        }
+        set(value) {
+            prefs.edit { putInt(KEY_CONTENT_SOURCE, value.ordinal) }
+        }
+
     enum class QualityMode {
         MINIMUM,
         MEDIUM,
         MAXIMUM,
         AUTO
+    }
+
+    enum class ContentSource {
+        PREMIER,
+        IVI,
+        SMOTRESHKA
     }
 }

@@ -15,6 +15,7 @@ class SettingsActivity : BaseActivity() {
     private lateinit var timezoneValueText: TextView
     private lateinit var qualityModeText: TextView
     private lateinit var languageText: TextView
+    private lateinit var sourceText: TextView
 
     private val preferences by lazy { AppPreferences(applicationContext) }
 
@@ -55,9 +56,16 @@ class SettingsActivity : BaseActivity() {
 
     private val languages = listOf("ru" to "Русский", "en" to "English")
 
+    private val sources = listOf(
+        AppPreferences.ContentSource.PREMIER,
+        AppPreferences.ContentSource.IVI,
+        AppPreferences.ContentSource.SMOTRESHKA
+    )
+
     private var currentTimezoneIndex = 15
     private var currentQualityIndex = 3
     private var currentLanguageIndex = 0
+    private var currentSourceIndex = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,11 +75,13 @@ class SettingsActivity : BaseActivity() {
         timezoneValueText = findViewById(R.id.timezoneValueText)
         qualityModeText = findViewById(R.id.qualityModeText)
         languageText = findViewById(R.id.languageText)
+        sourceText = findViewById(R.id.sourceText)
 
         loadCurrentSettings()
         setupTimezoneSelector()
         setupQualitySelector()
         setupLanguageSelector()
+        setupSourceSelector()
     }
 
     private fun loadCurrentSettings() {
@@ -79,9 +89,11 @@ class SettingsActivity : BaseActivity() {
         currentTimezoneIndex = timezones.indexOfFirst { it.first == currentOffset }.takeIf { it != -1 } ?: 15
         currentQualityIndex = qualityModes.indexOf(preferences.qualityMode).takeIf { it != -1 } ?: 3
         currentLanguageIndex = languages.indexOfFirst { it.first == preferences.language }.takeIf { it != -1 } ?: 0
+        currentSourceIndex = sources.indexOf(preferences.contentSource).takeIf { it != -1 } ?: 0
         updateTimezoneDisplay()
         updateQualityDisplay()
         updateLanguageDisplay()
+        updateSourceDisplay()
     }
 
     private fun setupTimezoneSelector() {
@@ -131,6 +143,16 @@ class SettingsActivity : BaseActivity() {
         }
     }
 
+    private fun setupSourceSelector() {
+        updateSourceDisplay()
+        findViewById<TextView>(R.id.sourceButton).setOnClickListener {
+            currentSourceIndex = (currentSourceIndex + 1) % sources.size
+            preferences.contentSource = sources[currentSourceIndex]
+            updateSourceDisplay()
+            Toast.makeText(this, getString(R.string.source_value, getSourceName(sources[currentSourceIndex])), Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun updateTimezoneDisplay() {
         timezoneValueText.text = getString(R.string.timezone_value, timezones[currentTimezoneIndex].second)
     }
@@ -143,12 +165,24 @@ class SettingsActivity : BaseActivity() {
         languageText.text = getString(R.string.language_value, languages[currentLanguageIndex].second)
     }
 
+    private fun updateSourceDisplay() {
+        sourceText.text = getString(R.string.source_value, getSourceName(sources[currentSourceIndex]))
+    }
+
     private fun getQualityName(mode: AppPreferences.QualityMode): String {
         return when (mode) {
             AppPreferences.QualityMode.MINIMUM -> getString(R.string.quality_minimum)
             AppPreferences.QualityMode.MEDIUM -> getString(R.string.quality_medium)
             AppPreferences.QualityMode.MAXIMUM -> getString(R.string.quality_maximum)
             AppPreferences.QualityMode.AUTO -> getString(R.string.quality_auto)
+        }
+    }
+
+    private fun getSourceName(source: AppPreferences.ContentSource): String {
+        return when (source) {
+            AppPreferences.ContentSource.PREMIER -> getString(R.string.source_premier)
+            AppPreferences.ContentSource.IVI -> getString(R.string.source_ivi)
+            AppPreferences.ContentSource.SMOTRESHKA -> getString(R.string.source_smotreshka)
         }
     }
 

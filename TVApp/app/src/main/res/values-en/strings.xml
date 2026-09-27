@@ -44,6 +44,11 @@
     <string name="quality_value">Quality: %1$s</string>
     <string name="language_label">Interface language:</string>
     <string name="language_value">Language: %1$s</string>
+    <string name="source_label">Channel source:</string>
+    <string name="source_value">Source: %1$s</string>
+    <string name="source_premier">Premier.one</string>
+    <string name="source_ivi">IVI</string>
+    <string name="source_smotreshka">Smotreshka</string>
     <string name="settings_help">Use remote to navigate. Press OK to select an option.</string>
 
     <!-- Quality modes -->
