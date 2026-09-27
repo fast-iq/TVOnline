@@ -24,6 +24,7 @@ class MainActivity : BaseActivity() {
 
     private var lastSelectedChannelId: String? = null
     private var lastFocusedPosition: Int = -1
+    private var pendingFocusRestore: Boolean = false
 
     private val scope = CoroutineScope(Dispatchers.Main + Job())
 
@@ -60,8 +61,26 @@ class MainActivity : BaseActivity() {
                     channelAdapter.updateChannels(channels)
                     restoreLastChannel()
                     updateHeaderProgram(channels)
+                    if (pendingFocusRestore && lastFocusedPosition >= 0) {
+                        pendingFocusRestore = false
+                        focusOnPosition(lastFocusedPosition)
+                    }
                 }
             } catch (e: Exception) {
+            }
+        }
+    }
+
+    private fun focusOnPosition(position: Int) {
+        channelsRecyclerView.post {
+            val child = channelsRecyclerView.findViewHolderForAdapterPosition(position)?.itemView
+            if (child != null) {
+                child.requestFocus()
+            } else {
+                channelsRecyclerView.scrollToPosition(position)
+                channelsRecyclerView.post {
+                    channelsRecyclerView.findViewHolderForAdapterPosition(position)?.itemView?.requestFocus()
+                }
             }
         }
     }
@@ -117,17 +136,10 @@ class MainActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
-        loadChannels()
         if (lastFocusedPosition >= 0) {
-            channelsRecyclerView.post {
-                val child = channelsRecyclerView.findViewHolderForAdapterPosition(lastFocusedPosition)?.itemView
-                if (child != null) {
-                    child.requestFocus()
-                } else {
-                    channelsRecyclerView.requestFocus()
-                }
-            }
+            pendingFocusRestore = true
         }
+        loadChannels()
     }
 
     private fun openPlayer(channel: Channel) {

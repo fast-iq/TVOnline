@@ -3,14 +3,19 @@ package com.example.tvapp.ui
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.View
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.media3.ui.PlayerView
 import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
+import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
 import com.example.tvapp.player.TVPlayerManager
-import android.widget.TextView
+import kotlinx.coroutines.*
+import java.text.SimpleDateFormat
+import java.util.*
 
 class PlayerActivity : BaseActivity() {
 
@@ -22,6 +27,11 @@ class PlayerActivity : BaseActivity() {
     private lateinit var playerManager: TVPlayerManager
     private lateinit var playerView: PlayerView
     private lateinit var infoText: TextView
+    private lateinit var programOverlay: LinearLayout
+    private lateinit var programNowText: TextView
+    private lateinit var programNextText: TextView
+
+    private val scope = CoroutineScope(Dispatchers.Main + Job())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +46,9 @@ class PlayerActivity : BaseActivity() {
 
             playerView = findViewById(R.id.playerView)
             infoText = findViewById(R.id.infoText)
+            programOverlay = findViewById(R.id.programOverlay)
+            programNowText = findViewById(R.id.programNowText)
+            programNextText = findViewById(R.id.programNextText)
 
             playerManager = TVPlayerManager(this)
 
@@ -76,6 +89,7 @@ class PlayerActivity : BaseActivity() {
                 infoText.text = getString(R.string.loading_channel, channelName)
                 infoText.visibility = View.VISIBLE
                 playerManager.playChannel(currentChannel!!, streamUrl)
+                showProgramOverlay(currentChannel!!)
             } else if (!streamUrl.isNullOrEmpty()) {
                 val url = streamUrl!!
                 infoText.text = getString(R.string.loading_channel, channelName)
@@ -127,6 +141,32 @@ class PlayerActivity : BaseActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        scope.cancel()
         playerManager.releasePlayer()
+    }
+
+    private fun showProgramOverlay(channel: Channel) {
+        val title = channel.currentProgramTitle
+        if (title == null || title.isBlank()) return
+
+        val tzOffset = AppPreferences(applicationContext).timezoneOffset
+        val tz = TimeZone.getTimeZone("GMT" + (if (tzOffset >= 0) "+" else "") + String.format(Locale.US, "%02d:00", tzOffset))
+        val sdf = SimpleDateFormat("HH:mm", Locale.getDefault()).apply { timeZone = tz }
+
+        val start = channel.currentProgramStart
+        val end = channel.currentProgramEnd
+
+        if (start != null && end != null) {
+            programNowText.text = getString(R.string.now_playing, title) + "  " + sdf.format(Date(start)) + "–" + sdf.format(Date(end))
+        } else {
+            programNowText.text = getString(R.string.now_playing, title)
+        }
+
+        val nextStart = end ?: (start?.plus(3600000L))
+        if (nextStart != null) {
+            programNextText.text = sdf.format(Date(nextStart)) + " – "
+        }
+
+        programOverlay.visibility = View.VISIBLE
     }
 }

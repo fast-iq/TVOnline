@@ -18,6 +18,7 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 - `TVApp/app/src/main/java/com/example/tvapp/settings/SettingsActivity.kt` - Settings
 
 ## Conventions
+- **ALWAYS read this file (AGENTS.md) before starting any task.** It contains critical context, known issues, and lessons learned that prevent regressions.
 - Kotlin, no comments unless asked
 - ViewBinding enabled but activities use findViewById (existing pattern)
 - Coroutines for async work, Dispatchers.IO for network
@@ -224,6 +225,32 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 - `TVApp[AWS_SECRET_KEY_REDACTED]ChannelAdapter.kt` — progress bar, program from channel
 - `TVApp[AWS_SECRET_KEY_REDACTED]MainActivity.kt` — simplified, no EPGRepository
 - `TVApp/app/src/main/res/layout/item_channel.xml` — added ProgressBar
+
+### 2026-09-27 Session 8 — TV device fixes: focus, channel mapping, timezone overlay
+
+**Goal:** Fix cursor jumping to settings after player exit, channel name/stream mismatch, timezone not affecting video content.
+
+**1. Cursor jumps to settings after exiting player:**
+- Root cause: `onResume()` posted a focus request that raced with async channel loading. The `post {}` ran before RecyclerView had items, falling back to `requestFocus()` on the RecyclerView itself which defaulted to the first focusable view (settings button).
+- FIX: Added `pendingFocusRestore` flag. Focus is only restored AFTER channels are loaded and adapter is updated. `focusOnPosition()` handles scroll + requestFocus in two posts.
+
+**2. Channel names don't match streams (CRITICAL):**
+- Root cause: Premier.one slugs (`pervyi`, `rossiya_1`, `pyatyi_kanal`, `matchtv`, `ren_tv`, `pyatnica`) don't match our hardcoded IDs (`c1r`, `rossiya1`, `5tv`, `match`, `ren`, `pz`). The slug lookup in ChannelRepository always failed → empty stream URLs.
+- FIX: Added `slugToIdMap` in ChannelRepository mapping all 23 premier.one slugs to our internal channel IDs. Lookup now: `slug → mapped ID → hardcoded channel (stream, category, fallbacks)`.
+
+**3. Timezone setting doesn't affect video content:**
+- Root cause: PlayerActivity showed no program info at all. Timezone only affected EPG screen.
+- FIX: Added program overlay (`programOverlay`) in activity_player.xml — bottom-left panel showing current program title + time range, and next program start time. Times formatted using user-configured timezone offset from `AppPreferences.timezoneOffset` via `TimeZone.getTimeZone("GMT+HH:MM")`.
+
+**4. AGENTS.md enforcement:**
+- Added rule: "ALWAYS read this file (AGENTS.md) before starting any task."
+
+**Files modified:**
+- `TVApp/[AWS_SECRET_KEY_REDACTED]/ChannelRepository.kt` — slugToIdMap, fixed channel ID resolution
+- `TVApp[AWS_SECRET_KEY_REDACTED]MainActivity.kt` — pendingFocusRestore, focusOnPosition()
+- `TVApp[AWS_SECRET_KEY_REDACTED]PlayerActivity.kt` — program overlay with timezone-aware times
+- `TVApp/app/src/main/res/layout/activity_player.xml` — added programOverlay LinearLayout
+- `AGENTS.md` — Session 8, enforcement rule
 
 ## Do NOT
 - Do not use `via.placeholder.com` (dead service)

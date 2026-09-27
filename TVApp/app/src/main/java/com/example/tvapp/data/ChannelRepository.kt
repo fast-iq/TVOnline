@@ -42,12 +42,38 @@ class ChannelRepository {
 
     suspend fun refreshChannels(): List<Channel> = getChannels(forceRefresh = true)
 
+    private val slugToIdMap = mapOf(
+        "pervyi" to "c1r",
+        "rossiya_1" to "rossiya1",
+        "ntv" to "ntv",
+        "pyatyi_kanal" to "5tv",
+        "kultura" to "kultura",
+        "rossiya_24" to "rossiya24",
+        "karusel" to "karusel",
+        "tvc" to "tvc",
+        "ren_tv" to "ren",
+        "spas" to "spas",
+        "sts" to "sts",
+        "domashniy" to "domashniy",
+        "tv3" to "tv3",
+        "pyatnica" to "pz",
+        "subbota" to "pz",
+        "zvezda" to "zvezda",
+        "mir" to "mir",
+        "tnt" to "tnt",
+        "muztv" to "muztv",
+        "matchtv" to "match",
+        "utr" to "utv",
+        "sun" to "sun",
+        "otr" to "otv"
+    )
+
     private fun fetchChannelsFromPremier(): List<Channel> {
         val html = httpGet(premierUrl) ?: return emptyList()
         val nuxtData = extractNuxtData(html) ?: return emptyList()
         val arr = parseNuxtArray(nuxtData) ?: return emptyList()
 
-        val hardcodedBySlug = ChannelList.hardcodedChannels.associateBy { it.id.lowercase() }
+        val hardcodedById = ChannelList.hardcodedChannels.associateBy { it.id.lowercase() }
         val channels = mutableListOf<Channel>()
 
         val tvChannelsListIdx = findKeyIndex(arr, "tv-channels-list") ?: return emptyList()
@@ -67,7 +93,8 @@ class ChannelRepository {
             val slug = resolveString(arr, slugRef) ?: continue
             val logoUrl = resolveString(arr, logoRef) ?: ""
 
-            val hardcoded = hardcodedBySlug[slug.lowercase()]
+            val channelId = slugToIdMap[slug.lowercase()] ?: slug
+            val hardcoded = hardcodedById[channelId.lowercase()]
             val streamUrl = hardcoded?.streamUrl ?: ""
 
             var progTitle: String? = null
@@ -100,7 +127,7 @@ class ChannelRepository {
 
             channels.add(
                 Channel(
-                    id = if (hardcoded != null) hardcoded.id else slug,
+                    id = channelId,
                     name = name,
                     logoUrl = logoUrl,
                     streamUrl = streamUrl,
