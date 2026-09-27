@@ -86,6 +86,7 @@ dependencies {
 
     // Media3 (новый ExoPlayer) для воспроизведения видео
     implementation 'androidx.media3:media3-exoplayer:1.11.1'
+    implementation 'androidx.media3:media3-exoplayer-hls:1.11.1'
     implementation 'androidx.media3:media3-ui:1.11.1'
 
     // Для работы с JSON
