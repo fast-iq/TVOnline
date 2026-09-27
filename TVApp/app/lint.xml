@@ -6,6 +6,9 @@
     <issue id="OldTargetApi">
         <ignore path="**/build.gradle" />
     </issue>
+    <issue id="GestureBackNavigation">
+        <ignore path="**/*.kt" />
+    </issue>
     <issue id="DiscouragedApi">
         <ignore path="**/AndroidManifest.xml" />
     </issue>
