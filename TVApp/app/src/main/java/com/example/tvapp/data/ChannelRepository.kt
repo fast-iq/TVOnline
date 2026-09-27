@@ -70,14 +70,28 @@ class ChannelRepository {
 
     private fun fetchChannelsFromPremier(): List<Channel> {
         val html = httpGet(premierUrl) ?: return emptyList()
-        val nuxtData = extractNuxtData(html) ?: return emptyList()
-        val arr = parseNuxtArray(nuxtData) ?: return emptyList()
+        val nuxtData = extractNuxtData(html) ?: run {
+            android.util.Log.w("ChannelRepo", "extractNuxtData failed, html length=${html.length}")
+            return emptyList()
+        }
+        val arr = parseNuxtArray(nuxtData) ?: run {
+            android.util.Log.w("ChannelRepo", "parseNuxtArray failed, json length=${nuxtData.length}, starts with: ${nuxtData.take(100)}")
+            return emptyList()
+        }
+        android.util.Log.d("ChannelRepo", "Parsed array size=${arr.size}")
 
         val hardcodedById = ChannelList.hardcodedChannels.associateBy { it.id.lowercase() }
         val channels = mutableListOf<Channel>()
 
-        val tvChannelsListIdx = findKeyIndex(arr, "tv-channels-list") ?: return emptyList()
-        val channelIndices = arr[tvChannelsListIdx] as? List<*> ?: return emptyList()
+        val tvChannelsListIdx = findKeyIndex(arr, "tv-channels-list") ?: run {
+            android.util.Log.w("ChannelRepo", "tv-channels-list key not found in array of size ${arr.size}")
+            return emptyList()
+        }
+        val channelIndices = arr[tvChannelsListIdx] as? List<*> ?: run {
+            android.util.Log.w("ChannelRepo", "tv-channels-list value is not a list: ${arr[tvChannelsListIdx]?.let { it::class.simpleName }}")
+            return emptyList()
+        }
+        android.util.Log.d("ChannelRepo", "Found ${channelIndices.size} channels in list")
 
         for (item in channelIndices) {
             val idx = item as? Number ?: continue
@@ -120,9 +134,23 @@ class ChannelRepository {
                             progTitle = resolveString(arr, titleRef)
                             progStart = resolveDateTime(arr, startRef)
                             progEnd = resolveDateTime(arr, endRef)
+                        } else {
+                            android.util.Log.w("ChannelRepo", "Program obj at $firstProgIdx is not a Map: ${arr[firstProgIdx]?.let { it::class.simpleName }}")
                         }
+                    } else {
+                        android.util.Log.w("ChannelRepo", "No valid program index for channel $slug, progListVal=$progListVal")
                     }
+                } else {
+                    android.util.Log.w("ChannelRepo", "Program list index $progListIdx out of bounds (arr size=${arr.size})")
                 }
+            } else {
+                android.util.Log.w("ChannelRepo", "No tvPrograms ref for channel $slug, chObj keys=${chObj.keys}")
+            }
+
+            if (progTitle == null) {
+                android.util.Log.d("ChannelRepo", "Channel $slug: no program title resolved")
+            } else {
+                android.util.Log.d("ChannelRepo", "Channel $slug: program='$progTitle' start=$progStart end=$progEnd")
             }
 
             channels.add(
@@ -139,6 +167,7 @@ class ChannelRepository {
                 )
             )
         }
+        android.util.Log.d("ChannelRepo", "Built ${channels.size} channels, with programs: ${channels.count { it.currentProgramTitle != null }}")
         return channels
     }
 
