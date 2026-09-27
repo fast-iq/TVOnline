@@ -11,6 +11,7 @@ import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
+import com.example.tvapp.data.ChannelRepository
 import com.example.tvapp.data.EPGRepository
 import com.example.tvapp.data.AppPreferences
 import kotlinx.coroutines.*
@@ -23,6 +24,7 @@ class MainActivity : BaseActivity() {
     private lateinit var channelAdapter: ChannelAdapter
 
     private val epgRepository = EPGRepository()
+    private val channelRepository = ChannelRepository()
     private val preferences by lazy { AppPreferences(applicationContext) }
 
     private var allPrograms = mapOf<String, List<com.example.tvapp.data.Program>>()
@@ -44,8 +46,24 @@ class MainActivity : BaseActivity() {
         epgButton.setOnClickListener { openEPG() }
 
         setupChannelsGrid()
-        loadEPG()
+        loadChannels()
         restoreLastChannel()
+    }
+
+    private fun loadChannels() {
+        scope.launch {
+            try {
+                val channels = withContext(Dispatchers.IO) {
+                    channelRepository.getChannels()
+                }
+                if (channels.isNotEmpty()) {
+                    channelAdapter.updateChannels(channels)
+                    loadEPG()
+                }
+            } catch (e: Exception) {
+                loadEPG()
+            }
+        }
     }
 
     private fun setupChannelsGrid() {

@@ -31,7 +31,14 @@ data class Program(
 }
 
 object ChannelList {
-    val channels = listOf(
+    var channels: List<Channel> = emptyList()
+        private set
+
+    fun updateChannels(newChannels: List<Channel>) {
+        channels = newChannels
+    }
+
+    val hardcodedChannels = listOf(
         Channel(
             id = "c1r",
             name = "Первый канал",
@@ -713,4 +720,8 @@ object ChannelList {
             epgId = "start_world"
         )
     )
+
+    init {
+        channels = hardcodedChannels
+    }
 }

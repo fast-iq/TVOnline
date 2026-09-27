@@ -68,4 +68,9 @@ class ChannelAdapter(
         currentProgramsMap = programsMap
         notifyDataSetChanged()
     }
+
+    fun updateChannels(newChannels: List<Channel>) {
+        channels = newChannels
+        notifyDataSetChanged()
+    }
 }
