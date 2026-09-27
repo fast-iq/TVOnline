@@ -44,8 +44,8 @@ class EPGRepository {
     private fun fetchEpgServiceSchedule(channelId: String, date: Date): List<Program>? {
         if (epgToken.isBlank()) return null
         try {
-            val hrefs = loadChannelHrefs() ?: return null
-            val href = hrefs[channelId] ?: return null
+            val channel = ChannelList.channels.find { it.id == channelId } ?: return null
+            val href = channel.epgHref ?: loadChannelHrefs()?.get(channelId) ?: return null
 
             val weekMonday = getWeekMondayDate(date)
             val weekStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(weekMonday)
@@ -107,11 +107,17 @@ class EPGRepository {
                     cache[channel.id] = exactHit
                     continue
                 }
+                var bestMatch: Pair<String, String>? = null
+                var bestScore = 0
                 for ((displayName, href) in nameToHref) {
-                    if (key.contains(displayName) || displayName.contains(key)) {
-                        cache[channel.id] = href
-                        break
+                    val score = computeNameMatchScore(key, displayName)
+                    if (score > bestScore) {
+                        bestScore = score
+                        bestMatch = displayName to href
                     }
+                }
+                if (bestScore >= 2 && bestMatch != null) {
+                    cache[channel.id] = bestMatch.second
                 }
             }
 
@@ -120,6 +126,18 @@ class EPGRepository {
         } catch (e: Exception) {
             return null
         }
+    }
+
+    private fun computeNameMatchScore(ourName: String, epgName: String): Int {
+        if (ourName == epgName) return 10
+        if (epgName.contains(ourName)) return 8
+        if (ourName.contains(epgName)) return 6
+        val ourWords = ourName.split(" ").filter { it.length > 2 }.toSet()
+        val epgWords = epgName.split(" ").filter { it.length > 2 }.toSet()
+        if (ourWords.isEmpty() || epgWords.isEmpty()) return 0
+        val common = ourWords.intersect(epgWords).size
+        val minSize = minOf(ourWords.size, epgWords.size)
+        return if (common >= minSize && common >= 2) 4 else if (common == 1) 1 else 0
     }
 
     private fun parseXmltvTime(timeStr: String): Long? {

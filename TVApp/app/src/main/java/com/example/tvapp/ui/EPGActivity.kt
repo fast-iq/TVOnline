@@ -14,6 +14,7 @@ import com.example.tvapp.R
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
 import com.example.tvapp.data.EPGRepository
+import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Program
 import kotlinx.coroutines.*
 import java.text.SimpleDateFormat
@@ -41,11 +42,14 @@ class EPGActivity : BaseActivity() {
     private val totalHours = 24
     private val leadMinutes = 30
 
-    private val moscowTz = TimeZone.getTimeZone("Europe/Moscow")
+    private lateinit var displayTz: TimeZone
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_epg)
+
+        val prefs = AppPreferences(applicationContext)
+        displayTz = createOffsetTimeZone(prefs.timezoneOffset)
 
         currentTimeText = findViewById(R.id.currentTimeText)
         timeScaleContainer = findViewById(R.id.timeScaleContainer)
@@ -60,6 +64,12 @@ class EPGActivity : BaseActivity() {
         loadEPGForDate()
         updateCurrentTimeDisplay()
         setupScrollSync()
+    }
+
+    private fun createOffsetTimeZone(offsetHours: Int): TimeZone {
+        val offsetMinutes = offsetHours * 60
+        val tzId = "GMT" + (if (offsetMinutes >= 0) "+" else "-") + String.format(Locale.US, "%02d:%02d", Math.abs(offsetMinutes / 60), Math.abs(offsetMinutes % 60))
+        return TimeZone.getTimeZone(tzId)
     }
 
     private fun setupScrollSync() {
@@ -91,7 +101,7 @@ class EPGActivity : BaseActivity() {
         val baseTime = getStartTimeMillis()
         for (hour in 0 until totalHours) {
             val hourStart = baseTime + hour * 3600_000L
-            val calendar = Calendar.getInstance(moscowTz).apply { timeInMillis = hourStart }
+            val calendar = Calendar.getInstance(displayTz).apply { timeInMillis = hourStart }
             val hourVal = calendar.get(Calendar.HOUR_OF_DAY)
             val timeText = TextView(this).apply {
                 text = String.format(Locale.US, "%02d:00", hourVal)
@@ -168,8 +178,8 @@ class EPGActivity : BaseActivity() {
             }
         }
 
-        val startCal = Calendar.getInstance(moscowTz).apply { timeInMillis = program.startTime }
-        val endCal = Calendar.getInstance(moscowTz).apply { timeInMillis = program.endTime }
+        val startCal = Calendar.getInstance(displayTz).apply { timeInMillis = program.startTime }
+        val endCal = Calendar.getInstance(displayTz).apply { timeInMillis = program.endTime }
         val timeStr = getString(R.string.time_range, dateFormat.format(startCal.time), dateFormat.format(endCal.time))
 
         val programText = TextView(this).apply {
@@ -194,7 +204,7 @@ class EPGActivity : BaseActivity() {
     }
 
     private fun getStartTimeMillis(): Long {
-        val calendar = Calendar.getInstance(moscowTz).apply {
+        val calendar = Calendar.getInstance(displayTz).apply {
             timeInMillis = System.currentTimeMillis()
             add(Calendar.HOUR_OF_DAY, -12)
             set(Calendar.MINUTE, 0)
@@ -226,9 +236,9 @@ class EPGActivity : BaseActivity() {
     }
 
     private fun updateCurrentTimeDisplay() {
-        val moscowCal = Calendar.getInstance(moscowTz)
+        val cal = Calendar.getInstance(displayTz)
         val dateFormat = SimpleDateFormat("HH:mm dd.MM.yyyy", Locale.getDefault())
-        currentTimeText.text = getString(R.string.time_msk, dateFormat.format(moscowCal.time))
+        currentTimeText.text = getString(R.string.time_msk, dateFormat.format(cal.time))
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {

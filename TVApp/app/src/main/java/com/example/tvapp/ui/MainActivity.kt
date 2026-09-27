@@ -47,7 +47,7 @@ class MainActivity : BaseActivity() {
 
         setupChannelsGrid()
         loadChannels()
-        restoreLastChannel()
+        loadEPG()
     }
 
     private fun loadChannels() {
@@ -58,10 +58,9 @@ class MainActivity : BaseActivity() {
                 }
                 if (channels.isNotEmpty()) {
                     channelAdapter.updateChannels(channels)
-                    loadEPG()
+                    restoreLastChannel()
                 }
             } catch (e: Exception) {
-                loadEPG()
             }
         }
     }
@@ -159,6 +158,7 @@ class MainActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
+        loadChannels()
         loadEPG()
     }
 

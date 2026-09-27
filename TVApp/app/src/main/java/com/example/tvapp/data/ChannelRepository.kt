@@ -12,15 +12,19 @@ class ChannelRepository {
     private val epgToken = AppPreferences.EPG_SERVICE_TOKEN
 
     private var cachedChannels: List<Channel>? = null
-    private var channelHrefCache: Map<String, String>? = null
+    private var lastFetchTime: Long = 0L
+    private val cacheDurationMs = 30 * 60 * 1000L
 
-    suspend fun getChannels(): List<Channel> {
-        cachedChannels?.let { return it }
+    suspend fun getChannels(forceRefresh: Boolean = false): List<Channel> {
+        if (!forceRefresh && cachedChannels != null && System.currentTimeMillis() - lastFetchTime < cacheDurationMs) {
+            return cachedChannels!!
+        }
         return withContext(Dispatchers.IO) {
             try {
                 val channels = fetchChannelsFromEpgService()
                 if (channels.isNotEmpty()) {
                     cachedChannels = channels
+                    lastFetchTime = System.currentTimeMillis()
                     ChannelList.updateChannels(channels)
                 } else {
                     ChannelList.channels
@@ -31,11 +35,14 @@ class ChannelRepository {
         }
     }
 
+    suspend fun refreshChannels(): List<Channel> = getChannels(forceRefresh = true)
+
     private fun fetchChannelsFromEpgService(): List<Channel> {
         if (epgToken.isBlank()) return emptyList()
         val url = "$epgApiBase/v1/index"
         val xmlStr = httpGet(url, authHeader = "Bearer $epgToken") ?: return emptyList()
 
+        val hardcodedByName = ChannelList.hardcodedChannels.associateBy { it.name.trim().lowercase() }
         val channels = mutableListOf<Channel>()
         val chRegex = Regex("<channel\\s+id=\"([^\"]+)\"[^>]*>(.*?)</channel>", RegexOption.DOT_MATCHES_ALL)
         for (match in chRegex.findAll(xmlStr)) {
@@ -44,12 +51,18 @@ class ChannelRepository {
             val href = Regex("<href>([^<]+)</href>").find(body)?.groupValues?.get(1)?.trim() ?: ""
             if (name.isBlank()) continue
 
+            val key = name.trim().lowercase()
+            val hardcoded = hardcodedByName[key]
+            if (hardcoded == null) continue
+
             channels.add(Channel(
-                id = name.lowercase().replace(" ", "_"),
+                id = hardcoded.id,
                 name = name,
-                logoUrl = "",
-                streamUrl = href.replace("http://", "https://"),
-                category = "general"
+                logoUrl = hardcoded.logoUrl,
+                streamUrl = hardcoded.streamUrl,
+                category = hardcoded.category,
+                fallbackStreamUrls = hardcoded.fallbackStreamUrls,
+                epgHref = href.ifBlank { null }
             ))
         }
         return channels

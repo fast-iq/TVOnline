@@ -8,7 +8,8 @@ data class Channel(
     val category: String = "general",
     val epgId: String? = null,
     val channelImageUrl: String? = null,
-    val fallbackStreamUrls: List<String> = emptyList()
+    val fallbackStreamUrls: List<String> = emptyList(),
+    val epgHref: String? = null
 )
 
 data class Program(
@@ -38,7 +39,7 @@ object ChannelList {
         channels = newChannels
     }
 
-    val hardcodedChannels = listOf(
+    val hardcodedChannels: List<Channel> = listOf(
         Channel(
             id = "c1r",
             name = "Первый канал",
@@ -65,7 +66,7 @@ object ChannelList {
         ),
         Channel(
             id = "5tv",
-            name = "5 Канал",
+            name = "Пятый канал",
             logoUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/5-tv_logo_%282023%29.svg/250px-5-tv_logo_%282023%29.svg.png",
             streamUrl = "https://streaming.goodstream.icu/live/8.m3u8",
             category = "federal",
@@ -249,7 +250,7 @@ object ChannelList {
         ),
         Channel(
             id = "ohota",
-            name = "Охота и рыбалка",
+            name = "Охота и Рыбалка",
             logoUrl = "https://www.ohotarybalka.tv/images/logo.png",
             streamUrl = "https://streaming.goodstream.icu/live/116.m3u8",
             category = "hunting_fishing",
