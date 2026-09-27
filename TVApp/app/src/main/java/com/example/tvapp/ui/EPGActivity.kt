@@ -22,7 +22,6 @@ import java.util.*
 class EPGActivity : BaseActivity() {
 
     private lateinit var currentTimeText: TextView
-    private lateinit var timeOffsetText: TextView
     private lateinit var timeScaleContainer: LinearLayout
     private lateinit var channelLabelsContainer: LinearLayout
     private lateinit var epgGridContainer: FrameLayout
@@ -32,8 +31,6 @@ class EPGActivity : BaseActivity() {
     private lateinit var channelLabelsScroll: NestedScrollView
 
     private val epgRepository = EPGRepository()
-    private var selectedDate = Date()
-    private var timeOffsetHours = 0
     private var channels: List<Channel> = emptyList()
 
     private val scope = CoroutineScope(Dispatchers.Main + Job())
@@ -42,16 +39,15 @@ class EPGActivity : BaseActivity() {
     private val pixelsPerMinute = pixelsPerHour / 60f
     private val rowHeight = 70
     private val totalHours = 24
+    private val leadMinutes = 30
 
     private val moscowTz = TimeZone.getTimeZone("Europe/Moscow")
-    private val localTz = TimeZone.getDefault()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_epg)
 
         currentTimeText = findViewById(R.id.currentTimeText)
-        timeOffsetText = findViewById(R.id.timeOffsetText)
         timeScaleContainer = findViewById(R.id.timeScaleContainer)
         channelLabelsContainer = findViewById(R.id.channelLabelsContainer)
         epgGridContainer = findViewById(R.id.epgGridContainer)
@@ -92,13 +88,13 @@ class EPGActivity : BaseActivity() {
 
     private fun createTimeScale() {
         timeScaleContainer.removeAllViews()
-        for (hourOffset in -12..12) {
-            val calendar = Calendar.getInstance(moscowTz).apply {
-                add(Calendar.HOUR_OF_DAY, hourOffset)
-            }
-            val hour = calendar.get(Calendar.HOUR_OF_DAY)
+        val baseTime = getStartTimeMillis()
+        for (hour in 0 until totalHours) {
+            val hourStart = baseTime + hour * 3600_000L
+            val calendar = Calendar.getInstance(moscowTz).apply { timeInMillis = hourStart }
+            val hourVal = calendar.get(Calendar.HOUR_OF_DAY)
             val timeText = TextView(this).apply {
-                text = String.format(Locale.US, "%02d:00", hour)
+                text = String.format(Locale.US, "%02d:00", hourVal)
                 textSize = 14f
                 setTextColor(getColor(R.color.text_secondary))
                 width = pixelsPerHour.toInt()
@@ -153,7 +149,6 @@ class EPGActivity : BaseActivity() {
 
     private fun createProgramBlock(program: Program, width: Int): View {
         val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-        val moscowCal = Calendar.getInstance(moscowTz)
 
         val container = FrameLayout(this).apply {
             setPadding(8, 8, 8, 8)
@@ -195,26 +190,25 @@ class EPGActivity : BaseActivity() {
     }
 
     private fun getMoscowNow(): Long {
-        val cal = Calendar.getInstance(moscowTz)
-        return cal.timeInMillis - moscowTz.getOffset(cal.timeInMillis).toLong()
+        return System.currentTimeMillis()
     }
 
     private fun getStartTimeMillis(): Long {
         val calendar = Calendar.getInstance(moscowTz).apply {
-            time = selectedDate
-            add(Calendar.HOUR_OF_DAY, -12 + timeOffsetHours)
+            timeInMillis = System.currentTimeMillis()
+            add(Calendar.HOUR_OF_DAY, -12)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
-        return calendar.timeInMillis - moscowTz.getOffset(calendar.timeInMillis).toLong()
+        return calendar.timeInMillis
     }
 
     private fun loadEPGForDate() {
         scope.launch {
             try {
                 val programs = withContext(Dispatchers.IO) {
-                    epgRepository.getProgramsForAllChannels(selectedDate)
+                    epgRepository.getProgramsForAllChannels(Date())
                 }
                 renderPrograms(programs)
                 epgGridContainer.post { scrollToCurrentTime() }
@@ -225,17 +219,16 @@ class EPGActivity : BaseActivity() {
     }
 
     private fun scrollToCurrentTime() {
-        val currentPos = (12 * pixelsPerHour).toInt() - (epgHorizontalScroll.width / 2)
-        epgHorizontalScroll.scrollTo(currentPos.coerceAtLeast(0), 0)
+        val baseTime = getStartTimeMillis()
+        val nowOffsetMin = (System.currentTimeMillis() - baseTime) / 1000f / 60f
+        val targetX = ((nowOffsetMin - leadMinutes) * pixelsPerMinute).toInt().coerceAtLeast(0)
+        epgHorizontalScroll.scrollTo(targetX, 0)
     }
 
     private fun updateCurrentTimeDisplay() {
         val moscowCal = Calendar.getInstance(moscowTz)
         val dateFormat = SimpleDateFormat("HH:mm dd.MM.yyyy", Locale.getDefault())
         currentTimeText.text = getString(R.string.time_msk, dateFormat.format(moscowCal.time))
-
-        val offsetText = if (timeOffsetHours >= 0) "+$timeOffsetHours" else "$timeOffsetHours"
-        timeOffsetText.text = getString(R.string.offset_value, offsetText)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -250,25 +243,16 @@ class EPGActivity : BaseActivity() {
                 if (channelLabelsScroll.scrollY < maxScroll) channelLabelsScroll.smoothScrollBy(0, rowHeight)
                 true
             }
-            KeyEvent.KEYCODE_DPAD_LEFT -> { changeTimeOffset(-1); true }
-            KeyEvent.KEYCODE_DPAD_RIGHT -> { changeTimeOffset(1); true }
+            KeyEvent.KEYCODE_DPAD_LEFT -> { scrollByMinutes(-15); true }
+            KeyEvent.KEYCODE_DPAD_RIGHT -> { scrollByMinutes(15); true }
             else -> super.onKeyDown(keyCode, event)
         }
     }
 
-    private fun changeTimeOffset(hours: Int) {
-        timeOffsetHours += hours
-        if (timeOffsetHours > 12) {
-            timeOffsetHours = 12
-            Toast.makeText(this, R.string.max_offset_error, Toast.LENGTH_SHORT).show()
-        }
-        if (timeOffsetHours < -12) {
-            timeOffsetHours = -12
-            Toast.makeText(this, R.string.min_offset_error, Toast.LENGTH_SHORT).show()
-        }
-        createTimeScale()
-        loadEPGForDate()
-        updateCurrentTimeDisplay()
+    private fun scrollByMinutes(minutes: Int) {
+        val maxScroll = epgGridContainer.width - epgHorizontalScroll.width
+        val newScrollX = (epgHorizontalScroll.scrollX + minutes * pixelsPerMinute).toInt().coerceIn(0, maxScroll.coerceAtLeast(0))
+        epgHorizontalScroll.smoothScrollTo(newScrollX, 0)
     }
 
     override fun onDestroy() {
