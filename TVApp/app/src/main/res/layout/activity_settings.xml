@@ -135,7 +135,6 @@
         app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
-        android:id="@+id/helpText"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="@string/settings_help"

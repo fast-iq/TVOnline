@@ -30,6 +30,8 @@
     <string name="buffering">Buffering…</string>
     <string name="switching_source">Switching to backup source…</string>
     <string name="no_stream_url">Error: stream URL not specified</string>
+    <string name="now_playing_with_time">Now: %1$s (%2$s–%3$s)</string>
+    <string name="next_program_at">Next at %1$s</string>
 
     <!-- EPG -->
     <string name="time_msk">Time (MSK): %1$s</string>

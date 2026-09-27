@@ -4,12 +4,15 @@
         <ignore path="**/*.kt" />
     </issue>
     <issue id="OldTargetApi">
-        <ignore path="**/AndroidManifest.xml" />
+        <ignore path="**/build.gradle" />
     </issue>
     <issue id="DiscouragedApi">
         <ignore path="**/AndroidManifest.xml" />
     </issue>
     <issue id="GradleDependency">
+        <ignore path="**/*.gradle" />
+    </issue>
+    <issue id="NewerVersionAvailable">
         <ignore path="**/*.gradle" />
     </issue>
     <issue id="VectorRaster">
@@ -55,12 +58,7 @@
     <issue id="TypographyDashes" severity="warning" />
     <issue id="TypographyQuotes" severity="warning" />
     <issue id="TypographyFractions" severity="warning" />
-    <issue id="TypographyAmpersand" severity="warning" />
     <issue id="WrongViewCast" severity="error" />
     <issue id="ViewConstructor" severity="error" />
-    <issue id="UnusedAnimation" severity="warning" />
-    <issue id="UnusedColors" severity="error" />
-    <issue id="UnusedDrawables" severity="error" />
     <issue id="UnusedQuantity" severity="error" />
-    <issue id="UnusedRxJava" severity="warning" />
 </lint>

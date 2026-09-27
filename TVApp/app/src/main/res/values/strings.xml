@@ -30,6 +30,8 @@
     <string name="buffering">Буферизация…</string>
     <string name="switching_source">Переключение на резервный источник…</string>
     <string name="no_stream_url">Ошибка: URL потока не указан</string>
+    <string name="now_playing_with_time">Сейчас: %1$s (%2$s–%3$s)</string>
+    <string name="next_program_at">Далее в %1$s</string>
 
     <!-- EPG -->
     <string name="time_msk">Время (МСК): %1$s</string>

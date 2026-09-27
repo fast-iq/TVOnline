@@ -157,14 +157,14 @@ class PlayerActivity : BaseActivity() {
         val end = channel.currentProgramEnd
 
         if (start != null && end != null) {
-            programNowText.text = getString(R.string.now_playing, title) + "  " + sdf.format(Date(start)) + "–" + sdf.format(Date(end))
+            programNowText.text = getString(R.string.now_playing_with_time, title, sdf.format(Date(start)), sdf.format(Date(end)))
         } else {
             programNowText.text = getString(R.string.now_playing, title)
         }
 
         val nextStart = end ?: (start?.plus(3600000L))
         if (nextStart != null) {
-            programNextText.text = sdf.format(Date(nextStart)) + " – "
+            programNextText.text = getString(R.string.next_program_at, sdf.format(Date(nextStart)))
         }
 
         programOverlay.visibility = View.VISIBLE
