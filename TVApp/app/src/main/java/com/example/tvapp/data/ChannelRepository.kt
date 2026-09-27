@@ -78,9 +78,10 @@ class ChannelRepository {
             if (tvProgramsRef != null) {
                 val progListIdx = tvProgramsRef.toInt()
                 if (progListIdx < arr.size) {
-                    val progRefOrObj = arr[progListIdx]
-                    val firstProgIdx = when (progRefOrObj) {
-                        is Number -> progRefOrObj.toInt()
+                    val progListVal = arr[progListIdx]
+                    val firstProgIdx: Int? = when (progListVal) {
+                        is Number -> progListVal.toInt()
+                        is List<*> -> (progListVal.firstOrNull() as? Number)?.toInt()
                         else -> null
                     }
                     if (firstProgIdx != null && firstProgIdx < arr.size) {

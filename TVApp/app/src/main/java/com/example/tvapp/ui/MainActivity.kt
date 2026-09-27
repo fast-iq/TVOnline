@@ -2,7 +2,6 @@ package com.example.tvapp.ui
 
 import android.os.Bundle
 import android.view.KeyEvent
-import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -24,6 +23,7 @@ class MainActivity : BaseActivity() {
     private val preferences by lazy { AppPreferences(applicationContext) }
 
     private var lastSelectedChannelId: String? = null
+    private var lastFocusedPosition: Int = -1
 
     private val scope = CoroutineScope(Dispatchers.Main + Job())
 
@@ -35,8 +35,16 @@ class MainActivity : BaseActivity() {
         currentProgramText = findViewById(R.id.currentProgramText)
         val settingsButton: android.widget.ImageView = findViewById(R.id.settingsButton)
         settingsButton.setOnClickListener { openSettings() }
+        settingsButton.setOnFocusChangeListener { v, hasFocus ->
+            v.scaleX = if (hasFocus) 1.2f else 1.0f
+            v.scaleY = if (hasFocus) 1.2f else 1.0f
+        }
         val epgButton: android.widget.ImageView = findViewById(R.id.epgButton)
         epgButton.setOnClickListener { openEPG() }
+        epgButton.setOnFocusChangeListener { v, hasFocus ->
+            v.scaleX = if (hasFocus) 1.2f else 1.0f
+            v.scaleY = if (hasFocus) 1.2f else 1.0f
+        }
 
         setupChannelsGrid()
         loadChannels()
@@ -66,13 +74,13 @@ class MainActivity : BaseActivity() {
                 lastSelectedChannelId = channel.id
                 preferences.lastChannelId = channel.id
                 openPlayer(channel)
-            }
+            },
+            onFocusPositionChanged = { pos -> lastFocusedPosition = pos }
         )
 
         channelsRecyclerView.apply {
             layoutManager = GridLayoutManager(this@MainActivity, spanCount)
             adapter = channelAdapter
-            descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
         }
     }
 
@@ -100,6 +108,7 @@ class MainActivity : BaseActivity() {
                 val position = ChannelList.channels.indexOf(it)
                 if (position != -1) {
                     channelsRecyclerView.scrollToPosition(position)
+                    lastFocusedPosition = position
                 }
                 lastSelectedChannelId = lastChannelId
             }
@@ -109,6 +118,16 @@ class MainActivity : BaseActivity() {
     override fun onResume() {
         super.onResume()
         loadChannels()
+        if (lastFocusedPosition >= 0) {
+            channelsRecyclerView.post {
+                val child = channelsRecyclerView.findViewHolderForAdapterPosition(lastFocusedPosition)?.itemView
+                if (child != null) {
+                    child.requestFocus()
+                } else {
+                    channelsRecyclerView.requestFocus()
+                }
+            }
+        }
     }
 
     private fun openPlayer(channel: Channel) {
