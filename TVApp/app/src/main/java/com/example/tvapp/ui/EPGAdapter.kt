@@ -30,14 +30,14 @@ class EPGAdapter(
 
         fun bind(channel: Channel, channelPrograms: List<Program>?) {
             channelName.text = channel.name
-            
+
             val sortedPrograms = channelPrograms?.sortedBy { it.startTime } ?: emptyList()
-            
+
             programList.apply {
                 layoutManager = LinearLayoutManager(itemView.context, LinearLayoutManager.HORIZONTAL, false)
                 adapter = ProgramListAdapter(sortedPrograms)
             }
-            
+
             // Фокус для навигации
             itemView.setOnFocusChangeListener { view, hasFocus ->
                 if (hasFocus) {
@@ -60,7 +60,7 @@ class EPGAdapter(
             fun bind(program: Program) {
                 programTitle.text = program.title
                 programTime.text = itemView.context.getString(R.string.time_range, dateFormat.format(Date(program.startTime)), dateFormat.format(Date(program.endTime)))
-                
+
                 // Подсветка текущей программы
                 val moscowTz = TimeZone.getTimeZone("Europe/Moscow")
                 val cal = Calendar.getInstance(moscowTz)
@@ -70,12 +70,12 @@ class EPGAdapter(
                 } else {
                     itemView.setBackgroundResource(android.R.color.transparent)
                 }
-                
+
                 // Обработка выбора программы
                 itemView.setOnClickListener {
                     // Можно реализовать перемотку к этой программе если это архив
                 }
-                
+
                 // Фокус
                 itemView.setOnFocusChangeListener { view, hasFocus ->
                     if (hasFocus) {
