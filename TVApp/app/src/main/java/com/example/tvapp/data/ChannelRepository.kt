@@ -571,9 +571,11 @@ class ChannelRepository(private val context: Context) {
 
     // ========== NTV.RU EPG ==========
 
-    suspend fun fetchNtvCurrentPrograms(): Map<String, Pair<String, Long, Long>> {
+    data class NtvProgram(val title: String, val startMs: Long, val endMs: Long)
+
+    suspend fun fetchNtvCurrentPrograms(): Map<String, NtvProgram> {
         return withContext(Dispatchers.IO) {
-            val result = mutableMapOf<String, Pair<String, Long, Long>>()
+            val result = mutableMapOf<String, NtvProgram>()
             try {
                 val json = httpGetWithHeaders(
                     "https://api.ntv.ru/vitrina/v1/channels/current_programs",
@@ -591,7 +593,7 @@ class ChannelRepository(private val context: Context) {
                     val endMs = parseNtvDate(programObj.optString("date_stop", ""))
                     if (startMs == null || endMs == null) continue
                     val channelId = ntvCodeToIdMap[code] ?: code
-                    result[channelId] = Triple(title, startMs, endMs)
+                    result[channelId] = NtvProgram(title, startMs, endMs)
                 }
             } catch (e: Exception) {
                 Log.e("ChannelRepo", "NTV EPG error: ${e.message}")

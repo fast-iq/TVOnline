@@ -80,9 +80,9 @@ class MainActivity : BaseActivity() {
                 val prog = ntvPrograms[ch.id]
                 if (prog != null) {
                     ch.copy(
-                        currentProgramTitle = prog.first,
-                        currentProgramStart = prog.second,
-                        currentProgramEnd = prog.third
+                        currentProgramTitle = prog.title,
+                        currentProgramStart = prog.startMs,
+                        currentProgramEnd = prog.endMs
                     )
                 } else ch
             }
