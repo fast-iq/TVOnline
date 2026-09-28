@@ -17,25 +17,25 @@ class EPGRepository {
     private var channelHrefCache: Map<String, String>? = null
 
     suspend fun getProgramForChannel(channelId: String, date: Date): List<Program> = withContext(Dispatchers.IO) {
-            try {
-                fetchEpgServiceSchedule(channelId, date) ?: generateFallbackEPG(channelId, date)
-            } catch (e: Exception) {
-                generateFallbackEPG(channelId, date)
-            }
+        try {
+            fetchEpgServiceSchedule(channelId, date) ?: generateFallbackEPG(channelId, date)
+        } catch (e: Exception) {
+            generateFallbackEPG(channelId, date)
         }
+    }
 
     suspend fun getProgramsForAllChannels(date: Date): Map<String, List<Program>> = withContext(Dispatchers.IO) {
-            val programs = mutableMapOf<String, List<Program>>()
-            for (channel in ChannelList.channels) {
-                try {
-                    val channelPrograms = getProgramForChannel(channel.id, date)
-                    programs[channel.id] = channelPrograms
-                } catch (e: Exception) {
-                    programs[channel.id] = generateFallbackEPG(channel.id, date)
-                }
+        val programs = mutableMapOf<String, List<Program>>()
+        for (channel in ChannelList.channels) {
+            try {
+                val channelPrograms = getProgramForChannel(channel.id, date)
+                programs[channel.id] = channelPrograms
+            } catch (e: Exception) {
+                programs[channel.id] = generateFallbackEPG(channel.id, date)
             }
-            programs
         }
+        programs
+    }
 
     private fun fetchEpgServiceSchedule(channelId: String, date: Date): List<Program>? {
         if (epgToken.isBlank()) return null
