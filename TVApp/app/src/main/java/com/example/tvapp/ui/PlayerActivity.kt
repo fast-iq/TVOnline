@@ -85,6 +85,7 @@ class PlayerActivity : BaseActivity() {
                         infoText.visibility = View.VISIBLE
                     }
                 }
+            }
             )
 
             if (currentChannel != null) {

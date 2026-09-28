@@ -4,6 +4,14 @@ plugins {
     id 'org.jlleitschuh.gradle.ktlint'
 }
 
+ktlint {
+    android = true
+    additionalEditorconfig = [
+        "ktlint_standard_trailing-comma-on-call-site": "disabled",
+        "ktlint_standard_trailing-comma-on-declaration-site": "disabled"
+    ]
+}
+
 def appVersion = project.hasProperty('APP_VERSION') ? project.APP_VERSION : null
 if (!appVersion) {
     def ciRef = System.getenv("GITHUB_REF_NAME")
