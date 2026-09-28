@@ -32,6 +32,10 @@
     <string name="no_stream_url">Error: stream URL not specified</string>
     <string name="now_playing_with_time">Now: %1$s (%2$s–%3$s)</string>
     <string name="next_program_at">Next at %1$s</string>
+    <string name="switch_source_title">Select video source</string>
+    <string name="source_official">Official</string>
+    <string name="source_alternative">Alternative</string>
+    <string name="source_current">(current)</string>
 
     <!-- EPG -->
     <string name="time_msk">Time (MSK): %1$s</string>

@@ -135,6 +135,10 @@ class PlayerActivity : BaseActivity() {
                 }
                 true
             }
+            KeyEvent.KEYCODE_MENU, 0x52c1 -> {
+                showSourceSwitchDialog()
+                true
+            }
             else -> super.onKeyDown(keyCode, event)
         }
     }
@@ -143,6 +147,32 @@ class PlayerActivity : BaseActivity() {
         super.onDestroy()
         scope.cancel()
         playerManager.releasePlayer()
+    }
+
+    private fun showSourceSwitchDialog() {
+        val channel = currentChannel ?: return
+        val urls = playerManager.getCurrentStreamUrls()
+        if (urls.size <= 1) {
+            Toast.makeText(this, getString(R.string.switch_source_title), Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val currentIndex = playerManager.getCurrentUrlIndex()
+        val items = mutableListOf<String>()
+        for (i in urls.indices) {
+            val label = if (i == 0) getString(R.string.source_official) else getString(R.string.source_alternative)
+            val marker = if (i == currentIndex) " " + getString(R.string.source_current) else ""
+            items.add("$label: ${urls[i]}$marker")
+        }
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle(getString(R.string.switch_source_title))
+            .setItems(items.toTypedArray()) { _, which ->
+                playerManager.switchToUrl(urls[which])
+                infoText.text = getString(R.string.loading_channel, channelName)
+                infoText.visibility = View.VISIBLE
+            }
+            .show()
     }
 
     private fun showProgramOverlay(channel: Channel) {

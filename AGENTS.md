@@ -252,6 +252,84 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 - `TVApp/app/src/main/res/layout/activity_player.xml` — added programOverlay LinearLayout
 - `AGENTS.md` — Session 8, enforcement rule
 
+### 2026-09-27 Session 9 — smotrim.ru stream discovery
+
+**Goal:** Find free HLS stream URLs for all Russian federal channels on smotrim.ru.
+
+**Discovery:**
+- smotrim.ru uses Nuxt 3 SSR. Channel pages have `__NUXT_DATA__` embedded JSON but `vitrinaStreams` is always empty in SSR (loaded client-side).
+- The player API is at `https://player-api.smotrim.ru/api/v1/channel/{id}` (found in `window.__NUXT__.config.public.playerApiUrl`).
+- Returns JSON: `{data: {title, epg: {programName}, streams: {m3u8}, splash: {large, medium, small}}}`.
+- VGTRK channels (Россия 1 id=1, Культура id=4, Россия 24 id=3) return direct HLS URLs at `https://live.smotrim.ru/vgtrk/0/{name}-hd/index.m3u8` — multi-quality (1080p/720p/576p), verified working.
+- All other channels (НТВ, Пятый, Матч ТВ, Карусель, ОТР, ТВЦ, РЕН ТВ, СПАС, СТС, Домашний, ТВ-3, Пятница!, Звезда, МИР, ТНТ, Муз-ТВ) return `streams: null` — these use Vitrina/MediaVitrina balancer API.
+
+**Vitrina balancer pattern (for non-VGTRK channels):**
+- Endpoint: `https://media.mediavitrina.ru/balancer/v3/default_2026/{channel_dir}/streams.json?application_id=smotrim_web&player_referer_hostname=smotrim.ru`
+- Returns JSON with `hls` (array of tokenized `.m3u8` URLs), `hlsp`, `mpdp` arrays.
+- Tokens are time-limited; `config_checksum_sha256` param can be empty.
+- Known channel dirs: russia1, 1tvch, zvezda, domashniy, rentv, karusel, tvc, spas, mir, muztv, ntv_msk, 5tv, otr, gpm_tnt, gpm_tv3, gpm_friday, ctc, gpm_matchtv
+- Player SDK: `https://staticmv.mediavitrina.ru/dist/eump-core/v20.3.3/web/mvp.js`
+
+**Channel ID map (smotrim.ru):**
+| Channel | smotrim ID | Stream source |
+|---------|-----------|---------------|
+| Россия 1 | 1 | Direct HLS (live.smotrim.ru) |
+| Матч ТВ | 263 | Vitrina balancer |
+| НТВ | 267 | Vitrina balancer |
+| Пятый канал | 255 | Vitrina balancer |
+| Культура | 4 | Direct HLS (live.smotrim.ru) |
+| Россия 24 | 3 | Direct HLS (live.smotrim.ru) |
+| Карусель | 70 | Vitrina balancer |
+| ОТР | 363 | Vitrina balancer |
+| ТВЦ | 260 | Vitrina balancer |
+| РЕН ТВ | 256 | Vitrina balancer |
+| СПАС | 257 | Vitrina balancer |
+| СТС | 258 | Vitrina balancer |
+| Домашний | 250 | Vitrina balancer |
+| ТВ-3 | 264 | Vitrina balancer |
+| Пятница! | 265 | Vitrina balancer |
+| Звезда | 251 | Vitrina balancer |
+| МИР | 253 | Vitrina balancer |
+| ТНТ | 266 | Vitrina balancer |
+| Муз-ТВ | 254 | Vitrina balancer |
+
+**Logo URLs:** `https://cdn.smotrim.ru/photobank/prod/{size}/{path}.png` (from player API splash field)
+
+### 2026-09-28 Session 10 — ntv.ru streams + runtime source switching
+
+**Goal:** Replace unreliable goodstream.icu streams with verified ntv.ru CDN streams. Add user-facing "switch source" dialog in player. Add ntv.ru EPG as enrichment source.
+
+**Stream sources (all verified 200 + #EXTM3U on 2026-09-28):**
+- **Primary (official, no auth):** `https://cdn.ntv.ru/{stream_key}/index.m3u8` — 20 channels
+  - Keys: vitrina18 (Первый), vitrina10 (Россия 1), ntv0_hd (НТВ), vitrina8 (5 канал), vitrina12 (Культура), vitrina2 (Звезда), vitrina7 (Пятница!), vitrina14 (СТС), vitrina1 (Домашний), vitrina17 (ТНТ), vitrina9 (РЕН ТВ), vitrina20 (Карусель), vitrina4 (Матч ТВ), vitrina11 (Россия 24), vitrina15 (ТВЦ), vitrina13 (СПАС), vitrina16 (ТВ-3), vitrina3 (МИР), vitrina5 (Муз-ТВ)
+  - VGTRK channels (Россия 1, Культура, Россия 24) also have direct HLS: `https://live.smotrim.ru/vgtrk/0/{name}-hd/index.m3u8`
+- **Fallback (iptv-org + other):** per-channel in `fallbackStreamUrls` (e.g. `http://46.32.176.50/perviy/index.m3u8`, `http://stream.mcquack.net/181/index.m3u8`)
+
+**Logos:** `https://api.ntv.ru/vitrina/static/images/logo/{file}.png` (from ntv.ru EPG API)
+
+**EPG enrichment from ntv.ru:**
+- `GET https://api.ntv.ru/vitrina/v1/channels/current_programs` with header `x-platform: website`
+- Returns 20 channels with current program: `{channel: {code, stream_key, icon}, program: {title, date_start, date_stop}}`
+- Date format: `MM/dd/yyyy HH:mm:ss` in **UTC+5** (Ural time) — parsed with `TimeZone.getTimeZone("GMT+05:00")`
+- Channel code → our ID mapping in `ntvCodeToIdMap` (e.g. `1tvch`→`c1r`, `russia1_orbit2`→`rossiya1`, `ntv2`→`ntv`)
+- Called from `MainActivity.enrichWithNtvEpg()` after channel list load — fills in program title/times for channels that don't have them from premier.one/IVI
+
+**Runtime source switching (PlayerActivity):**
+- MENU button (or 0x52c1) opens AlertDialog listing all sources: "Официальный" + "Альтернативный N" with current marked "(текущий)"
+- `TVPlayerManager.switchToUrl(url)` switches playback to selected URL
+- Auto-fallback on error still works (iterates through streamUrl + fallbackStreamUrls)
+
+**Slug→ID fix:**
+- `subbota` (Суббота!) now maps to `"subbota"` instead of `"pz"` (Пятница!) — separate channel
+
+**Files modified:**
+- `TVApp/[AWS_SECRET_KEY_REDACTED]/Models.kt` — 20 channels: new stream URLs, logos, fallbackStreamUrls
+- `TVApp/[AWS_SECRET_KEY_REDACTED]/ChannelRepository.kt` — ntvCodeToIdMap, fetchNtvCurrentPrograms(), parseNtvDate(), httpGetWithHeaders()
+- `TVApp[AWS_SECRET_KEY_REDACTED]PlayerActivity.kt` — showSourceSwitchDialog(), MENU key handler
+- `TVApp/app[AWS_SECRET_KEY_REDACTED]TVPlayerManager.kt` — switchToUrl(), getCurrentStreamUrls() public, getCurrentUrlIndex()
+- `TVApp[AWS_SECRET_KEY_REDACTED]MainActivity.kt` — enrichWithNtvEpg()
+- `TVApp/app/src/main/res/values/strings.xml` + `values-en/` — switch_source_title, source_official, source_alternative, source_current
+
 ## Do NOT
 - Do not use `via.placeholder.com` (dead service)
 - Do not use `static.wikia.nocookie.net` for channel logos (unreliable)

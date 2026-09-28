@@ -108,10 +108,18 @@ class TVPlayerManager(private val context: Context) {
         }
     }
 
-    private fun getCurrentStreamUrls(): List<String> {
+    fun switchToUrl(url: String) {
+        if (currentChannel != null) {
+            playChannel(currentChannel!!, url)
+        }
+    }
+
+    fun getCurrentStreamUrls(): List<String> {
         val channel = currentChannel ?: return emptyList()
         return listOf(channel.streamUrl) + channel.fallbackStreamUrls
     }
+
+    fun getCurrentUrlIndex(): Int = fallbackIndex
 
     fun setQualityMode(qualityMode: AppPreferences.QualityMode) {
         preferences.qualityMode = qualityMode

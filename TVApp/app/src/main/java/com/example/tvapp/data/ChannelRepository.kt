@@ -112,7 +112,7 @@ class ChannelRepository(private val context: Context) {
         "domashniy" to "domashniy",
         "tv3" to "tv3",
         "pyatnica" to "pz",
-        "subbota" to "pz",
+        "subbota" to "subbota",
         "zvezda" to "zvezda",
         "mir" to "mir",
         "tnt" to "tnt",
@@ -121,6 +121,29 @@ class ChannelRepository(private val context: Context) {
         "utr" to "utv",
         "sun" to "sun",
         "otr" to "otv"
+    )
+
+    private val ntvCodeToIdMap = mapOf(
+        "1tvch" to "c1r",
+        "russia1_orbit2" to "rossiya1",
+        "matchtv" to "match",
+        "ntv2" to "ntv",
+        "5tv2" to "5tv",
+        "kultura" to "kultura",
+        "russia24" to "rossiya24",
+        "carusel" to "karusel",
+        "otr2" to "otv",
+        "tvc" to "tvc",
+        "ren2" to "ren",
+        "ctc_msk2" to "sts",
+        "domashniy2_ext" to "domashniy",
+        "tv3_2" to "tv3",
+        "friday2" to "pz",
+        "tvzvezda2" to "zvezda",
+        "mir" to "mir",
+        "tnt2" to "tnt",
+        "muztv" to "muztv",
+        "spas2" to "spas"
     )
 
     private fun fetchChannelsFromPremier(): List<Channel> {
@@ -546,6 +569,49 @@ class ChannelRepository(private val context: Context) {
         return channels
     }
 
+    // ========== NTV.RU EPG ==========
+
+    suspend fun fetchNtvCurrentPrograms(): Map<String, Pair<String, Long, Long>> {
+        return withContext(Dispatchers.IO) {
+            val result = mutableMapOf<String, Pair<String, Long, Long>>()
+            try {
+                val json = httpGetWithHeaders(
+                    "https://api.ntv.ru/vitrina/v1/channels/current_programs",
+                    mapOf("x-platform" to "website")
+                ) ?: return@withContext result
+                val root = JSONObject(json)
+                val dataArr = root.optJSONArray("data") ?: return@withContext result
+                for (i in 0 until dataArr.length()) {
+                    val item = dataArr.optJSONObject(i) ?: continue
+                    val channelObj = item.optJSONObject("channel") ?: continue
+                    val programObj = item.optJSONObject("program") ?: continue
+                    val code = channelObj.optString("code", "")
+                    val title = programObj.optString("title", "")
+                    val startMs = parseNtvDate(programObj.optString("date_start", ""))
+                    val endMs = parseNtvDate(programObj.optString("date_stop", ""))
+                    if (startMs == null || endMs == null) continue
+                    val channelId = ntvCodeToIdMap[code] ?: code
+                    result[channelId] = Triple(title, startMs, endMs)
+                }
+            } catch (e: Exception) {
+                Log.e("ChannelRepo", "NTV EPG error: ${e.message}")
+            }
+            result
+        }
+    }
+
+    private fun parseNtvDate(str: String): Long? {
+        if (str.isEmpty()) return null
+        return try {
+            val sdf = SimpleDateFormat("MM/dd/yyyy HH:mm:ss", Locale.US)
+            val tz = TimeZone.getTimeZone("GMT+05:00")
+            sdf.timeZone = tz
+            sdf.parse(str)?.time
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     // ========== SHARED UTILS ==========
 
     private fun parseIsoDateTime(str: String): Long? {
@@ -565,6 +631,28 @@ class ChannelRepository(private val context: Context) {
                     null
                 }
             }
+        }
+    }
+
+    private fun httpGetWithHeaders(url: String, headers: Map<String, String>): String? {
+        val connection = URL(url).openConnection() as HttpURLConnection
+        return try {
+            connection.requestMethod = "GET"
+            connection.setRequestProperty("User-Agent", userAgent)
+            connection.setRequestProperty("Accept", "application/json")
+            for ((key, value) in headers) {
+                connection.setRequestProperty(key, value)
+            }
+            connection.connectTimeout = 15000
+            connection.readTimeout = 20000
+            val code = connection.responseCode
+            if (code != 200) return null
+            connection.inputStream.bufferedReader().use { it.readText() }
+        } catch (e: Exception) {
+            Log.e("ChannelRepo", "httpGetWithHeaders failed for $url: ${e.message}")
+            null
+        } finally {
+            connection.disconnect()
         }
     }
 

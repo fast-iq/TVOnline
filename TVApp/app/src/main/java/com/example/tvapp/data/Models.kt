@@ -46,136 +46,188 @@ object ChannelList {
         Channel(
             id = "c1r",
             name = "Первый канал",
-            logoUrl = "https://upload.wikimedia.org/wikipedia/commons/d/d1/Channel_one_russia_logo_2.PNG",
-            streamUrl = "https://streaming.goodstream.icu/live/210.m3u8",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/1.png",
+            streamUrl = "https://cdn.ntv.ru/vitrina18/index.m3u8",
             category = "federal",
-            epgId = "c1r"
+            epgId = "c1r",
+            fallbackStreamUrls = listOf(
+                "http://46.32.176.50/perviy/index.m3u8"
+            )
         ),
         Channel(
             id = "rossiya1",
             name = "Россия 1",
-            logoUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/11-%D0%B9_%D0%BB%D0%BE%D0%B3%D0%BE%D1%82%D0%B8%D0%BF_%D0%A0%D0%BE%D1%81%D1%81%D0%B8%D1%8F-1.svg/250px-11-%D0%B9_%D0%BB%D0%BE%D0%B3%D0%BE%D1%82%D0%B8%D0%BF_%D0%A0%D0%BE%D1%81%D1%81%D0%B8%D1%8F-1.svg.png",
-            streamUrl = "https://streaming.goodstream.icu/live/211.m3u8",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/ros-1.png",
+            streamUrl = "https://live.smotrim.ru/vgtrk/0/russia1-hd/index.m3u8",
             category = "federal",
-            epgId = "rossiya1"
+            epgId = "rossiya1",
+            fallbackStreamUrls = listOf(
+                "https://cdn.ntv.ru/vitrina10/index.m3u8",
+                "https://stream.smotrim.ru/hls2/russia_hd/playlist_6.m3u8"
+            )
         ),
         Channel(
             id = "ntv",
             name = "НТВ",
-            logoUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/NTV_logo.svg/250px-NTV_logo.svg.png",
-            streamUrl = "https://streaming.goodstream.icu/live/213.m3u8",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/ntv.png",
+            streamUrl = "https://cdn.ntv.ru/ntv0_hd/index.m3u8",
             category = "federal",
-            epgId = "ntv"
+            epgId = "ntv",
+            fallbackStreamUrls = listOf(
+                "https://cdn.ntv.ru/ntv1/playlist.m3u8"
+            )
         ),
         Channel(
             id = "5tv",
             name = "Пятый канал",
-            logoUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/5-tv_logo_%282023%29.svg/250px-5-tv_logo_%282023%29.svg.png",
-            streamUrl = "https://streaming.goodstream.icu/live/8.m3u8",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/5.png",
+            streamUrl = "https://cdn.ntv.ru/vitrina8/index.m3u8",
             category = "federal",
-            epgId = "5tv"
+            epgId = "5tv",
+            fallbackStreamUrls = listOf(
+                "http://46.32.176.50/5kanal/index.m3u8"
+            )
         ),
         Channel(
             id = "kultura",
             name = "Культура",
-            logoUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Kultura_Channel.svg/250px-Kultura_Channel.svg.png",
-            streamUrl = "https://streaming.goodstream.icu/live/9.m3u8",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/ros-kult.png",
+            streamUrl = "https://live.smotrim.ru/vgtrk/0/kultura-hd/index.m3u8",
             category = "culture",
-            epgId = "kultura"
+            epgId = "kultura",
+            fallbackStreamUrls = listOf(
+                "https://cdn.ntv.ru/vitrina12/index.m3u8",
+                "http://stream.mcquack.net/229/index.m3u8"
+            )
         ),
         Channel(
             id = "zvezda",
             name = "Звезда",
-            logoUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Zvezda_logo.svg/250px-Zvezda_logo.svg.png",
-            streamUrl = "https://streaming.goodstream.icu/live/10.m3u8",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/zvezda.png",
+            streamUrl = "https://cdn.ntv.ru/vitrina2/index.m3u8",
             category = "federal",
-            epgId = "zvezda"
+            epgId = "zvezda",
+            fallbackStreamUrls = listOf(
+                "http://51.158.144.33:2021/zvezda/index.m3u8"
+            )
         ),
         Channel(
             id = "pz",
             name = "Пятница!",
-            logoUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/%D0%9F%D1%8F%D1%82%D0%BD%D0%B8%D1%86%D0%B0_%28%D1%81_2013%29.svg/250px-%D0%9F%D1%8F%D1%82%D0%BD%D0%B8%D1%86%D0%B0_%28%D1%81_2013%29.svg.png",
-            streamUrl = "https://streaming.goodstream.icu/live/19.m3u8",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/pyatnica.png",
+            streamUrl = "https://cdn.ntv.ru/vitrina7/index.m3u8",
             category = "entertainment",
-            epgId = "pz"
+            epgId = "pz",
+            fallbackStreamUrls = listOf(
+                "http://stream.mcquack.net/181/index.m3u8",
+                "https://fs.uplink.kz/bolshaya_pyatnica/mono.m3u8?token=onlinetv"
+            )
         ),
         Channel(
             id = "sts",
             name = "СТС",
-            logoUrl = "https://upload.wikimedia.org/wikipedia/commons/8/86/Logo_%D0%A1%D0%A2%D0%A1_23-10-2017.png",
-            streamUrl = "https://streaming.goodstream.icu/live/296.m3u8",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/sts.png",
+            streamUrl = "https://cdn.ntv.ru/vitrina14/index.m3u8",
             category = "entertainment",
-            epgId = "sts"
+            epgId = "sts",
+            fallbackStreamUrls = listOf(
+                "http://tshift-1.telecoma.tv/sts/index.m3u8"
+            )
         ),
         Channel(
             id = "domashniy",
             name = "Домашний",
-            logoUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Domashniy-logo.svg/250px-Domashniy-logo.svg.png",
-            streamUrl = "https://streaming.goodstream.icu/live/17.m3u8",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/domashniy.png",
+            streamUrl = "https://cdn.ntv.ru/vitrina1/index.m3u8",
             category = "entertainment",
-            epgId = "domashniy"
+            epgId = "domashniy",
+            fallbackStreamUrls = listOf(
+                "http://stream.mcquack.net/227/index.m3u8"
+            )
         ),
         Channel(
             id = "tnt",
             name = "ТНТ",
-            logoUrl = "https://upload.wikimedia.org/wikipedia/commons/6/6b/Logo_tnt.png",
-            streamUrl = "https://streaming.goodstream.icu/live/21.m3u8",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/tnt.png",
+            streamUrl = "https://cdn.ntv.ru/vitrina17/index.m3u8",
             category = "entertainment",
-            epgId = "tnt"
+            epgId = "tnt",
+            fallbackStreamUrls = listOf(
+                "http://stream.mcquack.net/135/index.m3u8"
+            )
         ),
         Channel(
             id = "ren",
             name = "РЕН ТВ",
-            logoUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Logo_Ren-TV.svg/250px-Logo_Ren-TV.svg.png",
-            streamUrl = "https://streaming.goodstream.icu/live/14.m3u8",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/ren-tv.png",
+            streamUrl = "https://cdn.ntv.ru/vitrina9/index.m3u8",
             category = "federal",
-            epgId = "ren"
+            epgId = "ren",
+            fallbackStreamUrls = listOf(
+                "http://46.32.176.50/rentv/index.m3u8"
+            )
         ),
         Channel(
             id = "karusel",
             name = "Карусель",
-            logoUrl = "https://upload.wikimedia.org/wikipedia/commons/b/b7/Logo_KARUSEL_2023.png",
-            streamUrl = "https://streaming.goodstream.icu/live/232.m3u8",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/karusel.png",
+            streamUrl = "https://cdn.ntv.ru/vitrina20/index.m3u8",
             category = "kids",
-            epgId = "karusel"
+            epgId = "karusel",
+            fallbackStreamUrls = listOf(
+                "http://185.37.150.46/Karusel/index.m3u8"
+            )
         ),
         Channel(
             id = "match",
             name = "Матч ТВ",
-            logoUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/MatchTV_Logo.svg/250px-MatchTV_Logo.svg.png",
-            streamUrl = "https://streaming.goodstream.icu/live/6.m3u8",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/match.png",
+            streamUrl = "https://cdn.ntv.ru/vitrina4/index.m3u8",
             category = "sport",
-            epgId = "match"
+            epgId = "match",
+            fallbackStreamUrls = listOf(
+                "http://46.32.176.50/matchtv/index.m3u8"
+            )
         ),
         Channel(
             id = "rossiya24",
             name = "Россия 24",
-            logoUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Rossiya-24_Logo.svg/250px-Rossiya-24_Logo.svg.png",
-            streamUrl = "https://streaming.goodstream.icu/live/30.m3u8",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/ros-24.png",
+            streamUrl = "https://live.smotrim.ru/vgtrk/0/russia24-hd/index.m3u8",
             category = "news",
-            epgId = "rossiya24"
+            epgId = "rossiya24",
+            fallbackStreamUrls = listOf(
+                "https://cdn.ntv.ru/vitrina11/index.m3u8",
+                "http://77.232.131.211/Rossiya24/index.m3u8"
+            )
         ),
         Channel(
             id = "tvc",
             name = "ТВ Центр",
-            logoUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/TV_Tsentr_Logo.svg/250px-TV_Tsentr_Logo.svg.png",
-            streamUrl = "https://streaming.goodstream.icu/live/13.m3u8",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/tvc.png",
+            streamUrl = "https://cdn.ntv.ru/vitrina15/index.m3u8",
             category = "federal",
-            epgId = "tvc"
+            epgId = "tvc",
+            fallbackStreamUrls = listOf(
+                "https://stream8.cinerama.uz/1281/tracks-v1a1/mono.m3u8"
+            )
         ),
         Channel(
             id = "spas",
             name = "СПАС",
-            logoUrl = "https://upload.wikimedia.org/wikipedia/commons/4/45/Spas_logo.jpg",
-            streamUrl = "https://streaming.goodstream.icu/live/15.m3u8",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/spas.png",
+            streamUrl = "https://cdn.ntv.ru/vitrina13/index.m3u8",
             category = "religious",
-            epgId = "spas"
+            epgId = "spas",
+            fallbackStreamUrls = listOf(
+                "http://stream.mcquack.net/232/index.m3u8"
+            )
         ),
         Channel(
             id = "tv3",
             name = "ТВ-3",
-            logoUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/TV3_logo.svg/250px-TV3_logo.svg.png",
-            streamUrl = "https://streaming.goodstream.icu/live/18.m3u8",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/tv3.png",
+            streamUrl = "https://cdn.ntv.ru/vitrina16/index.m3u8",
             category = "entertainment",
             epgId = "tv3"
         ),
@@ -190,16 +242,16 @@ object ChannelList {
         Channel(
             id = "mir",
             name = "МИР",
-            logoUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/MIR_channel_logo.svg/250px-MIR_channel_logo.svg.png",
-            streamUrl = "https://streaming.goodstream.icu/live/22.m3u8",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/mir.png",
+            streamUrl = "https://cdn.ntv.ru/vitrina3/index.m3u8",
             category = "news",
             epgId = "mir"
         ),
         Channel(
             id = "otv",
-            name = "ОТВ",
-            logoUrl = "https://uma-static.rtbcdn.ru/cwebp/pic/cardimage/61/4c/614cd7a162e697751a87fef05f82703b.png?size=240&quality=95",
-            streamUrl = "https://streaming.goodstream.icu/live/12.m3u8",
+            name = "ОТР",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/otr.png",
+            streamUrl = "https://cdn.ntv.ru/vitrina19/index.m3u8",
             category = "regional",
             epgId = "otv"
         ),
@@ -238,8 +290,8 @@ object ChannelList {
         Channel(
             id = "muztv",
             name = "МУЗ-ТВ",
-            logoUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Muz-TV_logo.svg/250px-Muz-TV_logo.svg.png",
-            streamUrl = "https://streaming.goodstream.icu/live/618.m3u8",
+            logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/muz-tv.png",
+            streamUrl = "https://cdn.ntv.ru/vitrina5/index.m3u8",
             category = "music",
             epgId = "muztv"
         ),
