@@ -7,11 +7,11 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
-import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
 import com.example.tvapp.data.ChannelRepository
-import kotlinx.coroutines.launch
+import com.example.tvapp.data.AppPreferences
+import kotlinx.coroutines.*
 
 class MainActivity : BaseActivity() {
 
@@ -82,7 +82,7 @@ class MainActivity : BaseActivity() {
                     ch.copy(
                         currentProgramTitle = prog.title,
                         currentProgramStart = prog.startMs,
-                        currentProgramEnd = prog.endMs,
+                        currentProgramEnd = prog.endMs
                     )
                 } else {
                     ch
@@ -116,7 +116,7 @@ class MainActivity : BaseActivity() {
                 preferences.lastChannelId = channel.id
                 openPlayer(channel)
             },
-            onFocusPositionChanged = { pos -> lastFocusedPosition = pos },
+            onFocusPositionChanged = { pos -> lastFocusedPosition = pos }
         )
 
         channelsRecyclerView.apply {

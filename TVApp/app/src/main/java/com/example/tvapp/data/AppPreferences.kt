@@ -61,12 +61,12 @@ class AppPreferences(context: Context) {
         MINIMUM,
         MEDIUM,
         MAXIMUM,
-        AUTO,
+        AUTO
     }
 
     enum class ContentSource {
         PREMIER,
         IVI,
-        SMOTRESHKA,
+        SMOTRESHKA
     }
 }

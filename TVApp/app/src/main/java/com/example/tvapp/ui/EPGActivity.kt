@@ -11,16 +11,14 @@ import android.widget.Toast
 import androidx.core.widget.NestedScrollView
 import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
-import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
 import com.example.tvapp.data.EPGRepository
+import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Program
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.TimeZone
+import java.util.*
 
 class EPGActivity : BaseActivity() {
 
@@ -127,7 +125,7 @@ class EPGActivity : BaseActivity() {
                 text = channel.name
                 textSize = 14f
                 setTextColor(getColor(R.color.white))
-                layoutParams = LinearLayout.LayoutParams(,
+                layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     rowHeight
                 ).apply {

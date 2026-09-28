@@ -44,14 +44,14 @@ class SettingsActivity : BaseActivity() {
         9 to "+9 (UTC+9)",
         10 to "+10 (UTC+10)",
         11 to "+11 (UTC+11)",
-        12 to "+12 (UTC+12)",
+        12 to "+12 (UTC+12)"
     )
 
     private val qualityModes = listOf(
         AppPreferences.QualityMode.MINIMUM,
         AppPreferences.QualityMode.MEDIUM,
         AppPreferences.QualityMode.MAXIMUM,
-        AppPreferences.QualityMode.AUTO,
+        AppPreferences.QualityMode.AUTO
     )
 
     private val languages = listOf("ru" to "Русский", "en" to "English")
@@ -59,7 +59,7 @@ class SettingsActivity : BaseActivity() {
     private val sources = listOf(
         AppPreferences.ContentSource.PREMIER,
         AppPreferences.ContentSource.IVI,
-        AppPreferences.ContentSource.SMOTRESHKA,
+        AppPreferences.ContentSource.SMOTRESHKA
     )
 
     private var currentTimezoneIndex = 15
@@ -117,7 +117,7 @@ class SettingsActivity : BaseActivity() {
                 Toast.makeText(
                     this@SettingsActivity,
                     getString(R.string.timezone_value, timezones[currentTimezoneIndex].second),
-                    Toast.LENGTH_SHORT,
+                    Toast.LENGTH_SHORT
                 ).show()
             }
         })

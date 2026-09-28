@@ -6,9 +6,9 @@ import android.view.KeyEvent
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import com.bumptech.glide.Glide
 import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
+import com.bumptech.glide.Glide
 
 class ChannelInfoActivity : BaseActivity() {
 

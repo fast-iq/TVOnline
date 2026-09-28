@@ -14,7 +14,7 @@ import com.example.tvapp.data.Channel
 class ChannelAdapter(
     private var channels: List<Channel>,
     private val onChannelSelected: (Channel) -> Unit,
-    private val onFocusPositionChanged: (Int) -> Unit = {},
+    private val onFocusPositionChanged: (Int) -> Unit = {}
 ) : RecyclerView.Adapter<ChannelAdapter.ChannelViewHolder>() {
 
     inner class ChannelViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
