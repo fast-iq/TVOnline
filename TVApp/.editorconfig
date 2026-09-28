@@ -1,0 +1,34 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+max_line_length = off
+
+[*.{kt,kts}]
+ktlint_code_style = intellij_idea
+ktlint_standard_no-wildcard-imports = disabled
+ktlint_standard_trailing-comma-on-call-site = disabled
+ktlint_standard_trailing-comma-on-declaration-site = disabled
+ktlint_standard_multiline-expression-wrapping = disabled
+ktlint_standard_function-signature = disabled
+ktlint_standard_parameter-list-wrapping = disabled
+ktlint_standard_chain-method-continuation = disabled
+ktlint_standard_if-else-brace = disabled
+ktlint_standard_if-else-wrapping = disabled
+ktlint_standard_no-blank-line-before-rbrace = disabled
+ktlint_standard_blank-line-between-when-conditions = disabled
+ktlint_standard_block-comment-initializer = disabled
+ktlint_standard_comment-wrapping = disabled
+ktlint_standard_discouraged-comment-location = disabled
+ktlint_standard_annotation = disabled
+ktlint_standard_annotation-separator = disabled
+ktlint_argument-list-wrapping = disabled
+ktlint_standard_class-signature = disabled
+ktlint_standard_function-body = disabled
+ktlint_standard_no-consecutive-blank-lines = disabled
+ktlint_standard_wrapping = disabled
+ktlint_standard_import-ordering = disabled
