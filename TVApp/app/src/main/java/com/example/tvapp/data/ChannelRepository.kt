@@ -86,15 +86,13 @@ class ChannelRepository(private val context: Context) {
 
     // ========== PREMIER.ONE ==========
 
-    private fun tryFetchPremier(): List<Channel> {
-        return try {
-            val channels = fetchChannelsFromPremier()
-            Log.d("ChannelRepo", "Premier: ${channels.size} channels")
-            channels
-        } catch (e: Exception) {
-            Log.e("ChannelRepo", "Premier error: ${e.message}")
-            emptyList()
-        }
+    private fun tryFetchPremier(): List<Channel> = try {
+        val channels = fetchChannelsFromPremier()
+        Log.d("ChannelRepo", "Premier: ${channels.size} channels")
+        channels
+    } catch (e: Exception) {
+        Log.e("ChannelRepo", "Premier error: ${e.message}")
+        emptyList()
     }
 
     private val premierSlugToIdMap = mapOf(
@@ -301,15 +299,13 @@ class ChannelRepository(private val context: Context) {
 
     // ========== IVI.RU ==========
 
-    private fun tryFetchIvi(): List<Channel> {
-        return try {
-            val channels = fetchChannelsFromIvi()
-            Log.d("ChannelRepo", "IVI: ${channels.size} channels")
-            channels
-        } catch (e: Exception) {
-            Log.e("ChannelRepo", "IVI error: ${e.message}")
-            emptyList()
-        }
+    private fun tryFetchIvi(): List<Channel> = try {
+        val channels = fetchChannelsFromIvi()
+        Log.d("ChannelRepo", "IVI: ${channels.size} channels")
+        channels
+    } catch (e: Exception) {
+        Log.e("ChannelRepo", "IVI error: ${e.message}")
+        emptyList()
     }
 
     private val iviHruToIdMap = mapOf(
@@ -408,7 +404,10 @@ class ChannelRepository(private val context: Context) {
         var escaped = false
         for (i in jsonStart until html.length) {
             val c = html[i]
-            if (escaped) { escaped = false; continue }
+            if (escaped) {
+                escaped = false
+                continue
+            }
             when {
                 c == '\\' && inString -> escaped = true
                 c == '"' -> inString = !inString
@@ -424,15 +423,13 @@ class ChannelRepository(private val context: Context) {
 
     // ========== SMOTRESHKA.TV ==========
 
-    private fun tryFetchSmotreshka(): List<Channel> {
-        return try {
-            val channels = fetchChannelsFromSmotreshka()
-            Log.d("ChannelRepo", "Smotreshka: ${channels.size} channels")
-            channels
-        } catch (e: Exception) {
-            Log.e("ChannelRepo", "Smotreshka error: ${e.message}")
-            emptyList()
-        }
+    private fun tryFetchSmotreshka(): List<Channel> = try {
+        val channels = fetchChannelsFromSmotreshka()
+        Log.d("ChannelRepo", "Smotreshka: ${channels.size} channels")
+        channels
+    } catch (e: Exception) {
+        Log.e("ChannelRepo", "Smotreshka error: ${e.message}")
+        emptyList()
     }
 
     private val smotreshkaNameToIdMap = mapOf(

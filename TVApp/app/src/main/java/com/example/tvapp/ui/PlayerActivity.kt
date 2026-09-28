@@ -123,32 +123,30 @@ class PlayerActivity : BaseActivity() {
         playerManager.pause()
     }
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        return when (keyCode) {
-            KeyEvent.KEYCODE_BACK -> {
-                finish()
-                true
-            }
-            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
-                if (!playerManager.isPlaying()) {
-                    playerManager.resume()
-                }
-                true
-            }
-            KeyEvent.KEYCODE_MENU, 0x52c1 -> {
-                showSourceSwitchDialog()
-                true
-            }
-            KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                switchChannel(1)
-                true
-            }
-            KeyEvent.KEYCODE_DPAD_LEFT -> {
-                switchChannel(-1)
-                true
-            }
-            else -> super.onKeyDown(keyCode, event)
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean = when (keyCode) {
+        KeyEvent.KEYCODE_BACK -> {
+            finish()
+            true
         }
+        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
+            if (!playerManager.isPlaying()) {
+                playerManager.resume()
+            }
+            true
+        }
+        KeyEvent.KEYCODE_MENU, 0x52c1 -> {
+            showSourceSwitchDialog()
+            true
+        }
+        KeyEvent.KEYCODE_DPAD_RIGHT -> {
+            switchChannel(1)
+            true
+        }
+        KeyEvent.KEYCODE_DPAD_LEFT -> {
+            switchChannel(-1)
+            true
+        }
+        else -> super.onKeyDown(keyCode, event)
     }
 
     private fun switchChannel(direction: Int) {

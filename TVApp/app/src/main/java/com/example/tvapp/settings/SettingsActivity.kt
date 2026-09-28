@@ -169,27 +169,24 @@ class SettingsActivity : BaseActivity() {
         sourceText.text = getString(R.string.source_value, getSourceName(sources[currentSourceIndex]))
     }
 
-    private fun getQualityName(mode: AppPreferences.QualityMode): String {
-        return when (mode) {
-            AppPreferences.QualityMode.MINIMUM -> getString(R.string.quality_minimum)
-            AppPreferences.QualityMode.MEDIUM -> getString(R.string.quality_medium)
-            AppPreferences.QualityMode.MAXIMUM -> getString(R.string.quality_maximum)
-            AppPreferences.QualityMode.AUTO -> getString(R.string.quality_auto)
-        }
+    private fun getQualityName(mode: AppPreferences.QualityMode): String = when (mode) {
+        AppPreferences.QualityMode.MINIMUM -> getString(R.string.quality_minimum)
+        AppPreferences.QualityMode.MEDIUM -> getString(R.string.quality_medium)
+        AppPreferences.QualityMode.MAXIMUM -> getString(R.string.quality_maximum)
+        AppPreferences.QualityMode.AUTO -> getString(R.string.quality_auto)
     }
 
-    private fun getSourceName(source: AppPreferences.ContentSource): String {
-        return when (source) {
-            AppPreferences.ContentSource.PREMIER -> getString(R.string.source_premier)
-            AppPreferences.ContentSource.IVI -> getString(R.string.source_ivi)
-            AppPreferences.ContentSource.SMOTRESHKA -> getString(R.string.source_smotreshka)
-        }
+    private fun getSourceName(source: AppPreferences.ContentSource): String = when (source) {
+        AppPreferences.ContentSource.PREMIER -> getString(R.string.source_premier)
+        AppPreferences.ContentSource.IVI -> getString(R.string.source_ivi)
+        AppPreferences.ContentSource.SMOTRESHKA -> getString(R.string.source_smotreshka)
     }
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        return when (keyCode) {
-            KeyEvent.KEYCODE_BACK -> { finish(); true }
-            else -> super.onKeyDown(keyCode, event)
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean = when (keyCode) {
+        KeyEvent.KEYCODE_BACK -> {
+            finish()
+            true
         }
+        else -> super.onKeyDown(keyCode, event)
     }
 }

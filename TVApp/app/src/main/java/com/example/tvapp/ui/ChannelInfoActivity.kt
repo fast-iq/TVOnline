@@ -54,11 +54,15 @@ class ChannelInfoActivity : BaseActivity() {
         startActivity(intent)
     }
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        return when (keyCode) {
-            KeyEvent.KEYCODE_BACK -> { finish(); true }
-            KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_DPAD_CENTER -> { startPlayback(); true }
-            else -> super.onKeyDown(keyCode, event)
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean = when (keyCode) {
+        KeyEvent.KEYCODE_BACK -> {
+            finish()
+            true
         }
+        KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_DPAD_CENTER -> {
+            startPlayback()
+            true
+        }
+        else -> super.onKeyDown(keyCode, event)
     }
 }

@@ -23,15 +23,12 @@ data class Program(
     val endTime: Long,
     val iconUrl: String? = null
 ) {
-    fun isLive(currentTime: Long): Boolean {
-        return currentTime in startTime..endTime
-    }
+    fun isLive(currentTime: Long): Boolean = currentTime in startTime..endTime
 
     fun getDuration(): Long = endTime - startTime
 
-    fun getElapsedTime(currentTime: Long): Long {
-        return if (currentTime > startTime) currentTime - startTime else 0
-    }
+    fun getElapsedTime(currentTime: Long): Long =
+        if (currentTime > startTime) currentTime - startTime else 0
 }
 
 object ChannelList {

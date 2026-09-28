@@ -126,12 +126,21 @@ class TVPlayerManager(private val context: Context) {
         applyQualityMode()
     }
 
-    fun seekTo(positionMs: Long) { exoPlayer?.seekTo(positionMs) }
+    fun seekTo(positionMs: Long) {
+        exoPlayer?.seekTo(positionMs)
+    }
+
     fun getCurrentPosition(): Long = exoPlayer?.currentPosition ?: 0L
     fun getDuration(): Long = exoPlayer?.duration ?: 0L
     fun isPlaying(): Boolean = exoPlayer?.isPlaying == true
-    fun pause() { exoPlayer?.pause() }
-    fun resume() { exoPlayer?.play() }
+
+    fun pause() {
+        exoPlayer?.pause()
+    }
+
+    fun resume() {
+        exoPlayer?.play()
+    }
 
     fun releasePlayer() {
         exoPlayer?.apply {

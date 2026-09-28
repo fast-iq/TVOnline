@@ -84,7 +84,9 @@ class MainActivity : BaseActivity() {
                         currentProgramStart = prog.startMs,
                         currentProgramEnd = prog.endMs
                     )
-                } else ch
+                } else {
+                    ch
+                }
             }
         } catch (e: Exception) {
             channels
@@ -182,12 +184,16 @@ class MainActivity : BaseActivity() {
         startActivity(intent)
     }
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        return when (keyCode) {
-            KeyEvent.KEYCODE_MENU -> { openSettings(); true }
-            KeyEvent.KEYCODE_INFO -> { openEPG(); true }
-            else -> super.onKeyDown(keyCode, event)
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean = when (keyCode) {
+        KeyEvent.KEYCODE_MENU -> {
+            openSettings()
+            true
         }
+        KeyEvent.KEYCODE_INFO -> {
+            openEPG()
+            true
+        }
+        else -> super.onKeyDown(keyCode, event)
     }
 
     override fun onDestroy() {

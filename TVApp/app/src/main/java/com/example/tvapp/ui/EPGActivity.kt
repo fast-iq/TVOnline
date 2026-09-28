@@ -126,7 +126,8 @@ class EPGActivity : BaseActivity() {
                 textSize = 14f
                 setTextColor(getColor(R.color.white))
                 layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT, rowHeight
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    rowHeight
                 ).apply {
                     gravity = android.view.Gravity.CENTER_VERTICAL
                     setPadding(16, 0, 16, 0)
@@ -203,9 +204,7 @@ class EPGActivity : BaseActivity() {
         return container
     }
 
-    private fun getMoscowNow(): Long {
-        return System.currentTimeMillis()
-    }
+    private fun getMoscowNow(): Long = System.currentTimeMillis()
 
     private fun getStartTimeMillis(): Long {
         val calendar = Calendar.getInstance(displayTz).apply {
@@ -242,22 +241,29 @@ class EPGActivity : BaseActivity() {
         currentTimeText.text = getString(R.string.time_msk, dateFormat.format(cal.time))
     }
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        return when (keyCode) {
-            KeyEvent.KEYCODE_BACK -> { finish(); true }
-            KeyEvent.KEYCODE_DPAD_UP -> {
-                if (channelLabelsScroll.scrollY > 0) channelLabelsScroll.smoothScrollBy(0, -rowHeight)
-                true
-            }
-            KeyEvent.KEYCODE_DPAD_DOWN -> {
-                val maxScroll = channelLabelsContainer.height - channelLabelsScroll.height
-                if (channelLabelsScroll.scrollY < maxScroll) channelLabelsScroll.smoothScrollBy(0, rowHeight)
-                true
-            }
-            KeyEvent.KEYCODE_DPAD_LEFT -> { scrollByMinutes(-15); true }
-            KeyEvent.KEYCODE_DPAD_RIGHT -> { scrollByMinutes(15); true }
-            else -> super.onKeyDown(keyCode, event)
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean = when (keyCode) {
+        KeyEvent.KEYCODE_BACK -> {
+            finish()
+            true
         }
+        KeyEvent.KEYCODE_DPAD_UP -> {
+            if (channelLabelsScroll.scrollY > 0) channelLabelsScroll.smoothScrollBy(0, -rowHeight)
+            true
+        }
+        KeyEvent.KEYCODE_DPAD_DOWN -> {
+            val maxScroll = channelLabelsContainer.height - channelLabelsScroll.height
+            if (channelLabelsScroll.scrollY < maxScroll) channelLabelsScroll.smoothScrollBy(0, rowHeight)
+            true
+        }
+        KeyEvent.KEYCODE_DPAD_LEFT -> {
+            scrollByMinutes(-15)
+            true
+        }
+        KeyEvent.KEYCODE_DPAD_RIGHT -> {
+            scrollByMinutes(15)
+            true
+        }
+        else -> super.onKeyDown(keyCode, event)
     }
 
     private fun scrollByMinutes(minutes: Int) {
