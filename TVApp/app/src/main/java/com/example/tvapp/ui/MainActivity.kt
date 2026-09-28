@@ -7,11 +7,15 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
+import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
 import com.example.tvapp.data.ChannelRepository
-import com.example.tvapp.data.AppPreferences
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : BaseActivity() {
 

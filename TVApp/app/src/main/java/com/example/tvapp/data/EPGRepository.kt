@@ -16,8 +16,7 @@ class EPGRepository {
 
     private var channelHrefCache: Map<String, String>? = null
 
-    suspend fun getProgramForChannel(channelId: String, date: Date): List<Program> =
-        withContext(Dispatchers.IO) {
+    suspend fun getProgramForChannel(channelId: String, date: Date): List<Program> = withContext(Dispatchers.IO) {
             try {
                 fetchEpgServiceSchedule(channelId, date) ?: generateFallbackEPG(channelId, date)
             } catch (e: Exception) {
@@ -25,8 +24,7 @@ class EPGRepository {
             }
         }
 
-    suspend fun getProgramsForAllChannels(date: Date): Map<String, List<Program>> =
-        withContext(Dispatchers.IO) {
+    suspend fun getProgramsForAllChannels(date: Date): Map<String, List<Program>> = withContext(Dispatchers.IO) {
             val programs = mutableMapOf<String, List<Program>>()
             for (channel in ChannelList.channels) {
                 try {
@@ -461,9 +459,7 @@ class EPGRepository {
         }
     }
 
-    fun getCurrentProgram(programs: List<Program>, currentTime: Long = System.currentTimeMillis()): Program? =
-        programs.find { it.isLive(currentTime) }
+    fun getCurrentProgram(programs: List<Program>, currentTime: Long = System.currentTimeMillis()): Program? = programs.find { it.isLive(currentTime) }
 
-    fun getNextProgram(programs: List<Program>, currentTime: Long = System.currentTimeMillis()): Program? =
-        programs.filter { it.startTime > currentTime }.minByOrNull { it.startTime }
+    fun getNextProgram(programs: List<Program>, currentTime: Long = System.currentTimeMillis()): Program? = programs.filter { it.startTime > currentTime }.minByOrNull { it.startTime }
 }

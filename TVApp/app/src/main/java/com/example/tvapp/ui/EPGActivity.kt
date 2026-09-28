@@ -11,14 +11,21 @@ import android.widget.Toast
 import androidx.core.widget.NestedScrollView
 import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
+import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
 import com.example.tvapp.data.EPGRepository
-import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Program
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 class EPGActivity : BaseActivity() {
 

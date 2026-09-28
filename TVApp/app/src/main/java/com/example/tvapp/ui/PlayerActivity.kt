@@ -13,9 +13,13 @@ import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
 import com.example.tvapp.player.TVPlayerManager
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 class PlayerActivity : BaseActivity() {
 
@@ -52,38 +56,41 @@ class PlayerActivity : BaseActivity() {
 
             playerManager = TVPlayerManager(this)
 
-            playerManager.initializePlayer(playerView, object : TVPlayerManager.PlayerCallback {
-                override fun onPlaybackReady() {
-                    runOnUiThread {
-                        infoText.visibility = View.GONE
-                    }
-                }
-
-                override fun onPlaybackError(error: String) {
-                    runOnUiThread {
-                        infoText.text = getString(R.string.playback_error, error)
-                        infoText.visibility = View.VISIBLE
-                    }
-                }
-
-                override fun onBuffering(isBuffering: Boolean) {
-                    runOnUiThread {
-                        if (isBuffering) {
-                            infoText.text = getString(R.string.buffering)
-                            infoText.visibility = View.VISIBLE
-                        } else {
+            playerManager.initializePlayer(
+                playerView,
+                object : TVPlayerManager.PlayerCallback {
+                    override fun onPlaybackReady() {
+                        runOnUiThread {
                             infoText.visibility = View.GONE
                         }
                     }
-                }
 
-                override fun onFallbackUsed(fallbackUrl: String) {
-                    runOnUiThread {
-                        infoText.text = getString(R.string.switching_source)
-                        infoText.visibility = View.VISIBLE
+                    override fun onPlaybackError(error: String) {
+                        runOnUiThread {
+                            infoText.text = getString(R.string.playback_error, error)
+                            infoText.visibility = View.VISIBLE
+                        }
+                    }
+
+                    override fun onBuffering(isBuffering: Boolean) {
+                        runOnUiThread {
+                            if (isBuffering) {
+                                infoText.text = getString(R.string.buffering)
+                                infoText.visibility = View.VISIBLE
+                            } else {
+                                infoText.visibility = View.GONE
+                            }
+                        }
+                    }
+
+                    override fun onFallbackUsed(fallbackUrl: String) {
+                        runOnUiThread {
+                            infoText.text = getString(R.string.switching_source)
+                            infoText.visibility = View.VISIBLE
+                        }
                     }
                 }
-            })
+            )
 
             if (currentChannel != null) {
                 infoText.text = getString(R.string.loading_channel, channelName)

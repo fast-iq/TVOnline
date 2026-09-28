@@ -27,8 +27,7 @@ data class Program(
 
     fun getDuration(): Long = endTime - startTime
 
-    fun getElapsedTime(currentTime: Long): Long =
-        if (currentTime > startTime) currentTime - startTime else 0
+    fun getElapsedTime(currentTime: Long): Long = if (currentTime > startTime) currentTime - startTime else 0
 }
 
 object ChannelList {
