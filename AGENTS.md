@@ -325,10 +325,13 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 **Files modified:**
 - `TVApp/[AWS_SECRET_KEY_REDACTED]/Models.kt` — 20 channels: new stream URLs, logos, fallbackStreamUrls
 - `TVApp/[AWS_SECRET_KEY_REDACTED]/ChannelRepository.kt` — ntvCodeToIdMap, fetchNtvCurrentPrograms(), parseNtvDate(), httpGetWithHeaders()
-- `TVApp[AWS_SECRET_KEY_REDACTED]PlayerActivity.kt` — showSourceSwitchDialog(), MENU key handler
+- `TVApp[AWS_SECRET_KEY_REDACTED]PlayerActivity.kt` — showSourceSwitchDialog(), MENU key handler, DPAD left/right channel switching
 - `TVApp/app[AWS_SECRET_KEY_REDACTED]TVPlayerManager.kt` — switchToUrl(), getCurrentStreamUrls() public, getCurrentUrlIndex()
 - `TVApp[AWS_SECRET_KEY_REDACTED]MainActivity.kt` — enrichWithNtvEpg()
 - `TVApp/app/src/main/res/values/strings.xml` + `values-en/` — switch_source_title, source_official, source_alternative, source_current
+
+**CI fix (1f00c8f):**
+- Kotlin Pair is binary: replaced with data class NtvProgram(title, startMs, endMs) in ChannelRepository.kt + MainActivity.kt uses .title/.startMs/.endMs
 
 ## Do NOT
 - Do not use `via.placeholder.com` (dead service)
