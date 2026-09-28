@@ -16,7 +16,7 @@ import java.util.TimeZone
 class EPGAdapter(
     private var channels: List<Channel>,
     private var programs: Map<String, List<Program>>,
-    private val timezoneOffset: Int
+    private val timezoneOffset: Int,
 ) : RecyclerView.Adapter<EPGAdapter.EPGViewHolder>() {
 
     private val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -50,7 +50,7 @@ class EPGAdapter(
     }
 
     inner class ProgramListAdapter(
-        private var programList: List<Program>
+        private var programList: List<Program>,
     ) : RecyclerView.Adapter<ProgramListAdapter.ProgramItemViewHolder>() {
 
         inner class ProgramItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {

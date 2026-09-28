@@ -12,7 +12,7 @@ data class Channel(
     val epgHref: String? = null,
     val currentProgramTitle: String? = null,
     val currentProgramStart: Long? = null,
-    val currentProgramEnd: Long? = null
+    val currentProgramEnd: Long? = null,
 )
 
 data class Program(
@@ -21,14 +21,13 @@ data class Program(
     val description: String?,
     val startTime: Long,
     val endTime: Long,
-    val iconUrl: String? = null
+    val iconUrl: String? = null,
 ) {
     fun isLive(currentTime: Long): Boolean = currentTime in startTime..endTime
 
     fun getDuration(): Long = endTime - startTime
 
-    fun getElapsedTime(currentTime: Long): Long =
-        if (currentTime > startTime) currentTime - startTime else 0
+    fun getElapsedTime(currentTime: Long): Long = if (currentTime > startTime) currentTime - startTime else 0
 }
 
 object ChannelList {
@@ -49,7 +48,7 @@ object ChannelList {
             epgId = "c1r",
             fallbackStreamUrls = listOf(
                 "http://46.32.176.50/perviy/index.m3u8"
-            )
+            ),
         ),
         Channel(
             id = "rossiya1",
@@ -61,7 +60,7 @@ object ChannelList {
             fallbackStreamUrls = listOf(
                 "https://cdn.ntv.ru/vitrina10/index.m3u8",
                 "https://stream.smotrim.ru/hls2/russia_hd/playlist_6.m3u8"
-            )
+            ),
         ),
         Channel(
             id = "ntv",
@@ -72,7 +71,7 @@ object ChannelList {
             epgId = "ntv",
             fallbackStreamUrls = listOf(
                 "https://cdn.ntv.ru/ntv1/playlist.m3u8"
-            )
+            ),
         ),
         Channel(
             id = "5tv",
@@ -83,7 +82,7 @@ object ChannelList {
             epgId = "5tv",
             fallbackStreamUrls = listOf(
                 "http://46.32.176.50/5kanal/index.m3u8"
-            )
+            ),
         ),
         Channel(
             id = "kultura",
@@ -95,7 +94,7 @@ object ChannelList {
             fallbackStreamUrls = listOf(
                 "https://cdn.ntv.ru/vitrina12/index.m3u8",
                 "http://stream.mcquack.net/229/index.m3u8"
-            )
+            ),
         ),
         Channel(
             id = "zvezda",
@@ -106,7 +105,7 @@ object ChannelList {
             epgId = "zvezda",
             fallbackStreamUrls = listOf(
                 "http://51.158.144.33:2021/zvezda/index.m3u8"
-            )
+            ),
         ),
         Channel(
             id = "pz",
@@ -118,7 +117,7 @@ object ChannelList {
             fallbackStreamUrls = listOf(
                 "http://stream.mcquack.net/181/index.m3u8",
                 "https://fs.uplink.kz/bolshaya_pyatnica/mono.m3u8?token=onlinetv"
-            )
+            ),
         ),
         Channel(
             id = "sts",
@@ -129,7 +128,7 @@ object ChannelList {
             epgId = "sts",
             fallbackStreamUrls = listOf(
                 "http://tshift-1.telecoma.tv/sts/index.m3u8"
-            )
+            ),
         ),
         Channel(
             id = "domashniy",
@@ -140,7 +139,7 @@ object ChannelList {
             epgId = "domashniy",
             fallbackStreamUrls = listOf(
                 "http://stream.mcquack.net/227/index.m3u8"
-            )
+            ),
         ),
         Channel(
             id = "tnt",
@@ -151,7 +150,7 @@ object ChannelList {
             epgId = "tnt",
             fallbackStreamUrls = listOf(
                 "http://stream.mcquack.net/135/index.m3u8"
-            )
+            ),
         ),
         Channel(
             id = "ren",
@@ -162,7 +161,7 @@ object ChannelList {
             epgId = "ren",
             fallbackStreamUrls = listOf(
                 "http://46.32.176.50/rentv/index.m3u8"
-            )
+            ),
         ),
         Channel(
             id = "karusel",
@@ -173,7 +172,7 @@ object ChannelList {
             epgId = "karusel",
             fallbackStreamUrls = listOf(
                 "http://185.37.150.46/Karusel/index.m3u8"
-            )
+            ),
         ),
         Channel(
             id = "match",
@@ -184,7 +183,7 @@ object ChannelList {
             epgId = "match",
             fallbackStreamUrls = listOf(
                 "http://46.32.176.50/matchtv/index.m3u8"
-            )
+            ),
         ),
         Channel(
             id = "rossiya24",
@@ -196,7 +195,7 @@ object ChannelList {
             fallbackStreamUrls = listOf(
                 "https://cdn.ntv.ru/vitrina11/index.m3u8",
                 "http://77.232.131.211/Rossiya24/index.m3u8"
-            )
+            ),
         ),
         Channel(
             id = "tvc",
@@ -207,7 +206,7 @@ object ChannelList {
             epgId = "tvc",
             fallbackStreamUrls = listOf(
                 "https://stream8.cinerama.uz/1281/tracks-v1a1/mono.m3u8"
-            )
+            ),
         ),
         Channel(
             id = "spas",
@@ -218,7 +217,7 @@ object ChannelList {
             epgId = "spas",
             fallbackStreamUrls = listOf(
                 "http://stream.mcquack.net/232/index.m3u8"
-            )
+            ),
         ),
         Channel(
             id = "tv3",
@@ -771,8 +770,8 @@ object ChannelList {
             streamUrl = "https://streaming.goodstream.icu/live/177.m3u8",
             category = "entertainment",
             epgId = "start_world"
-        )
-    )
+        ),
+    ),
 
     init {
         channels = hardcodedChannels

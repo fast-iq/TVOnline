@@ -13,9 +13,9 @@ import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
 import com.example.tvapp.player.TVPlayerManager
-import kotlinx.coroutines.*
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
 
 class PlayerActivity : BaseActivity() {
 
@@ -52,7 +52,9 @@ class PlayerActivity : BaseActivity() {
 
             playerManager = TVPlayerManager(this)
 
-            playerManager.initializePlayer(playerView, object : TVPlayerManager.PlayerCallback {
+            playerManager.initializePlayer(
+                playerView,
+                object : TVPlayerManager.PlayerCallback {
                 override fun onPlaybackReady() {
                     runOnUiThread {
                         infoText.visibility = View.GONE
@@ -83,7 +85,7 @@ class PlayerActivity : BaseActivity() {
                         infoText.visibility = View.VISIBLE
                     }
                 }
-            })
+            )
 
             if (currentChannel != null) {
                 infoText.text = getString(R.string.loading_channel, channelName)
@@ -98,7 +100,7 @@ class PlayerActivity : BaseActivity() {
                     id = channelId ?: "unknown",
                     name = channelName ?: getString(R.string.unknown_channel),
                     logoUrl = "",
-                    streamUrl = url
+                    streamUrl = url,
                 )
                 currentChannel = tempChannel
                 playerManager.playChannel(tempChannel, url)

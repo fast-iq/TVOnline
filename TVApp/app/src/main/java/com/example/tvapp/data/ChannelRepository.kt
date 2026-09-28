@@ -118,7 +118,7 @@ class ChannelRepository(private val context: Context) {
         "matchtv" to "match",
         "utr" to "utv",
         "sun" to "sun",
-        "otr" to "otv"
+        "otr" to "otv",
     )
 
     private val ntvCodeToIdMap = mapOf(
@@ -141,7 +141,7 @@ class ChannelRepository(private val context: Context) {
         "mir" to "mir",
         "tnt2" to "tnt",
         "muztv" to "muztv",
-        "spas2" to "spas"
+        "spas2" to "spas",
     )
 
     private fun fetchChannelsFromPremier(): List<Channel> {
@@ -217,8 +217,8 @@ class ChannelRepository(private val context: Context) {
                     fallbackStreamUrls = hardcoded?.fallbackStreamUrls ?: emptyList(),
                     currentProgramTitle = progTitle,
                     currentProgramStart = progStart,
-                    currentProgramEnd = progEnd
-                )
+                    currentProgramEnd = progEnd,
+                ),
             )
         }
         return channels
@@ -327,7 +327,7 @@ class ChannelRepository(private val context: Context) {
         "spas" to "spas",
         "tv3" to "tv3",
         "mir" to "mir",
-        "muztv" to "muztv"
+        "muztv" to "muztv",
     )
 
     private fun fetchChannelsFromIvi(): List<Channel> {
@@ -386,8 +386,8 @@ class ChannelRepository(private val context: Context) {
                     fallbackStreamUrls = hardcoded?.fallbackStreamUrls ?: emptyList(),
                     currentProgramTitle = progTitle,
                     currentProgramStart = progStart,
-                    currentProgramEnd = progEnd
-                )
+                    currentProgramEnd = progEnd,
+                ),
             )
         }
         return channels
@@ -451,7 +451,7 @@ class ChannelRepository(private val context: Context) {
         "спас" to "spas",
         "тв-3" to "tv3",
         "мир" to "mir",
-        "муз-тв" to "muztv"
+        "муз-тв" to "muztv",
     )
 
     private fun fetchChannelsFromSmotreshka(): List<Channel> {
@@ -470,7 +470,7 @@ class ChannelRepository(private val context: Context) {
 
         val onAirResp = httpGet(
             "https://fe.smotreshka.tv/epg/v2/on-air?languageCode=ru&tv-asset-token=$tvAssetToken" +
-                "&appVersion=1.0.0&platform=android&osVersion=35"
+                "&appVersion=1.0.0&platform=android&osVersion=35",
         ) ?: return emptyList()
         val onAirObj = JSONObject(onAirResp)
         val schedulesArr = onAirObj.optJSONArray("schedules") ?: return emptyList()
@@ -559,8 +559,8 @@ class ChannelRepository(private val context: Context) {
                     fallbackStreamUrls = hardcoded?.fallbackStreamUrls ?: emptyList(),
                     currentProgramTitle = progTitle,
                     currentProgramStart = progStart,
-                    currentProgramEnd = progEnd
-                )
+                    currentProgramEnd = progEnd,
+                ),
             )
         }
         return channels
@@ -576,7 +576,7 @@ class ChannelRepository(private val context: Context) {
             try {
                 val json = httpGetWithHeaders(
                     "https://api.ntv.ru/vitrina/v1/channels/current_programs",
-                    mapOf("x-platform" to "website")
+                    mapOf("x-platform" to "website"),
                 ) ?: return@withContext result
                 val root = JSONObject(json)
                 val dataArr = root.optJSONArray("data") ?: return@withContext result

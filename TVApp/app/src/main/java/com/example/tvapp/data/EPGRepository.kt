@@ -16,8 +16,7 @@ class EPGRepository {
 
     private var channelHrefCache: Map<String, String>? = null
 
-    suspend fun getProgramForChannel(channelId: String, date: Date): List<Program> =
-        withContext(Dispatchers.IO) {
+    suspend fun getProgramForChannel(channelId: String, date: Date): List<Program> = withContext(Dispatchers.IO) {
             try {
                 fetchEpgServiceSchedule(channelId, date) ?: generateFallbackEPG(channelId, date)
             } catch (e: Exception) {
@@ -25,8 +24,7 @@ class EPGRepository {
             }
         }
 
-    suspend fun getProgramsForAllChannels(date: Date): Map<String, List<Program>> =
-        withContext(Dispatchers.IO) {
+    suspend fun getProgramsForAllChannels(date: Date): Map<String, List<Program>> = withContext(Dispatchers.IO) {
             val programs = mutableMapOf<String, List<Program>>()
             for (channel in ChannelList.channels) {
                 try {
@@ -74,8 +72,8 @@ class EPGRepository {
                         endTime = stopMs,
                         iconUrl = iconUrl
                     )
-                )
-            }
+                ),
+            },
             return result
         } catch (e: Exception) {
             return null
@@ -224,8 +222,8 @@ class EPGRepository {
                             endTime = endSec * 1000,
                             iconUrl = item.optString("photo", "")
                         )
-                    )
-                }
+                    ),
+                },
             }
             programs
         } catch (e: Exception) {
@@ -297,8 +295,8 @@ class EPGRepository {
                     endTime = endTime,
                     iconUrl = null
                 )
-            )
-            currentTime = endTime
+            ),
+            currentTime = endTime,
         }
         return programs
     }
@@ -318,7 +316,7 @@ class EPGRepository {
                 "Новости" to 30,
                 "Ночной эфир" to 120
             )
-            "entertainment" -> listOf(
+            "entertainment" -> listOf(,
                 "Утреннее шоу" to 120,
                 "Ток-шоу" to 60,
                 "Сериал" to 90,
@@ -329,7 +327,7 @@ class EPGRepository {
                 "Премьера" to 60,
                 "Поздний фильм" to 120
             )
-            "movies" -> listOf(
+            "movies" -> listOf(,
                 "Утренний фильм" to 100,
                 "Сериал" to 90,
                 "Детектив" to 100,
@@ -340,7 +338,7 @@ class EPGRepository {
                 "Премьера" to 110,
                 "Ночной фильм" to 130
             )
-            "kids" -> listOf(
+            "kids" -> listOf(,
                 "Утренние мультфильмы" to 60,
                 "Образовательная программа" to 30,
                 "Мультсериал" to 45,
@@ -350,7 +348,7 @@ class EPGRepository {
                 "Мультсериал" to 60,
                 "Вечерний мультфильм" to 90
             )
-            "sport" -> listOf(
+            "sport" -> listOf(,
                 "Утренняя аэробика" to 30,
                 "Спортивный обзор" to 60,
                 "Трансляция матча" to 120,
@@ -360,7 +358,7 @@ class EPGRepository {
                 "Вечерний спортивный обзор" to 90,
                 "Документальный о спорте" to 60
             )
-            "music" -> listOf(
+            "music" -> listOf(,
                 "Утренние хиты" to 120,
                 "Музыкальный чарт" to 60,
                 "Клипы и премьеры" to 90,
@@ -369,7 +367,7 @@ class EPGRepository {
                 "Вечерние хиты" to 120,
                 "Ночной микс" to 180
             )
-            "culture" -> listOf(
+            "culture" -> listOf(,
                 "Утренняя культурная программа" to 60,
                 "Телевизионный театр" to 90,
                 "Документальный фильм" to 60,
@@ -378,7 +376,7 @@ class EPGRepository {
                 "Вечерний спектакль" to 120,
                 "Ночной кинопоказ" to 100
             )
-            "nature" -> listOf(
+            "nature" -> listOf(,
                 "Утренние дикие животные" to 60,
                 "Документальный о природе" to 90,
                 "Путешествия" to 60,
@@ -387,7 +385,7 @@ class EPGRepository {
                 "Вечерний документальный" to 120,
                 "Ночной эфир" to 120
             )
-            "documentary" -> listOf(
+            "documentary" -> listOf(,
                 "Утренний документальный" to 60,
                 "Историческая программа" to 90,
                 "Научный фильм" to 60,
@@ -396,7 +394,7 @@ class EPGRepository {
                 "Вечерний документальный" to 120,
                 "Ночной эфир" to 120
             )
-            "lifestyle" -> listOf(
+            "lifestyle" -> listOf(,
                 "Утренние советы" to 60,
                 "Кулинарное шоу" to 45,
                 "Дизайн интерьера" to 30,
@@ -405,7 +403,7 @@ class EPGRepository {
                 "Вечернее шоу" to 90,
                 "Ночной эфир" to 120
             )
-            "hunting_fishing" -> listOf(
+            "hunting_fishing" -> listOf(,
                 "Утренняя рыбалка" to 60,
                 "Охота и природа" to 90,
                 "Мастер-класс" to 45,
@@ -414,7 +412,7 @@ class EPGRepository {
                 "Вечерний эфир" to 120,
                 "Ночной эфир" to 120
             )
-            "relax" -> listOf(
+            "relax" -> listOf(,
                 "Утренние медитации" to 60,
                 "Релакс-музыка" to 90,
                 "Йога и здоровье" to 45,
@@ -422,7 +420,7 @@ class EPGRepository {
                 "Спокойный вечер" to 120,
                 "Ночной релакс" to 180
             )
-            "series" -> listOf(
+            "series" -> listOf(,
                 "Утренний сериал" to 90,
                 "Детективный сериал" to 90,
                 "Ситком" to 30,
@@ -431,7 +429,7 @@ class EPGRepository {
                 "Вечерний сериал" to 120,
                 "Ночной эфир" to 120
             )
-            "regional" -> listOf(
+            "regional" -> listOf(,
                 "Утренние новости региона" to 60,
                 "Общественная программа" to 45,
                 "Культурная афиша" to 30,
@@ -440,7 +438,7 @@ class EPGRepository {
                 "Региональное шоу" to 90,
                 "Ночной эфир" to 120
             )
-            "religious" -> listOf(
+            "religious" -> listOf(,
                 "Утреннее богослужение" to 60,
                 "Религиозная программа" to 45,
                 "Православные новости" to 30,
@@ -448,7 +446,7 @@ class EPGRepository {
                 "Вечернее богослужение" to 90,
                 "Ночной эфир" to 120
             )
-            else -> listOf(
+            else -> listOf(,
                 "Утренние новости" to 60,
                 "Общественная программа" to 60,
                 "Сериал" to 90,
@@ -458,12 +456,10 @@ class EPGRepository {
                 "Фильм" to 120,
                 "Ночной эфир" to 120
             )
-        }
+        },
     }
 
-    fun getCurrentProgram(programs: List<Program>, currentTime: Long = System.currentTimeMillis()): Program? =
-        programs.find { it.isLive(currentTime) }
+    fun getCurrentProgram(programs: List<Program>, currentTime: Long = System.currentTimeMillis()): Program? = programs.find { it.isLive(currentTime) }
 
-    fun getNextProgram(programs: List<Program>, currentTime: Long = System.currentTimeMillis()): Program? =
-        programs.filter { it.startTime > currentTime }.minByOrNull { it.startTime }
+    fun getNextProgram(programs: List<Program>, currentTime: Long = System.currentTimeMillis()): Program? = programs.filter { it.startTime > currentTime }.minByOrNull { it.startTime }
 }
