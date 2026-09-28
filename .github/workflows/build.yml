@@ -96,9 +96,10 @@ jobs:
         with:
           project: 'TVOnline'
           path: '.'
-          format: 'HTML,JSON'
+          format: 'HTML'
           out: 'dc-reports'
           args: >
+            -f JSON
             --failOnCVSS 9
 
       - name: Upload Dependency-Check Report
