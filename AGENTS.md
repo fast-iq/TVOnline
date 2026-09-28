@@ -3,7 +3,7 @@
 ## Project Overview
 Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3), Retrofit, Glide, Coroutines.
 - Package: `com.example.tvapp`
-- minSdk 28, targetSdk 35, compileSdk 35
+- minSdk 28, targetSdk 36, compileSdk 36
 - Leanback launcher + standard launcher
 
 ## Key Files
@@ -332,6 +332,35 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 
 **CI fix (1f00c8f):**
 - Kotlin Pair is binary: replaced with data class NtvProgram(title, startMs, endMs) in ChannelRepository.kt + MainActivity.kt uses .title/.startMs/.endMs
+
+### 2026-09-28 Session 11 — CI/CD hardening + Ktlint
+
+**Goal:** Add code-style checks (Ktlint), security scans (OWASP Dependency-Check), APK/AAB signature verification, and strict unit tests to CI. Fix all ktlint violations.
+
+**CI workflow (`.github/workflows/build.yml`):**
+- Job `lint`: Android Lint (`lintDebug`) + Ktlint (`ktlintCheck`)
+- Job `dependency-check`: OWASP Dependency-Check (fail on CVSS ≥ 9)
+- Job `build`: compile + unit tests (`testDebugUnitTest`, no `continue-on-error`) + APK/AAB signing verification (`apksigner verify --print-certs`) + AAB integrity check (`unzip -t`)
+
+**Ktlint setup:**
+- Plugin: `org.jlleitschuh.gradle.ktlint:14.2.0` (root `build.gradle` apply false, `app/build.gradle` apply)
+- Config in `app/build.gradle`: `ktlint { android = true; additionalEditorconfig = [trailing-comma rules disabled] }`
+- `.editorconfig` at `TVApp/.editorconfig`: `ktlint_code_style = intellij_idea`, trailing comma disabled (both call-site and declaration-site)
+- Trailing commas CANNOT be reliably auto-fixed by script (breaks when/if bodies, nested calls). Disabled via Gradle `additionalEditorconfig`.
+
+**Ktlint violations fixed in code:**
+- Wildcard imports (`kotlinx.coroutines.*`, `java.util.*`) → explicit imports in EPGActivity, MainActivity, PlayerActivity
+- Import ordering: `AppPreferences` before `Channel*`, `com.bumptech.glide.Glide` before `com.example.tvapp.*`
+- Body expression on same line as signature (5 places): EPGRepository ×4, Models.kt ×1
+- Lambda body indentation after merging `= withContext(...)` onto one line (EPGRepository)
+- PlayerActivity: multi-line `initializePlayer(` call + newline before closing `)`
+- Missing `import kotlinx.coroutines.cancel` (3 files)
+
+**OWASP Dependency-Check fix:**
+- Action `dependency-check/Dependency-Check_Action@main` passes `--format HTML,JSON` which is invalid (tool doesn't support comma-separated formats)
+- FIX: `format: 'HTML'` + `args: -f JSON --failOnCVSS 9` (two separate `-f` flags)
+
+**Result:** All CI jobs green. Lint: 0 errors (1 non-blocking OldTargetApi warning). OWASP: no critical vulns. Ktlint: clean.
 
 ## Do NOT
 - Do not use `via.placeholder.com` (dead service)
