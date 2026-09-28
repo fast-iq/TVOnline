@@ -139,8 +139,33 @@ class PlayerActivity : BaseActivity() {
                 showSourceSwitchDialog()
                 true
             }
+            KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                switchChannel(1)
+                true
+            }
+            KeyEvent.KEYCODE_DPAD_LEFT -> {
+                switchChannel(-1)
+                true
+            }
             else -> super.onKeyDown(keyCode, event)
         }
+    }
+
+    private fun switchChannel(direction: Int) {
+        val channels = ChannelList.channels
+        if (channels.isEmpty()) return
+        val currentId = channelId ?: return
+        val currentIndex = channels.indexOfFirst { it.id == currentId }
+        if (currentIndex < 0) return
+        val newIndex = (currentIndex + direction + channels.size) % channels.size
+        val newChannel = channels[newIndex]
+        channelId = newChannel.id
+        channelName = newChannel.name
+        currentChannel = newChannel
+        playerManager.playChannel(newChannel)
+        showProgramOverlay(newChannel)
+        infoText.text = getString(R.string.loading_channel, newChannel.name)
+        infoText.visibility = View.VISIBLE
     }
 
     override fun onDestroy() {
