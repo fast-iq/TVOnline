@@ -362,6 +362,64 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 
 **Result:** All CI jobs green. Lint: 0 errors (1 non-blocking OldTargetApi warning). OWASP: no critical vulns. Ktlint: clean.
 
+### 2026-09-29 Session 12 — Regional (time-offset) sources from ngenix playlist
+
+**Goal:** Add "change region" (time-offset) variants for federal channels as alternative viewing sources, extracted from the IPTV_MEGA_PLAYLIST.m3u (ngenix "Zabava" CDN).
+
+**Background:** The user wanted channels whose region can be changed. In the ngenix (Zabava) stream family, each channel has regional variants `CH_X`, `CH_X_2`, `CH_X_4`, `CH_X_7` (and for Первый also `_3`, `_6`, `_8`) — the suffix is the time offset in hours vs Moscow (МСК+2/+4/+7…). These are real broadcast time-shifts for different regions, not separate channels. They were added to the player's existing "switch source" dialog (MENU button) so the user can pick a region.
+
+**Streams verified live (HTTP 200) on 2026-09-29:**
+- Base: `CH_1TVSD`, `CH_RUSSIA1`, `CH_NTV`, `CH_5TV`, `CH_ZVEZDA`, `CH_STS`, `CH_TNT`, `CH_RENTV`, `CH_KARUSEL`, `CH_TVC`, `CH_SPAS`, `CH_MIR`, `CH_OTR`, `CH_PERETZ`, `CH_MUZTV`
+- Offset variants: `CH_1TVSD_2/3/4/6/8`, `CH_NTV_2/4/7`, `CH_ZVEZDA_2/7`, `CH_STS_2/4/7`, `CH_TNT_2/4/7`, `CH_KARUSEL_4/7`, `CH_SPAS_2/7`, `CH_MIR_2/4/7`, `CH_PERETZ_7`, `CH_MUZTV_2/4/7`, `CH_CHE_2`
+- All at `https://zabava-htlive.cdn.ngenix.net/hls/{CH}/variant.m3u8`
+
+**Changes:**
+- `Models.kt` — added `private const val NG` (ngenix base) and appended ngenix base + offset URLs to `fallbackStreamUrls` for: c1r (6), rossiya1 (1), ntv (4), 5tv (1), zvezda (3), sts (4), tnt (4), ren (1), karusel (3), tvc (1), spas (3), mir (4), otv (1), che (2), muztv (4).
+- `PlayerActivity.kt` — `showSourceSwitchDialog()` now labels each source: `i==0` → "Официальный", ngenix offset URL → "Время МСК+N ч" (parsed by `regionOffsetOf()` regex `/hls/CH_[A-Z0-9]+_(\d+)/variant\.m3u8`), else → "Альтернативный N". Marker "(текущий)" kept.
+- `strings.xml` (ru + en) — added `source_alternative_indexed` and `source_region_offset`.
+
+**Verification:** `:app:ktlintCheck` PASSED. Full `lintDebug`/compile/test BLOCKED locally (no Android SDK installed; `JAVA_HOME` → `C:\Users\Sidelnikov\.jdks\corretto-17.0.15`). Verify via CI.
+
+### 2026-09-29 Session 13 — Source-switch correctness: region wiring + fallback fixes
+
+**Goal:** User report: "Сообщение выскакивает, но ничего не меняется" when switching channel source. Audit and fix.
+
+**Root causes found:**
+1. **Region selector (commit add6a63) was dead code** — `AppPreferences.regionId` was written by SettingsActivity but never read anywhere; changing region showed a toast and had zero effect on streams.
+2. **Manual switch + auto-fallback conflict** — if a manually picked source failed, `onPlayerError` silently walked the fallback chain forward and could land back on the same feed already playing → "nothing changed".
+3. **Misleading single-source toast** — channels with 1 source showed "Выберите источник видео" (nothing to choose).
+4. **Dead URLs in fallback chains** — 2 `mhd.iptv2022.com` URLs added by add6a63 (c1r, rossiya1) carry time-limited tokens (expired 2026-09-30) and `-drm` paths (ExoPlayer has no DRM support) → guaranteed failures slowing auto-fallback. Removed.
+
+**Changes:**
+- `Models.kt` — new `object RegionList`: single source of truth for the 71 regions (moved out of SettingsActivity) + `offset(regionId)` — region → МСК time offset by Russian time zones (e.g. 29 Свердловская→2, 54 Омская→3, 46 Красноярский→4, 71 Якутия→6, 28/32/58/67→7, 48 Магадан→8; 25 Калининград→-1, 34/49/50/62/66/70→1, 35/41→5, 40/71→6, 42 Камчатка→9).
+- `Models.kt` — removed the 2 dead `mhd.iptv2022.com` (-drm, expired-token) URLs from c1r and rossiya1 `fallbackStreamUrls`.
+- `PlayerActivity.kt` — new `preferredUrl(channel)`: on channel open and on DPAD left/right switch picks the ngenix variant with minimal `|variantOffset − regionOffset|` (ties → first in list); region МСК+0 (and west) → official source (null).
+- `PlayerActivity.kt` — single-source case now shows `only_one_source` ("Доступен только один источник") instead of "Выберите источник видео".
+- `TVPlayerManager.kt` — `manualSwitch` flag + `lastWorkingUrl`/`pendingUrl` tracking (STATE_READY records the ready URL): if a manually selected source fails, player reverts to the last working source (with "Переключаем источник…" message) instead of walking the fallback chain; normal auto-fallback on channel start unchanged.
+- `SettingsActivity.kt` — uses `RegionList.regions` instead of a local copy of the list.
+- `strings.xml` (ru + en) — added `only_one_source`.
+
+**Behavior now:**
+- Region in settings actually changes the stream: e.g. Свердловская область (МСК+2) + Первый → `CH_1TVSD_2/variant.m3u8`; Иркутск (МСК+5) → closest available variant (МСК+4).
+- Manual source pick that fails visibly reverts to the last working source instead of silently landing on the same feed.
+
+**Verification:** `:app:ktlintCheck` PASSED. Full build blocked locally (no Android SDK) — verify via CI.
+
+### 2026-09-29 Session 14 — Settings screen: option lists with current selection
+
+**Goal:** "Настройки качества немного странные — сделай их списком и чтобы отображалось что сейчас выбрано. Все настройки между запусками должны сохраняться."
+
+**Changes:**
+- `activity_settings.xml` — replaced the 3 "Нажмите для смены" buttons + separate value texts (quality/language/source) with 3 horizontal `LinearLayout` containers: `qualityOptions`, `languageOptions`, `sourceOptions`. Buttons are built programmatically in code.
+- `SettingsActivity.kt` — generic `buildOptionRow(container, labels, selectedIndex, onSelect)`: creates focusable/clickable option buttons (18sp, dp(24)/dp(12) padding, 16dp gap). The currently saved value is highlighted via `isSelected` on open and updated on click; each click writes the value to `AppPreferences` immediately. Language change now calls `recreate()` so the new locale applies to the screen at once. Region `SeekBar` now saves `regionId` on every `onProgressChanged(fromUser)` (not only `onStopTrackingTouch`) so TV-remote D-pad changes always persist.
+- New `res/drawable/option_button_bg.xml` — selector: `state_selected` → accent fill, `state_focused` → gray fill, default → dark fill (12dp corners).
+- New `res/color/option_button_text.xml` — white for selected/focused, `text_secondary` otherwise.
+- Removed now-unused strings (ru + en): `press_to_change`, `quality_value`, `language_value`, `source_value`, plus stale en-only `timezone_label`/`timezone_value`.
+
+**Persistence (verified):** all settings already live in SharedPreferences via `AppPreferences` (`PreferenceManager.getDefaultSharedPreferences`): `regionId`, `qualityMode`, `language`, `contentSource`, `lastChannelId`. Nothing extra needed; region save point moved to guarantee D-pad persistence.
+
+**Verification:** `:app:ktlintCheck` PASSED. Full build blocked locally (no Android SDK) — verify via CI.
+
 ## Do NOT
 - Do not use `via.placeholder.com` (dead service)
 - Do not use `static.wikia.nocookie.net` for channel logos (unreliable)
@@ -376,3 +434,9 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 - **premier.one CDN**: `https://uma-static.rtbcdn.ru/cwebp/pic/cardimage/{2ch}/{2ch}/{md5}.png?size=240&quality=95`
   - Source page: https://premier.one/tv/categories/besplatnye
 - **EPG Service API**: `https://api.epgservice.ru/v1/index` → channel list with hrefs to XMLTV schedules
+
+## Channel Stream Sources (verified working)
+- **ngenix "Zabava" CDN (regional time-offsets)**: `https://zabava-htlive.cdn.ngenix.net/hls/{CH}/variant.m3u8`
+  - `CH` suffix = time offset vs Moscow: `_2`, `_3`, `_4`, `_6`, `_7`, `_8` (e.g. `CH_1TVSD_4` = МСК+4)
+  - Source: IPTV_MEGA_PLAYLIST.m3u (group `GitHub - Zabava / Основные`)
+- **ntv.ru CDN (official)**: `https://cdn.ntv.ru/{stream_key}/index.m3u8` (see Session 10)

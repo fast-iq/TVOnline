@@ -65,32 +65,14 @@
         app:layout_constraintTop_toBottomOf="@id/regionValueText"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <TextView
-        android:id="@+id/qualityModeButton"
+    <LinearLayout
+        android:id="@+id/qualityOptions"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/press_to_change"
-        android:textSize="18sp"
-        android:textColor="@color/accent"
-        android:padding="16dp"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
+        android:orientation="horizontal"
         android:layout_marginStart="24dp"
         android:layout_marginTop="8dp"
         app:layout_constraintTop_toBottomOf="@id/qualityLabel"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <TextView
-        android:id="@+id/qualityModeText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/quality_value"
-        android:textSize="16sp"
-        android:textColor="@color/text_secondary"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/qualityModeButton"
         app:layout_constraintStart_toStartOf="parent" />
 
     <!-- Язык -->
@@ -103,35 +85,17 @@
         android:textColor="@color/white"
         android:layout_marginStart="24dp"
         android:layout_marginTop="32dp"
-        app:layout_constraintTop_toBottomOf="@id/qualityModeText"
+        app:layout_constraintTop_toBottomOf="@id/qualityOptions"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <TextView
-        android:id="@+id/languageButton"
+    <LinearLayout
+        android:id="@+id/languageOptions"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/press_to_change"
-        android:textSize="18sp"
-        android:textColor="@color/accent"
-        android:padding="16dp"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
+        android:orientation="horizontal"
         android:layout_marginStart="24dp"
         android:layout_marginTop="8dp"
         app:layout_constraintTop_toBottomOf="@id/languageLabel"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <TextView
-        android:id="@+id/languageText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/language_value"
-        android:textSize="16sp"
-        android:textColor="@color/text_secondary"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/languageButton"
         app:layout_constraintStart_toStartOf="parent" />
 
     <!-- Источник каналов -->
@@ -144,35 +108,17 @@
         android:textColor="@color/white"
         android:layout_marginStart="24dp"
         android:layout_marginTop="32dp"
-        app:layout_constraintTop_toBottomOf="@id/languageText"
+        app:layout_constraintTop_toBottomOf="@id/languageOptions"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <TextView
-        android:id="@+id/sourceButton"
+    <LinearLayout
+        android:id="@+id/sourceOptions"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/press_to_change"
-        android:textSize="18sp"
-        android:textColor="@color/accent"
-        android:padding="16dp"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
+        android:orientation="horizontal"
         android:layout_marginStart="24dp"
         android:layout_marginTop="8dp"
         app:layout_constraintTop_toBottomOf="@id/sourceLabel"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <TextView
-        android:id="@+id/sourceText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/source_value"
-        android:textSize="16sp"
-        android:textColor="@color/text_secondary"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/sourceButton"
         app:layout_constraintStart_toStartOf="parent" />
 
     <TextView

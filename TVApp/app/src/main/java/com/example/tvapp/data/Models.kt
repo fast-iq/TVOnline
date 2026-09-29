@@ -31,6 +31,9 @@ data class Program(
 }
 
 object ChannelList {
+
+    private const val NG = "https://zabava-htlive.cdn.ngenix.net/hls/"
+
     var channels: List<Channel> = emptyList()
         private set
 
@@ -48,7 +51,12 @@ object ChannelList {
             epgId = "c1r",
             fallbackStreamUrls = listOf(
                 "http://46.32.176.50/perviy/index.m3u8",
-                "https://mhd.iptv2022.com/x/t5lf7N6guHOBWZDixAIpCw,1790755830/streaming/1kanalplus2-drm/324/5/index.m3u8"
+                NG + "CH_1TVSD/variant.m3u8",
+                NG + "CH_1TVSD_2/variant.m3u8",
+                NG + "CH_1TVSD_3/variant.m3u8",
+                NG + "CH_1TVSD_4/variant.m3u8",
+                NG + "CH_1TVSD_6/variant.m3u8",
+                NG + "CH_1TVSD_8/variant.m3u8"
             )
         ),
         Channel(
@@ -61,7 +69,7 @@ object ChannelList {
             fallbackStreamUrls = listOf(
                 "https://cdn.ntv.ru/vitrina10/index.m3u8",
                 "https://stream.smotrim.ru/hls2/russia_hd/playlist_6.m3u8",
-                "https://mhd.iptv2022.com/x/k45fVF6xGTQzKaub-yQFkQ,1790756264/streaming/1kanalott-drm/324/5/index.m3u8"
+                NG + "CH_RUSSIA1/variant.m3u8"
             )
         ),
         Channel(
@@ -72,7 +80,11 @@ object ChannelList {
             category = "federal",
             epgId = "ntv",
             fallbackStreamUrls = listOf(
-                "https://cdn.ntv.ru/ntv1/playlist.m3u8"
+                "https://cdn.ntv.ru/ntv1/playlist.m3u8",
+                NG + "CH_NTV/variant.m3u8",
+                NG + "CH_NTV_2/variant.m3u8",
+                NG + "CH_NTV_4/variant.m3u8",
+                NG + "CH_NTV_7/variant.m3u8"
             )
         ),
         Channel(
@@ -83,7 +95,8 @@ object ChannelList {
             category = "federal",
             epgId = "5tv",
             fallbackStreamUrls = listOf(
-                "http://46.32.176.50/5kanal/index.m3u8"
+                "http://46.32.176.50/5kanal/index.m3u8",
+                NG + "CH_5TV/variant.m3u8"
             )
         ),
         Channel(
@@ -106,7 +119,10 @@ object ChannelList {
             category = "federal",
             epgId = "zvezda",
             fallbackStreamUrls = listOf(
-                "http://51.158.144.33:2021/zvezda/index.m3u8"
+                "http://51.158.144.33:2021/zvezda/index.m3u8",
+                NG + "CH_ZVEZDA/variant.m3u8",
+                NG + "CH_ZVEZDA_2/variant.m3u8",
+                NG + "CH_ZVEZDA_7/variant.m3u8"
             )
         ),
         Channel(
@@ -129,7 +145,11 @@ object ChannelList {
             category = "entertainment",
             epgId = "sts",
             fallbackStreamUrls = listOf(
-                "http://tshift-1.telecoma.tv/sts/index.m3u8"
+                "http://tshift-1.telecoma.tv/sts/index.m3u8",
+                NG + "CH_STS/variant.m3u8",
+                NG + "CH_STS_2/variant.m3u8",
+                NG + "CH_STS_4/variant.m3u8",
+                NG + "CH_STS_7/variant.m3u8"
             )
         ),
         Channel(
@@ -151,7 +171,11 @@ object ChannelList {
             category = "entertainment",
             epgId = "tnt",
             fallbackStreamUrls = listOf(
-                "http://stream.mcquack.net/135/index.m3u8"
+                "http://stream.mcquack.net/135/index.m3u8",
+                NG + "CH_TNT/variant.m3u8",
+                NG + "CH_TNT_2/variant.m3u8",
+                NG + "CH_TNT_4/variant.m3u8",
+                NG + "CH_TNT_7/variant.m3u8"
             )
         ),
         Channel(
@@ -162,7 +186,8 @@ object ChannelList {
             category = "federal",
             epgId = "ren",
             fallbackStreamUrls = listOf(
-                "http://46.32.176.50/rentv/index.m3u8"
+                "http://46.32.176.50/rentv/index.m3u8",
+                NG + "CH_RENTV/variant.m3u8"
             )
         ),
         Channel(
@@ -173,7 +198,10 @@ object ChannelList {
             category = "kids",
             epgId = "karusel",
             fallbackStreamUrls = listOf(
-                "http://185.37.150.46/Karusel/index.m3u8"
+                "http://185.37.150.46/Karusel/index.m3u8",
+                NG + "CH_KARUSEL/variant.m3u8",
+                NG + "CH_KARUSEL_4/variant.m3u8",
+                NG + "CH_KARUSEL_7/variant.m3u8"
             )
         ),
         Channel(
@@ -207,7 +235,8 @@ object ChannelList {
             category = "federal",
             epgId = "tvc",
             fallbackStreamUrls = listOf(
-                "https://stream8.cinerama.uz/1281/tracks-v1a1/mono.m3u8"
+                "https://stream8.cinerama.uz/1281/tracks-v1a1/mono.m3u8",
+                NG + "CH_TVC/variant.m3u8"
             )
         ),
         Channel(
@@ -218,7 +247,10 @@ object ChannelList {
             category = "religious",
             epgId = "spas",
             fallbackStreamUrls = listOf(
-                "http://stream.mcquack.net/232/index.m3u8"
+                "http://stream.mcquack.net/232/index.m3u8",
+                NG + "CH_SPAS/variant.m3u8",
+                NG + "CH_SPAS_2/variant.m3u8",
+                NG + "CH_SPAS_7/variant.m3u8"
             )
         ),
         Channel(
@@ -243,7 +275,13 @@ object ChannelList {
             logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/mir.png",
             streamUrl = "https://cdn.ntv.ru/vitrina3/index.m3u8",
             category = "news",
-            epgId = "mir"
+            epgId = "mir",
+            fallbackStreamUrls = listOf(
+                NG + "CH_MIR/variant.m3u8",
+                NG + "CH_MIR_2/variant.m3u8",
+                NG + "CH_MIR_4/variant.m3u8",
+                NG + "CH_MIR_7/variant.m3u8"
+            )
         ),
         Channel(
             id = "otv",
@@ -251,7 +289,10 @@ object ChannelList {
             logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/otr.png",
             streamUrl = "https://cdn.ntv.ru/vitrina19/index.m3u8",
             category = "regional",
-            epgId = "otv"
+            epgId = "otv",
+            fallbackStreamUrls = listOf(
+                NG + "CH_OTR/variant.m3u8"
+            )
         ),
         Channel(
             id = "che",
@@ -259,7 +300,11 @@ object ChannelList {
             logoUrl = "https://uma-static.rtbcdn.ru/cwebp/pic/cardimage/7e/de/7ede7ab4fd8d0539cf4ecd4f8b49a7a1.png?size=240&quality=95",
             streamUrl = "https://streaming.goodstream.icu/live/23.m3u8",
             category = "entertainment",
-            epgId = "che"
+            epgId = "che",
+            fallbackStreamUrls = listOf(
+                NG + "CH_PERETZ/variant.m3u8",
+                NG + "CH_PERETZ_7/variant.m3u8"
+            )
         ),
         Channel(
             id = "dom_kino",
@@ -291,7 +336,13 @@ object ChannelList {
             logoUrl = "https://api.ntv.ru/vitrina/static/images/logo/muz-tv.png",
             streamUrl = "https://cdn.ntv.ru/vitrina5/index.m3u8",
             category = "music",
-            epgId = "muztv"
+            epgId = "muztv",
+            fallbackStreamUrls = listOf(
+                NG + "CH_MUZTV/variant.m3u8",
+                NG + "CH_MUZTV_2/variant.m3u8",
+                NG + "CH_MUZTV_4/variant.m3u8",
+                NG + "CH_MUZTV_7/variant.m3u8"
+            )
         ),
         Channel(
             id = "tv1000",
@@ -777,5 +828,96 @@ object ChannelList {
 
     init {
         channels = hardcodedChannels
+    }
+}
+
+object RegionList {
+
+    val regions: List<Pair<Int, String>> = listOf(
+        1 to "Москва",
+        2 to "Московская область",
+        3 to "Санкт-Петербург",
+        4 to "Ленинградская область",
+        5 to "Вологодская область",
+        6 to "Воронежская область",
+        7 to "Ивановская область",
+        8 to "Калужская область",
+        9 to "Костромская область",
+        10 to "Курская область",
+        11 to "Липецкая область",
+        12 to "Московская область (запад)",
+        13 to "Московская область (восток)",
+        14 to "Новгородская область",
+        15 to "Псковская область",
+        16 to "Рязанская область",
+        17 to "Смоленская область",
+        18 to "Тверская область",
+        19 to "Тульская область",
+        20 to "Тамбовская область",
+        21 to "Ярославская область",
+        22 to "Белгородская область",
+        23 to "Брянская область",
+        24 to "Владимирская область",
+        25 to "Калининградская область",
+        26 to "Орловская область",
+        27 to "Саратовская область",
+        28 to "Сахалинская область",
+        29 to "Свердловская область",
+        30 to "Челябинская область",
+        31 to "Ямало-Ненецкий АО",
+        32 to "Амурская область",
+        33 to "Архангельская область",
+        34 to "Астраханская область",
+        35 to "Бурятия",
+        36 to "Волгоградская область",
+        37 to "Вологодская область (север)",
+        38 to "Дагестан",
+        39 to "Еврейская АО",
+        40 to "Забайкальский край",
+        41 to "Иркутская область",
+        42 to "Камчатский край",
+        43 to "Кемеровская область",
+        44 to "Кировская область",
+        45 to "Краснодарский край",
+        46 to "Красноярский край",
+        47 to "Крым",
+        48 to "Магаданская область",
+        49 to "Марий Эл",
+        50 to "Мордовия",
+        51 to "Мурманская область",
+        52 to "Ненецкий АО",
+        53 to "Нижегородская область",
+        54 to "Омская область",
+        55 to "Оренбургская область",
+        56 to "Пензенская область",
+        57 to "Пермский край",
+        58 to "Приморский край",
+        59 to "Ростовская область",
+        60 to "Рязанская область (юг)",
+        61 to "Ставропольский край",
+        62 to "Татарстан",
+        63 to "Томская область",
+        64 to "Тульская область (юг)",
+        65 to "Тыва",
+        66 to "Удмуртия",
+        67 to "Хабаровский край",
+        68 to "Ханты-Мансийский АО",
+        69 to "Чечня",
+        70 to "Чувашия",
+        71 to "Якутия"
+    )
+
+    fun offset(regionId: Int): Int = when (regionId) {
+        25 -> -1
+        34, 49, 50, 62, 66, 70 -> 1
+        29, 30, 31, 57, 68 -> 2
+        54 -> 3
+        43, 46, 63, 65 -> 4
+        35, 41 -> 5
+        40, 71 -> 6
+        28, 32, 39, 58, 67 -> 7
+        48 -> 8
+        42 -> 9
+        else -> 0
     }
 }

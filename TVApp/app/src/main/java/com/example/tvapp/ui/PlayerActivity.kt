@@ -12,6 +12,7 @@ import com.example.tvapp.R
 import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
+import com.example.tvapp.data.RegionList
 import com.example.tvapp.player.TVPlayerManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +38,7 @@ class PlayerActivity : BaseActivity() {
     private lateinit var programNextText: TextView
 
     private val scope = CoroutineScope(Dispatchers.Main + Job())
+    private val preferences by lazy { AppPreferences(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -96,7 +98,7 @@ class PlayerActivity : BaseActivity() {
             if (currentChannel != null) {
                 infoText.text = getString(R.string.loading_channel, channelName)
                 infoText.visibility = View.VISIBLE
-                playerManager.playChannel(currentChannel!!, streamUrl)
+                playerManager.playChannel(currentChannel!!, preferredUrl(currentChannel!!) ?: streamUrl)
                 showProgramOverlay(currentChannel!!)
             } else if (!streamUrl.isNullOrEmpty()) {
                 val url = streamUrl!!
@@ -168,7 +170,7 @@ class PlayerActivity : BaseActivity() {
         channelId = newChannel.id
         channelName = newChannel.name
         currentChannel = newChannel
-        playerManager.playChannel(newChannel)
+        playerManager.playChannel(newChannel, preferredUrl(newChannel))
         showProgramOverlay(newChannel)
         infoText.text = getString(R.string.loading_channel, newChannel.name)
         infoText.visibility = View.VISIBLE
@@ -184,16 +186,22 @@ class PlayerActivity : BaseActivity() {
         val channel = currentChannel ?: return
         val urls = playerManager.getCurrentStreamUrls()
         if (urls.size <= 1) {
-            Toast.makeText(this, getString(R.string.switch_source_title), Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.only_one_source), Toast.LENGTH_SHORT).show()
             return
         }
 
         val currentIndex = playerManager.getCurrentUrlIndex()
         val items = mutableListOf<String>()
         for (i in urls.indices) {
-            val label = if (i == 0) getString(R.string.source_official) else getString(R.string.source_alternative)
+            val offset = regionOffsetOf(urls[i])
+            val label = when {
+                i == 0 -> getString(R.string.source_official)
+                offset != null -> getString(R.string.source_region_offset, offset)
+                i == 1 -> getString(R.string.source_alternative)
+                else -> getString(R.string.source_alternative_indexed, i - 1)
+            }
             val marker = if (i == currentIndex) " " + getString(R.string.source_current) else ""
-            items.add("$label: ${urls[i]}$marker")
+            items.add("$label$marker")
         }
 
         android.app.AlertDialog.Builder(this)
@@ -204,6 +212,30 @@ class PlayerActivity : BaseActivity() {
                 infoText.visibility = View.VISIBLE
             }
             .show()
+    }
+
+    private fun regionOffsetOf(url: String): Int? {
+        val match = Regex("/hls/CH_[A-Z0-9]+_(\\d+)/variant\\.m3u8").find(url)
+        return match?.groupValues?.get(1)?.toIntOrNull()
+    }
+
+    private fun preferredUrl(channel: Channel): String? {
+        val offset = RegionList.offset(preferences.regionId)
+        if (offset <= 0) return null
+        val urls = listOf(channel.streamUrl) + channel.fallbackStreamUrls
+        var best: String? = null
+        var bestDelta = Int.MAX_VALUE
+        for (url in urls) {
+            val o = regionOffsetOf(url)
+            if (o != null && o > 0) {
+                val delta = Math.abs(o - offset)
+                if (delta < bestDelta) {
+                    bestDelta = delta
+                    best = url
+                }
+            }
+        }
+        return best
     }
 
     private fun showProgramOverlay(channel: Channel) {

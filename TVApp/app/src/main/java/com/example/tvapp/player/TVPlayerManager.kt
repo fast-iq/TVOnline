@@ -17,6 +17,9 @@ class TVPlayerManager(private val context: Context) {
     private val preferences = AppPreferences(context)
     private var currentChannel: Channel? = null
     private var fallbackIndex = 0
+    private var pendingUrl: String? = null
+    private var lastWorkingUrl: String? = null
+    private var manualSwitch = false
 
     interface PlayerCallback {
         fun onPlaybackReady()
@@ -39,16 +42,30 @@ class TVPlayerManager(private val context: Context) {
                 addListener(object : Player.Listener {
                     override fun onPlaybackStateChanged(state: Int) {
                         when (state) {
-                            Player.STATE_READY -> callback?.onPlaybackReady()
+                            Player.STATE_READY -> {
+                                lastWorkingUrl = pendingUrl
+                                callback?.onPlaybackReady()
+                            }
                             Player.STATE_BUFFERING -> callback?.onBuffering(true)
                             Player.STATE_IDLE, Player.STATE_ENDED -> callback?.onBuffering(false)
                         }
                     }
 
                     override fun onPlayerError(error: PlaybackException) {
-                        if (fallbackIndex < getCurrentStreamUrls().size - 1) {
+                        val urls = getCurrentStreamUrls()
+                        pendingUrl = null
+                        if (manualSwitch) {
+                            manualSwitch = false
+                            val revert = lastWorkingUrl
+                            if (revert != null && urls.indexOf(revert) >= 0) {
+                                callback?.onFallbackUsed(revert)
+                                playChannel(currentChannel!!, revert)
+                                return
+                            }
+                        }
+                        if (fallbackIndex < urls.size - 1) {
                             fallbackIndex++
-                            val nextUrl = getCurrentStreamUrls()[fallbackIndex]
+                            val nextUrl = urls[fallbackIndex]
                             callback?.onFallbackUsed(nextUrl)
                             playChannel(currentChannel!!, nextUrl)
                         } else {
@@ -94,6 +111,7 @@ class TVPlayerManager(private val context: Context) {
     fun playChannel(channel: Channel, streamUrl: String? = null) {
         val url = streamUrl ?: channel.streamUrl
         currentChannel = channel
+        pendingUrl = url
         fallbackIndex = if (streamUrl == null) 0 else getCurrentStreamUrls().indexOf(streamUrl).coerceAtLeast(0)
 
         exoPlayer?.apply {
@@ -110,6 +128,7 @@ class TVPlayerManager(private val context: Context) {
 
     fun switchToUrl(url: String) {
         if (currentChannel != null) {
+            manualSwitch = true
             playChannel(currentChannel!!, url)
         }
     }

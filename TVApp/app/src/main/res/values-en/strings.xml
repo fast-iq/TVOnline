@@ -7,7 +7,6 @@
     <string name="epg">TV Guide</string>
     <string name="channels">Channels</string>
     <string name="unknown_channel">Unknown channel</string>
-    <string name="press_to_change">Press to change</string>
 
     <!-- Main screen -->
     <string name="select_channel">Select a channel</string>
@@ -35,6 +34,9 @@
     <string name="switch_source_title">Select video source</string>
     <string name="source_official">Official</string>
     <string name="source_alternative">Alternative</string>
+    <string name="source_alternative_indexed">Alternative %1$d</string>
+    <string name="source_region_offset">Time MSK+%1$d</string>
+    <string name="only_one_source">Only one source available</string>
     <string name="source_current">(current)</string>
 
     <!-- EPG -->
@@ -42,14 +44,9 @@
     <string name="time_placeholder">Time: —:—</string>
 
     <!-- Settings -->
-    <string name="timezone_label">Timezone:</string>
-    <string name="timezone_value">Timezone: %1$s</string>
     <string name="quality_label">Video quality:</string>
-    <string name="quality_value">Quality: %1$s</string>
     <string name="language_label">Interface language:</string>
-    <string name="language_value">Language: %1$s</string>
     <string name="source_label">Channel source:</string>
-    <string name="source_value">Source: %1$s</string>
     <string name="source_premier">Premier.one</string>
     <string name="source_ivi">IVI</string>
     <string name="source_smotreshka">Smotreshka</string>
