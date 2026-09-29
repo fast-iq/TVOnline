@@ -11,6 +11,7 @@ class AppPreferences(context: Context) {
     companion object {
         private const val KEY_LAST_CHANNEL = "last_channel_id"
         private const val KEY_TIMEZONE_OFFSET = "timezone_offset"
+        private const val KEY_REGION_ID = "region_id"
         private const val KEY_QUALITY_MODE = "quality_mode"
         private const val KEY_LANGUAGE = "language"
         private const val KEY_CONTENT_SOURCE = "content_source"
@@ -38,6 +39,12 @@ class AppPreferences(context: Context) {
         }
         set(value) {
             prefs.edit { putInt(KEY_TIMEZONE_OFFSET, value) }
+        }
+
+    var regionId: Int
+        get() = prefs.getInt(KEY_REGION_ID, 1)
+        set(value) {
+            prefs.edit { putInt(KEY_REGION_ID, value) }
         }
 
     var qualityMode: QualityMode

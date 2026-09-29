@@ -11,40 +11,86 @@ import com.example.tvapp.data.AppPreferences
 
 class SettingsActivity : BaseActivity() {
 
-    private lateinit var timezoneSeekBar: SeekBar
-    private lateinit var timezoneValueText: TextView
+    private lateinit var regionSeekBar: SeekBar
+    private lateinit var regionValueText: TextView
     private lateinit var qualityModeText: TextView
     private lateinit var languageText: TextView
     private lateinit var sourceText: TextView
 
     private val preferences by lazy { AppPreferences(applicationContext) }
 
-    private val timezones = listOf(
-        -12 to "-12 (UTC-12)",
-        -11 to "-11 (UTC-11)",
-        -10 to "-10 (UTC-10)",
-        -9 to "-9 (UTC-9)",
-        -8 to "-8 (UTC-8)",
-        -7 to "-7 (UTC-7)",
-        -6 to "-6 (UTC-6)",
-        -5 to "-5 (UTC-5)",
-        -4 to "-4 (UTC-4)",
-        -3 to "-3 (UTC-3)",
-        -2 to "-2 (UTC-2)",
-        -1 to "-1 (UTC-1)",
-        0 to "0 (UTC)",
-        1 to "+1 (UTC+1)",
-        2 to "+2 (UTC+2)",
-        3 to "+3 (UTC+3 - Москва)",
-        4 to "+4 (UTC+4)",
-        5 to "+5 (UTC+5)",
-        6 to "+6 (UTC+6)",
-        7 to "+7 (UTC+7)",
-        8 to "+8 (UTC+8)",
-        9 to "+9 (UTC+9)",
-        10 to "+10 (UTC+10)",
-        11 to "+11 (UTC+11)",
-        12 to "+12 (UTC+12)"
+    private val regions = listOf(
+        1 to "Москва",
+        2 to "Московская область",
+        3 to "Санкт-Петербург",
+        4 to "Ленинградская область",
+        5 to "Вологодская область",
+        6 to "Воронежская область",
+        7 to "Ивановская область",
+        8 to "Калужская область",
+        9 to "Костромская область",
+        10 to "Курская область",
+        11 to "Липецкая область",
+        12 to "Московская область (запад)",
+        13 to "Московская область (восток)",
+        14 to "Новгородская область",
+        15 to "Псковская область",
+        16 to "Рязанская область",
+        17 to "Смоленская область",
+        18 to "Тверская область",
+        19 to "Тульская область",
+        20 to "Тамбовская область",
+        21 to "Ярославская область",
+        22 to "Белгородская область",
+        23 to "Брянская область",
+        24 to "Владимирская область",
+        25 to "Калининградская область",
+        26 to "Орловская область",
+        27 to "Саратовская область",
+        28 to "Сахалинская область",
+        29 to "Свердловская область",
+        30 to "Челябинская область",
+        31 to "Ямало-Ненецкий АО",
+        32 to "Амурская область",
+        33 to "Архангельская область",
+        34 to "Астраханская область",
+        35 to "Бурятия",
+        36 to "Волгоградская область",
+        37 to "Вологодская область (север)",
+        38 to "Дагестан",
+        39 to "Еврейская АО",
+        40 to "Забайкальский край",
+        41 to "Иркутская область",
+        42 to "Камчатский край",
+        43 to "Кемеровская область",
+        44 to "Кировская область",
+        45 to "Краснодарский край",
+        46 to "Красноярский край",
+        47 to "Крым",
+        48 to "Магаданская область",
+        49 to "Марий Эл",
+        50 to "Мордовия",
+        51 to "Мурманская область",
+        52 to "Ненецкий АО",
+        53 to "Нижегородская область",
+        54 to "Омская область",
+        55 to "Оренбургская область",
+        56 to "Пензенская область",
+        57 to "Пермский край",
+        58 to "Приморский край",
+        59 to "Ростовская область",
+        60 to "Рязанская область (юг)",
+        61 to "Ставропольский край",
+        62 to "Татарстан",
+        63 to "Томская область",
+        64 to "Тульская область (юг)",
+        65 to "Тыва",
+        66 to "Удмуртия",
+        67 to "Хабаровский край",
+        68 to "Ханты-Мансийский АО",
+        69 to "Чечня",
+        70 to "Чувашия",
+        71 to "Якутия"
     )
 
     private val qualityModes = listOf(
@@ -62,7 +108,7 @@ class SettingsActivity : BaseActivity() {
         AppPreferences.ContentSource.SMOTRESHKA
     )
 
-    private var currentTimezoneIndex = 15
+    private var currentRegionIndex = 0
     private var currentQualityIndex = 3
     private var currentLanguageIndex = 0
     private var currentSourceIndex = 0
@@ -71,56 +117,61 @@ class SettingsActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
 
-        timezoneSeekBar = findViewById(R.id.timezoneSeekBar)
-        timezoneValueText = findViewById(R.id.timezoneValueText)
+        regionSeekBar = findViewById(R.id.regionSeekBar)
+        regionValueText = findViewById(R.id.regionValueText)
         qualityModeText = findViewById(R.id.qualityModeText)
         languageText = findViewById(R.id.languageText)
         sourceText = findViewById(R.id.sourceText)
 
         loadCurrentSettings()
-        setupTimezoneSelector()
+        setupRegionSelector()
         setupQualitySelector()
         setupLanguageSelector()
         setupSourceSelector()
     }
 
     private fun loadCurrentSettings() {
-        val currentOffset = preferences.timezoneOffset
-        currentTimezoneIndex = timezones.indexOfFirst { it.first == currentOffset }.takeIf { it != -1 } ?: 15
+        val currentRegion = preferences.regionId
+        currentRegionIndex = regions.indexOfFirst { it.first == currentRegion }.takeIf { it != -1 } ?: 0
         currentQualityIndex = qualityModes.indexOf(preferences.qualityMode).takeIf { it != -1 } ?: 3
         currentLanguageIndex = languages.indexOfFirst { it.first == preferences.language }.takeIf { it != -1 } ?: 0
         currentSourceIndex = sources.indexOf(preferences.contentSource).takeIf { it != -1 } ?: 0
-        updateTimezoneDisplay()
+        updateRegionDisplay()
         updateQualityDisplay()
         updateLanguageDisplay()
         updateSourceDisplay()
     }
 
-    private fun setupTimezoneSelector() {
-        timezoneSeekBar.max = timezones.size - 1
-        timezoneSeekBar.progress = currentTimezoneIndex
-        updateTimezoneDisplay()
+    private fun setupRegionSelector() {
+        regionSeekBar.max = regions.size - 1
+        regionSeekBar.progress = currentRegionIndex
+        updateRegionDisplay()
 
-        timezoneSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+        regionSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    currentTimezoneIndex = progress
-                    updateTimezoneDisplay()
+                    currentRegionIndex = progress
+                    updateRegionDisplay()
                 }
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                val selectedOffset = timezones[currentTimezoneIndex].first
-                preferences.timezoneOffset = selectedOffset
+                val selectedRegionId = regions[currentRegionIndex].first
+                preferences.regionId = selectedRegionId
                 Toast.makeText(
                     this@SettingsActivity,
-                    getString(R.string.timezone_value, timezones[currentTimezoneIndex].second),
+                    getString(R.string.region_value, regions[currentRegionIndex].second),
                     Toast.LENGTH_SHORT
                 ).show()
             }
         })
+    }
+
+    private fun updateRegionDisplay() {
+        val regionName = regions[currentRegionIndex].second
+        regionValueText.text = regionName
     }
 
     private fun setupQualitySelector() {
@@ -151,10 +202,6 @@ class SettingsActivity : BaseActivity() {
             updateSourceDisplay()
             Toast.makeText(this, getString(R.string.source_value, getSourceName(sources[currentSourceIndex])), Toast.LENGTH_SHORT).show()
         }
-    }
-
-    private fun updateTimezoneDisplay() {
-        timezoneValueText.text = getString(R.string.timezone_value, timezones[currentTimezoneIndex].second)
     }
 
     private fun updateQualityDisplay() {

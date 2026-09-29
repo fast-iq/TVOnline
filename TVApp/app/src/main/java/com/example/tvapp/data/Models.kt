@@ -47,7 +47,8 @@ object ChannelList {
             category = "federal",
             epgId = "c1r",
             fallbackStreamUrls = listOf(
-                "http://46.32.176.50/perviy/index.m3u8"
+                "http://46.32.176.50/perviy/index.m3u8",
+                "https://mhd.iptv2022.com/x/t5lf7N6guHOBWZDixAIpCw,1790755830/streaming/1kanalplus2-drm/324/5/index.m3u8"
             )
         ),
         Channel(
@@ -59,7 +60,8 @@ object ChannelList {
             epgId = "rossiya1",
             fallbackStreamUrls = listOf(
                 "https://cdn.ntv.ru/vitrina10/index.m3u8",
-                "https://stream.smotrim.ru/hls2/russia_hd/playlist_6.m3u8"
+                "https://stream.smotrim.ru/hls2/russia_hd/playlist_6.m3u8",
+                "https://mhd.iptv2022.com/x/k45fVF6xGTQzKaub-yQFkQ,1790756264/streaming/1kanalott-drm/324/5/index.m3u8"
             )
         ),
         Channel(

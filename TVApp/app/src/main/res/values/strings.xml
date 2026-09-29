@@ -42,8 +42,8 @@
     <string name="time_placeholder">Время: —:—</string>
 
     <!-- Settings -->
-    <string name="timezone_label">Часовой пояс:</string>
-    <string name="timezone_value">Часовой пояс: %1$s</string>
+    <string name="region_label">Регион:</string>
+    <string name="region_value">Регион: %1$s</string>
     <string name="quality_label">Качество видео:</string>
     <string name="quality_value">Качество: %1$s</string>
     <string name="language_label">Язык интерфейса:</string>
