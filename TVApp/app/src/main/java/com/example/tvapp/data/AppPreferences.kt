@@ -28,7 +28,14 @@ class AppPreferences(context: Context) {
         }
 
     var timezoneOffset: Int
-        get() = prefs.getInt(KEY_TIMEZONE_OFFSET, DEFAULT_MOSCOW_OFFSET)
+        get() {
+            val stored = prefs.getInt(KEY_TIMEZONE_OFFSET, Int.MIN_VALUE)
+            if (stored == Int.MIN_VALUE) {
+                val offsetMinutes = java.util.TimeZone.getDefault().getRawOffset() / 60000
+                return offsetMinutes / 60
+            }
+            return stored
+        }
         set(value) {
             prefs.edit { putInt(KEY_TIMEZONE_OFFSET, value) }
         }
