@@ -1,6 +1,5 @@
 plugins {
     id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
     id 'org.jlleitschuh.gradle.ktlint'
 }
 
@@ -36,7 +35,7 @@ if (appVersion != null && appVersion) {
 }
 
 android {
-    namespace 'com.example.tvapp'
+    namespace = 'com.example.tvapp'
     compileSdk 36
 
     defaultConfig {
@@ -73,20 +72,23 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = '17'
-    }
     buildFeatures {
-        viewBinding true
+        viewBinding = true
     }
 
     lint {
-        lintConfig file("lint.xml")
-        checkReleaseBuilds true
-        abortOnError false
-        xmlReport true
-        htmlReport true
-        textReport true
+        lintConfig = file("lint.xml")
+        checkReleaseBuilds = true
+        abortOnError = false
+        xmlReport = true
+        htmlReport = true
+        textReport = true
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 
