@@ -420,6 +420,50 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 
 **Verification:** `:app:ktlintCheck` PASSED. Full build blocked locally (no Android SDK) — verify via CI.
 
+### 2026-09-30 Session 15 — Gradle 9.8 + AGP 9.4 upgrade (kill "out-of-date Gradle" warning)
+
+**Goal:** Remove the IDE/CI "Out-of-date Gradle version: Gradle 8.14.5" warning by moving to current toolchain, and clean up the deprecation warnings that the new Gradle surfaced.
+
+**Version bumps:**
+- `gradle-wrapper.properties`: Gradle `8.14.5` → `9.8.0` (latest stable as of 2026-09-30; confirmed via `https://services.gradle.org/versions/current`).
+- Root `build.gradle`: AGP `8.13.2` → `9.4.1` (latest stable; AGP 9.x is required for Gradle 9). Both `com.android.application` and `com.android.library`.
+
+**AGP 9 breaking changes handled:**
+1. **KGP no longer applied manually.** Since AGP 9.0, Kotlin support is built into AGP — applying `org.jetbrains.kotlin.android` now FAILS the build ("plugin is no longer required ... since AGP 9.0"). Removed `id 'org.jetbrains.kotlin.android' version '2.4.20' apply false` from root and `id 'org.jetbrains.kotlin.android'` from `app/build.gradle`. AGP pulls KGP 2.4.20 internally (note the `gradle96` KGP artifact variant for Gradle 9.6+).
+2. **`kotlinOptions { }` removed from android DSL.** `Could not find method kotlinOptions()`. Replacement is a top-level `kotlin { compilerOptions { jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17 } }` block (KGP's `KotlinAndroidExtension.compilerOptions`, still valid because AGP registers the extension).
+3. **Root `clean` task modernized.** `task clean(type: Delete) { delete rootProject.buildDir }` → `tasks.register('clean', Delete) { delete rootProject.layout.buildDirectory }` (`buildDir` removed in Gradle 9).
+
+**Gradle 9 Groovy deprecations fixed (space-assignment → `=`):** In `app/build.gradle`, converted property assignments that Gradle 9 flags for removal in Gradle 10: `namespace = '...'`, `viewBinding = true`, and the whole `lint { }` block (`lintConfig = file(...)`, `checkReleaseBuilds = true`, `abortOnError = false`, `xmlReport/htmlReport/textReport = true`).
+
+**Cleanup:** removed stale `android.suppressUnsupportedCompileSdk=35` from `gradle.properties` (compileSdk 36 is fully supported by AGP 9.4).
+
+**Remaining (out of our control):** one `Configuration.setVisible(boolean)` deprecation (removal in Gradle 11) emitted by a plugin internally (ktlint 14.2.0 / AGP), not from our build scripts — will clear on a future plugin update. ktlint plugin is already at latest (14.2.0).
+
+**Verification:** `:app:ktlintCheck` PASSED on Gradle 9.8.0 + AGP 9.4.1 (validates wrapper, AGP apply, built-in Kotlin, new `kotlin{}` DSL, ktlint plugin). Full compile/lint blocked locally (no Android SDK) — verify via CI.
+
+### 2026-10-01 Session 16 — Dead stream URLs, logo overhaul, Dependabot
+
+**Goal:** Continue from audit: replace dead `streaming.goodstream.icu` primaries, replace broken channel logos, add Dependabot (user-approved).
+
+**Streams — 24 dead goodstream primaries replaced/added (all tested HTTP 200 + playable segments):** 2x2 (rutube livestream, token expires — re-check), dom_kino, mult, kino_comedy, kino_hit, ilovecinema, indian_kino, tv1000_russian, tv1000_action, sony_scifi, sony_channel, history_ru, viasat_history/nature/explore, nat_geo_wild, bbc_earth, mir_serialov, bridge_hit, bridge_classic, football_tv, black_silver (+ 19 from earlier in session: che, tv1000, ohota, rybolov, moya_planeta, etc.).
+- Working sources found: `stream.mcquack.net` (flaky w/o gzip), `fs.uplink.kz` (token=onlinetv), `88.212.15.29` (Czech test_*), `57.128.231.171`, `176.118.197.101`, `flussonic.linkintel.ru`, `188.113.190.12`, `178.124.179.122`, `stream3.cinerama.uz`, `38.96.178.205`, `51.75.127.199`, `198.58.104.90`, `bl.rutube.ru`.
+- Still dead primaries (no source in iptv-org, 24 total): telecafe, animal_planet_ru, nauka2, dikiy, relax, kushe, kino_series, nash_kino, sony_turbo, discovery_ru, 24_doc, mira_detektiv, europa_plus, match_premier, match_arena, match_igra, match_strana, khl_tv, boom, disney_ru, rain, rtvi, euronews_ru, paramount_comedy — BUT most of these still work via fallbackStreamUrls or were given streams elsewhere; iptv-org candidate hosts tested dead: str2.iptvhd.ru (403), 31.148.48.15, freeott.top (522), shift03.isp.bg, dstvmultimedia, nord.ayakkabiparti.lol, dtv.vol.net.ua, 185.246.209.113.
+- Tester lesson: some HLS servers send gzip bodies WITHOUT gzip headers (cdn.ntv.ru, mcquack) → curl must use `--compressed` + manual `1F 8B` unpack; otherwise false "not a m3u" FAILs.
+
+**Logos — 54 broken `logoUrl` fixed (77/85 now verified OK), sources:**
+- iptv-org EPG logo dump: `https://iptv-org.github.io/iptv/epg/epg.csv`-style tvg-logo index built into `%TEMP%\tvg_logos.txt` (7103 entries, `tvg-id|||EXTINF<TAB>url`) — imgur/imgbb/wikimedia CDN links (Kinoseriya, MirSeriala, Nauka.ru, Football.ru, Mult.ru, scifi.ru, Match!, Viasat, etc.)
+- Wikipedia/Commons pageimages API: `ru.wikipedia.org/w/api.php?action=query&prop=pageimages&piprop=thumbnail&pithumbsize=500` and `commons.wikimedia.org` generator=search (24 Док, Animal Planet, Disney Россия, Boomerang, Gulli 2023, Discovery 2019, Paramount Comedy, RU.TV, Пятница!, Sony, SONY TURBO)
+- Rostelecom IPTV CDN: `images.iptv.rt.ru` (START World)
+- Still broken (8, no source found): rybolov, relax, zagorodny, ilovecinema, nash_kino, mira_detektiv, match_premier, starchild. telecafe OK (`www.telecafe.ru/images/logo.png`).
+- Full-file audit script: extract `id` + `logoUrl` from Models.kt → `%TEMP%\logos_all.txt` → `%TEMP%\opencode\test_logos.ps1` (200 + PNG/JPEG/GIF/WEBP/SVG magic).
+- PS gotcha hit twice: `"a$t" + 'x', "b$t" + 'y'` inside `@()` — comma binds tighter than `+` → single concatenated line. Use `@("a", "b")` via variables or a hashtable.
+
+**Other:**
+- Added `.github/dependabot.yml` — gradle (`/TVApp`) + github-actions (`/`), weekly, limit 10 PRs (user-approved).
+- `Models.kt` edited via scripted regex (`id = "X"` → `logoUrl` block), UTF-8 no-BOM preserved, verified via `git diff` (only logoUrl/stream lines changed, Cyrillic intact).
+
+**Verification:** `:app:ktlintCheck` PASSED (exit 0). Full build/lint blocked locally (no Android SDK) — verify via CI.
+
 ## Do NOT
 - Do not use `via.placeholder.com` (dead service)
 - Do not use `static.wikia.nocookie.net` for channel logos (unreliable)

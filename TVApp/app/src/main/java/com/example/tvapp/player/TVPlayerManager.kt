@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.GzipSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
@@ -38,6 +41,7 @@ class TVPlayerManager(private val context: Context) {
         exoPlayer = ExoPlayer.Builder(context)
             .setLoadControl(loadControl)
             .setTrackSelector(trackSelector!!)
+            .setDataSourceFactory(createDataSourceFactory())
             .build().apply {
                 addListener(object : Player.Listener {
                     override fun onPlaybackStateChanged(state: Int) {
@@ -92,6 +96,17 @@ class TVPlayerManager(private val context: Context) {
 
         applyQualityMode()
         playerView.player = exoPlayer
+    }
+
+    private fun createDataSourceFactory(): DataSource.Factory = object : DataSource.Factory {
+        override fun createDataSource(): DataSource {
+            val http = DefaultHttpDataSource.Factory()
+                .setAllowCrossProtocolRedirects(true)
+                .setConnectTimeoutMs(10_000)
+                .setReadTimeoutMs(20_000)
+                .createDataSource()
+            return GzipSource(http)
+        }
     }
 
     private fun applyQualityMode() {
