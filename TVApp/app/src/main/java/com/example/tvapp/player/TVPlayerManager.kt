@@ -1,17 +1,25 @@
 package com.example.tvapp.player
 
 import android.content.Context
+import android.net.Uri
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.datasource.GzipSource
+import androidx.media3.datasource.TransferListener
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Channel
+import java.io.BufferedInputStream
+import java.io.IOException
+import java.io.InputStream
+import java.util.zip.GZIPInputStream
 
 class TVPlayerManager(private val context: Context) {
 
@@ -41,7 +49,7 @@ class TVPlayerManager(private val context: Context) {
         exoPlayer = ExoPlayer.Builder(context)
             .setLoadControl(loadControl)
             .setTrackSelector(trackSelector!!)
-            .setDataSourceFactory(createDataSourceFactory())
+            .setMediaSourceFactory(DefaultMediaSourceFactory(createDataSourceFactory()))
             .build().apply {
                 addListener(object : Player.Listener {
                     override fun onPlaybackStateChanged(state: Int) {
@@ -105,7 +113,7 @@ class TVPlayerManager(private val context: Context) {
                 .setConnectTimeoutMs(10_000)
                 .setReadTimeoutMs(20_000)
                 .createDataSource()
-            return GzipSource(http)
+            return GzipDetectingDataSource(http)
         }
     }
 
@@ -183,5 +191,55 @@ class TVPlayerManager(private val context: Context) {
         }
         exoPlayer = null
         trackSelector = null
+    }
+}
+
+private class GzipDetectingDataSource(private val delegate: DataSource) : DataSource {
+
+    private var input: InputStream? = null
+
+    override fun addTransferListener(transferListener: TransferListener) {
+        delegate.addTransferListener(transferListener)
+    }
+
+    override fun open(dataSpec: DataSpec): Long {
+        val remaining = delegate.open(dataSpec)
+        val upstream = object : InputStream() {
+            override fun read(): Int {
+                val one = ByteArray(1)
+                return if (read(one, 0, 1) == -1) -1 else one[0].toInt() and 0xFF
+            }
+
+            override fun read(b: ByteArray, off: Int, len: Int): Int = delegate.read(b, off, len)
+
+            override fun close() {
+                delegate.close()
+            }
+        }
+        val buffered = BufferedInputStream(upstream)
+        buffered.mark(2)
+        val b1 = buffered.read()
+        val b2 = buffered.read()
+        buffered.reset()
+        val isGzip = b1 == 0x1F && b2 == 0x8B
+        input = if (isGzip) GZIPInputStream(buffered) else buffered
+        return if (isGzip) C.LENGTH_UNSET.toLong() else remaining
+    }
+
+    override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
+        val stream = input ?: throw IOException("DataSource is not open")
+        return stream.read(buffer, offset, length)
+    }
+
+    override fun getUri(): Uri? = delegate.uri
+
+    override fun getResponseHeaders(): Map<String, List<String>> = delegate.responseHeaders
+
+    override fun close() {
+        try {
+            input?.close()
+        } finally {
+            input = null
+        }
     }
 }

@@ -464,6 +464,25 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 
 **Verification:** `:app:ktlintCheck` PASSED (exit 0). Full build/lint blocked locally (no Android SDK) — verify via CI.
 
+### 2026-10-02 Session 17 — First CI run on AGP 9: compile fix + local Android SDK
+
+**Goal:** CI `Lint & Code Style` job failed on push 7fd2096 (`compileDebugKotlin` errors) — Session 16's gzip fix was never compiled locally (no SDK). Fix and enable local full builds.
+
+**CI failure (job logs via `git credential fill` → token → `GET /actions/jobs/{id}/logs`):**
+- `TVPlayerManager.kt` — `Unresolved reference 'GzipSource'` (media3 has no such class) and `Unresolved reference 'setDataSourceFactory'` (removed from `ExoPlayer.Builder` in media3 1.11.1 — only `setMediaSourceFactory` exists).
+
+**Fix in `TVPlayerManager.kt`:**
+- Builder: `.setMediaSourceFactory(DefaultMediaSourceFactory(createDataSourceFactory()))`.
+- New private class `GzipDetectingDataSource(delegate)`: implements `DataSource` directly (can't extend `BaseDataSource` — `addTransferListener` is final and wouldn't forward to delegate). Peeks 2 bytes via `BufferedInputStream.mark/reset`; if `1F 8B` → wrap in `java.util.zip.GZIPInputStream` (import is `java.util.zip`, NOT `java.io`!) and return `C.LENGTH_UNSET.toLong()` (`C.LENGTH_UNSET` is Int!), else passthrough with original remaining. Forwards `addTransferListener`/`getUri`/`getResponseHeaders` to delegate. Handles servers that send gzip bodies (cdn.ntv.ru, mcquack) even without `Content-Encoding` header; plain responses pass through untouched.
+- Verified against real APIs by downloading `media3-exoplayer`/`media3-datasource` 1.11.1 AARs from `dl.google.com/android/maven2/` and running `javap`.
+
+**Local Android SDK now installed (unblocks all future sessions):**
+- `%LOCALAPPDATA%\Android\Sdk` — cmdline-tools 23.0, platform-tools, platforms;android-36, build-tools;36.0.0.
+- `TVApp/local.properties` → `sdk.dir=C:/Users/Sidelnikov/AppData/Local/Android/Sdk` (added `local.properties` to root `.gitignore` — never commit machine paths).
+- Full local pipeline (same as CI): `$env:JAVA_HOME='C:\Users\Sidelnikov\.jdks\corretto-17.0.15'; $env:ANDROID_HOME="$env:LOCALAPPDATA\Android\Sdk"; .\gradlew.bat lintDebug ktlintCheck testDebugUnitTest assembleDebug` — **BUILD SUCCESSFUL** (8m22s; only known warnings: OldTargetApi/GradleDependency/NewerVersionAvailable).
+
+**Lesson:** do NOT claim "verify via CI" when a compile error would be caught — install/use local SDK and run `compileDebugKotlin` before pushing. ktlintCheck only parses; it does not type-check.
+
 ## Do NOT
 - Do not use `via.placeholder.com` (dead service)
 - Do not use `static.wikia.nocookie.net` for channel logos (unreliable)
