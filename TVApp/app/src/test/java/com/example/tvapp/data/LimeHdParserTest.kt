@@ -45,6 +45,7 @@ class LimeHdParserTest {
                 "url": "https://a/common.m3u8",
                 "cached_logo_url": "https://logo/a.png",
                 "drm": true,
+                "region_code": 66,
                 "current": [
                   {"title": "Вечер", "timestart": 300, "timestop": 400},
                   {"title": "Утро", "timestart": 100, "timestop": 200}
@@ -65,6 +66,7 @@ class LimeHdParserTest {
         assertEquals("limehd_45", first.id)
         assertEquals("Тест", first.name)
         assertEquals("https://b/x", first.streamUrl)
+        assertEquals(0, first.regionCode)
 
         val second = channels[1]
         assertEquals("limehd_123", second.id)
@@ -75,6 +77,7 @@ class LimeHdParserTest {
         assertEquals("federal", second.category)
         assertEquals("123", second.epgId)
         assertTrue(second.isDrm)
+        assertEquals(66, second.regionCode)
         assertEquals("Вечер", second.currentProgramTitle)
         assertEquals(300_000L, second.currentProgramStart)
         assertEquals(400_000L, second.currentProgramEnd)

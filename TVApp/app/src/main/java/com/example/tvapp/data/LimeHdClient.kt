@@ -61,7 +61,8 @@ class LimeHdClient(context: Context) {
             val payload = createPayload()
             val body = JSONObject(httpPostForm(url, "payload=" + URLEncoder.encode(payload, "UTF-8")) ?: return emptyList())
             val channelsArray = body.optJSONArray("channels") ?: return emptyList()
-            parseChannels(channelsArray)
+            val parsed = parseChannels(channelsArray)
+            if (region != 0) parsed.sortedByDescending { it.regionCode == region } else parsed
         } catch (e: Exception) {
             Log.e(TAG, "getChannels failed: ${e.message}")
             emptyList()
@@ -330,7 +331,8 @@ internal object LimeHdParser {
                 currentProgramStart = current?.startMs,
                 currentProgramEnd = current?.endMs,
                 programs = programs,
-                isDrm = item.optBoolean("drm", false)
+                isDrm = item.optBoolean("drm", false),
+                regionCode = item.optInt("region_code", 0)
             )
 
             entries.add(Pair(item.optInt("number", Int.MAX_VALUE), channel))
