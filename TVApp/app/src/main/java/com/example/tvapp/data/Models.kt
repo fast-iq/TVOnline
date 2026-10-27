@@ -323,7 +323,7 @@ object ChannelList {
             id = "telecafe",
             name = "Телекафе",
             logoUrl = "https://www.telecafe.ru/images/logo.png",
-            streamUrl = "https://streaming.goodstream.icu/live/26.m3u8",
+            streamUrl = "https://cdn4.skygo.mn/live/disk1/Telecafe/HLSv3-FTA/Telecafe.m3u8",
             category = "lifestyle",
             epgId = "telecafe"
         ),
@@ -368,7 +368,7 @@ object ChannelList {
         Channel(
             id = "rybolov",
             name = "Рыбалка TV",
-            logoUrl = "https://www.rybalka.tv/images/logo.png",
+            logoUrl = "",
             streamUrl = "https://stream8.cinerama.uz/1413/tracks-v1a1/mono.m3u8",
             category = "hunting_fishing",
             epgId = "rybolov"
@@ -377,7 +377,7 @@ object ChannelList {
             id = "animal_planet_ru",
             name = "Animal Planet Россия",
             logoUrl = "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/20/2018_Animal_Planet_logo.svg/500px-2018_Animal_Planet_logo.svg.png",
-            streamUrl = "https://streaming.goodstream.icu/live/120.m3u8",
+            streamUrl = "http://stream.mcquack.net/114/index.m3u8",
             category = "nature",
             epgId = "animal_planet_ru"
         ),
@@ -385,7 +385,7 @@ object ChannelList {
             id = "nauka2",
             name = "Наука 2.0",
             logoUrl = "https://i.imgur.com/ZZxzueO.png",
-            streamUrl = "https://streaming.goodstream.icu/live/121.m3u8",
+            streamUrl = "http://stream.mcquack.net/403/index.m3u8",
             category = "nature",
             epgId = "nauka2"
         ),
@@ -416,7 +416,7 @@ object ChannelList {
         Channel(
             id = "relax",
             name = "Релакс ТВ",
-            logoUrl = "https://www.relaxtv.ru/images/logo.png",
+            logoUrl = "",
             streamUrl = "https://streaming.goodstream.icu/live/126.m3u8",
             category = "relax",
             epgId = "relax"
@@ -448,7 +448,7 @@ object ChannelList {
         Channel(
             id = "zagorodny",
             name = "Загородный",
-            logoUrl = "https://www.zagorodny.ru/images/logo.png",
+            logoUrl = "",
             streamUrl = "http://185.57.68.33/40/index.m3u8",
             category = "lifestyle",
             epgId = "zagorodny"
@@ -488,7 +488,7 @@ object ChannelList {
         Channel(
             id = "ilovecinema",
             name = "I Love Cinema",
-            logoUrl = "https://www.ilovecinema.ru/images/logo.png",
+            logoUrl = "",
             streamUrl = "http://flussonic.linkintel.ru/cinema/index.m3u8",
             category = "movies",
             epgId = "ilovecinema"
@@ -496,8 +496,8 @@ object ChannelList {
         Channel(
             id = "nash_kino",
             name = "Наше кино",
-            logoUrl = "https://www.nashkino.ru/images/logo.png",
-            streamUrl = "https://streaming.goodstream.icu/live/136.m3u8",
+            logoUrl = "",
+            streamUrl = "https://stream8.cinerama.uz/1051/tracks-v1a1/mono.m3u8",
             category = "movies",
             epgId = "nash_kino"
         ),
@@ -561,7 +561,7 @@ object ChannelList {
             id = "viasat_history",
             name = "Viasat History",
             logoUrl = "https://i.imgur.com/X16UGUf.png",
-            streamUrl = "http://88.212.15.29/live/test_viasat_history_atk_tv/playlist.m3u8",
+            streamUrl = "http://178.124.179.122:8080/HistoryHD/index.m3u8",
             category = "documentary",
             epgId = "viasat_history"
         ),
@@ -577,7 +577,7 @@ object ChannelList {
             id = "viasat_explore",
             name = "Viasat Explore",
             logoUrl = "https://i.imgur.com/DyT5pKB.png",
-            streamUrl = "http://88.212.15.29/live/test_viasat_explore_atk_tv/playlist.m3u8",
+            streamUrl = "http://stream.mcquack.net/239/index.m3u8",
             category = "documentary",
             epgId = "viasat_explore"
         ),
@@ -585,7 +585,7 @@ object ChannelList {
             id = "discovery_ru",
             name = "Discovery Россия",
             logoUrl = "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/27/Discovery_Channel_-_Logo_2019.svg/500px-Discovery_Channel_-_Logo_2019.svg.png",
-            streamUrl = "https://streaming.goodstream.icu/live/147.m3u8",
+            streamUrl = "http://stream.mcquack.net/177/index.m3u8",
             category = "documentary",
             epgId = "discovery_ru"
         ),
@@ -593,12 +593,11 @@ object ChannelList {
             id = "nat_geo_wild",
             name = "Nat Geo Wild",
             logoUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/National_Geographic_Wild_logo.svg/960px-National_Geographic_Wild_logo.svg.png",
-            streamUrl = "http://88.212.15.29/live/test_ngw/playlist.m3u8",
+            streamUrl = "http://198.58.104.90:8989/natgeowild/index.m3u8",
             category = "nature",
             epgId = "nat_geo_wild",
             fallbackStreamUrls = listOf(
-                "http://51.75.127.199:3141/natgeowild/index.m3u8",
-                "http://198.58.104.90:8989/natgeowild/index.m3u8"
+                "http://51.75.127.199:3141/natgeowild/index.m3u8"
             )
         ),
         Channel(
@@ -628,7 +627,7 @@ object ChannelList {
         Channel(
             id = "mira_detektiv",
             name = "Мир Детективов",
-            logoUrl = "https://www.mirdetektivov.ru/images/logo.png",
+            logoUrl = "",
             streamUrl = "https://streaming.goodstream.icu/live/152.m3u8",
             category = "series",
             epgId = "mira_detektiv"
@@ -645,7 +644,7 @@ object ChannelList {
             id = "europa_plus",
             name = "Europa Plus TV",
             logoUrl = "https://i.imgur.com/GLc4qrc.png",
-            streamUrl = "https://streaming.goodstream.icu/live/154.m3u8",
+            streamUrl = "http://46.53.200.153:7777/play/EuropaPlus/index.m3u8",
             category = "music",
             epgId = "europa_plus"
         ),
@@ -692,7 +691,7 @@ object ChannelList {
         Channel(
             id = "match_premier",
             name = "Матч Премьер",
-            logoUrl = "https://www.matchtv.ru/images/logo.png",
+            logoUrl = "",
             streamUrl = "https://streaming.goodstream.icu/live/160.m3u8",
             category = "sport",
             epgId = "match_premier"
@@ -772,7 +771,7 @@ object ChannelList {
         Channel(
             id = "starchild",
             name = "StarChild",
-            logoUrl = "https://www.starchild.ru/images/logo.png",
+            logoUrl = "",
             streamUrl = "https://dash2.antik.sk/live/test_star_cinema_atktv/playlist.m3u8",
             category = "kids",
             epgId = "starchild"
@@ -797,7 +796,7 @@ object ChannelList {
             id = "euronews_ru",
             name = "Euronews Русский",
             logoUrl = "https://i.imgur.com/8t9mdg9.png",
-            streamUrl = "https://streaming.goodstream.icu/live/173.m3u8",
+            streamUrl = "https://cdn-euronews.akamaized.net/live/eds/euronews-ru/25071/index.m3u8",
             category = "news",
             epgId = "euronews_ru"
         ),

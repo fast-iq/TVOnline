@@ -610,6 +610,31 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 
 **Verification:** `:app:testDebugUnitTest` 36/36 PASSED, `:app:ktlintCheck`, `:app:lintDebug`, `:app:assembleDebug` PASSED.
 
+### 2026-10-27 Session 24 — dependency bumps, git hygiene, dead streams/logos
+
+**Dependabot (safe minors only, local commits — PRs #46/#48/#52):**
+- Gradle wrapper 9.8.0 -> 9.8.1; `actions/setup-java` v5 -> v6; `actions/download-artifact` v7 -> v8.
+- NOT applied: core-ktx 1.19.1 requires compileSdk 37 (no stable platform in SDK repo yet — build fails `checkDebugAarMetadata`); Glide 5, OkHttp 5, leanback 1.3 alpha are breaking majors (PRs stay open).
+
+**Git hygiene:**
+- `TVApp/.gradle/` was TRACKED despite gitignore rule — untracked with `git rm -r --cached`.
+- .gitignore now also ignores `lint-results*`, `dependency-check-report.*`, `/fix_kt.ps1`, `/APK_other/`, `/efir_tv_pro_4_0_6/`.
+
+**Stream audit (curl test of all 85 primaries; gotcha: `#EXTM3U` is 7 chars, slicing 6 caused false all-FAIL):**
+- 51/85 primaries alive. All goodstream.icu paths are 412 again (with any Referer) — replaced where a source was found:
+  - telecafe -> `https://cdn4.skygo.mn/live/disk1/Telecafe/HLSv3-FTA/Telecafe.m3u8`
+  - animal_planet_ru -> mcquack 114, discovery_ru -> mcquack 177, viasat_explore -> mcquack 239, nauka2 -> mcquack 403 (Nauka UA)
+  - viasat_history -> `http://178.124.179.122:8080/HistoryHD/index.m3u8`
+  - nash_kino -> `https://stream8.cinerama.uz/1051/tracks-v1a1/mono.m3u8`
+  - europa_plus -> `http://46.53.200.153:7777/play/EuropaPlus/index.m3u8`
+  - euronews_ru -> official `https://cdn-euronews.akamaized.net/live/eds/euronews-ru/25071/index.m3u8`
+  - nat_geo_wild primary -> `http://198.58.104.90:8989/natgeowild/index.m3u8` (worked fallback promoted; dedup required — ModelsTest asserts primary not in fallback)
+- No source found (still dead primaries, LimeHD default masks them): mult, ohota, moya_planeta, dikiy, relax, kushe, kino_series, sony_turbo, viasat_nature, bbc_earth, 24_doc, mira_detektiv, match_premier/arena/igra/strana, khl_tv, boom, disney_ru, rain, rtvi, paramount_comedy, first_music (rtmp.one.by is RTMP, unplayable by ExoPlayer).
+- fs.uplink.kz token=onlinetv -> 403 for mult/ohota/tv1000_russkoe (token dead for some paths); 31.148.48.15 and freeott.top hosts dead.
+- Logos: api.ntv.ru returns 405 on HEAD but 200 on GET (false FAIL — test logos with GET). 8 dead-domain logos (rybalka.tv, relaxtv.ru, zagorodny.ru, ilovecinema.ru, nashkino.ru, mirdetektivov.ru, matchtv.ru logo, starchild.ru) set to `""` -> Glide placeholder (no source found on iptv-org/wikipedia/commons/premier).
+
+**Verification:** `:app:testDebugUnitTest` 36/36, `:app:ktlintCheck`, `:app:assembleDebug` PASSED.
+
 ## Do NOT
 - Do not use `via.placeholder.com` (dead service)
 - Do not use `static.wikia.nocookie.net` for channel logos (unreliable)
