@@ -66,6 +66,7 @@ class TVPlayerManager(private val context: Context) {
                     }
 
                     override fun onPlayerError(error: PlaybackException) {
+                        val channel = currentChannel ?: return
                         val urls = getCurrentStreamUrls()
                         pendingUrl = null
                         if (manualSwitch) {
@@ -73,7 +74,7 @@ class TVPlayerManager(private val context: Context) {
                             val revert = lastWorkingUrl
                             if (revert != null && urls.indexOf(revert) >= 0) {
                                 callback?.onFallbackUsed(revert)
-                                playChannel(currentChannel!!, revert)
+                                playChannel(channel, revert)
                                 return
                             }
                         }
@@ -81,7 +82,7 @@ class TVPlayerManager(private val context: Context) {
                             fallbackIndex++
                             val nextUrl = urls[fallbackIndex]
                             callback?.onFallbackUsed(nextUrl)
-                            playChannel(currentChannel!!, nextUrl)
+                            playChannel(channel, nextUrl)
                         } else {
                             val errorMessage = when (error.errorCodeName) {
                                 "ERROR_CODE_IO_NETWORK_CONNECTION_FAILED" ->
@@ -163,7 +164,7 @@ class TVPlayerManager(private val context: Context) {
 
     fun getCurrentStreamUrls(): List<String> {
         val channel = currentChannel ?: return emptyList()
-        return listOf(channel.streamUrl) + channel.fallbackStreamUrls
+        return (listOf(channel.streamUrl) + channel.fallbackStreamUrls).distinct()
     }
 
     fun getCurrentUrlIndex(): Int = fallbackIndex

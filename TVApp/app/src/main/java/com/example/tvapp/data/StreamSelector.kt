@@ -8,7 +8,7 @@ object StreamSelector {
 
     fun regionOffsetOf(url: String): Int? = REGION_URL.find(url)?.groupValues?.get(1)?.toIntOrNull()
 
-    fun allUrls(channel: Channel): List<String> = listOf(channel.streamUrl) + channel.fallbackStreamUrls
+    fun allUrls(channel: Channel): List<String> = (listOf(channel.streamUrl) + channel.fallbackStreamUrls).distinct()
 
     fun preferredUrl(channel: Channel, regionId: Int): String? {
         val offset = RegionList.offset(regionId)

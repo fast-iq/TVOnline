@@ -30,6 +30,10 @@ import java.util.TimeZone
 
 class EPGActivity : BaseActivity() {
 
+    companion object {
+        private const val EPG_MAX_CHANNELS = 80
+    }
+
     private lateinit var currentTimeText: TextView
     private lateinit var timeScaleContainer: LinearLayout
     private lateinit var channelLabelsContainer: LinearLayout
@@ -90,7 +94,7 @@ class EPGActivity : BaseActivity() {
     }
 
     private fun setupEPGGrid() {
-        channels = ChannelList.channels
+        channels = ChannelList.channels.take(EPG_MAX_CHANNELS)
         createTimeScale()
         createChannelLabels()
         val totalWidth = (totalMinutes * pixelsPerMinute).toInt()
@@ -221,7 +225,7 @@ class EPGActivity : BaseActivity() {
         scope.launch {
             try {
                 val programs = withContext(Dispatchers.IO) {
-                    epgRepository.getProgramsForAllChannels(Date())
+                    epgRepository.getProgramsForAllChannels(channels, Date())
                 }
                 renderPrograms(programs)
                 epgGridContainer.post { scrollToCurrentTime() }

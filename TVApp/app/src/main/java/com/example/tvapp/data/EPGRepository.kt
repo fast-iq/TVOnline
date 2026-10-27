@@ -31,9 +31,9 @@ class EPGRepository(context: Context? = null) {
         }
     }
 
-    suspend fun getProgramsForAllChannels(date: Date): Map<String, List<Program>> = withContext(Dispatchers.IO) {
+    suspend fun getProgramsForAllChannels(channels: List<Channel>, date: Date): Map<String, List<Program>> = withContext(Dispatchers.IO) {
         val programs = mutableMapOf<String, List<Program>>()
-        for (channel in ChannelList.channels) {
+        for (channel in channels) {
             try {
                 val channelPrograms = getProgramForChannel(channel.id, date)
                 programs[channel.id] = channelPrograms
