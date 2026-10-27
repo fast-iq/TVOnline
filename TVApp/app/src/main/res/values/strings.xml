@@ -47,7 +47,8 @@
     <string name="region_label">Регион:</string>
     <string name="region_auto">Автоопределение</string>
     <string name="region_default_moscow">Москва</string>
-    <string name="region_value">Регион: %1$s</string>
+    <string name="region_select_title">Выбор региона</string>
+    <string name="region_prefix">Регион: %1$s</string>
     <string name="quality_label">Качество видео:</string>
     <string name="language_label">Язык интерфейса:</string>
     <string name="source_label">Источник каналов:</string>

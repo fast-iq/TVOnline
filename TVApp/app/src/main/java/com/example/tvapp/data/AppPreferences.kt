@@ -5,8 +5,8 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 
-class AppPreferences(context: Context) {
-    private val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
+class AppPreferences(private val prefs: SharedPreferences) {
+    constructor(context: Context) : this(PreferenceManager.getDefaultSharedPreferences(context.applicationContext))
 
     companion object {
         private const val KEY_LAST_CHANNEL = "last_channel_id"

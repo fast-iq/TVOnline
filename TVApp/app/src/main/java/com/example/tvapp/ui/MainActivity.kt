@@ -22,6 +22,7 @@ class MainActivity : BaseActivity() {
 
     private lateinit var channelsRecyclerView: RecyclerView
     private lateinit var currentProgramText: TextView
+    private lateinit var regionText: TextView
     private lateinit var channelAdapter: ChannelAdapter
 
     private val channelRepository by lazy { ChannelRepository(applicationContext) }
@@ -39,6 +40,8 @@ class MainActivity : BaseActivity() {
 
         channelsRecyclerView = findViewById(R.id.channelsRecyclerView)
         currentProgramText = findViewById(R.id.currentProgramText)
+        regionText = findViewById(R.id.regionText)
+        updateRegionDisplay()
         val settingsButton: android.widget.ImageView = findViewById(R.id.settingsButton)
         settingsButton.setOnClickListener { openSettings() }
         settingsButton.setOnFocusChangeListener { v, hasFocus ->
@@ -162,8 +165,19 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    private fun updateRegionDisplay() {
+        val code = preferences.limehdRegion
+        val name = if (code == 0) {
+            getString(R.string.region_auto)
+        } else {
+            preferences.limehdRegionName ?: code.toString()
+        }
+        regionText.text = getString(R.string.region_prefix, name)
+    }
+
     override fun onResume() {
         super.onResume()
+        updateRegionDisplay()
         if (lastFocusedPosition >= 0) {
             pendingFocusRestore = true
         }

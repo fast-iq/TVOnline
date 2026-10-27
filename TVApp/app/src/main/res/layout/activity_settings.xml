@@ -29,27 +29,24 @@
         app:layout_constraintTop_toBottomOf="@id/titleText"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <SeekBar
-        android:id="@+id/regionSeekBar"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginEnd="24dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/regionLabel"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
     <TextView
-        android:id="@+id/regionValueText"
+        android:id="@+id/regionButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/region_value"
-        android:textSize="16sp"
-        android:textColor="@color/text_secondary"
+        android:minWidth="320dp"
+        android:textSize="18sp"
+        android:textColor="@color/option_button_text"
+        android:background="@drawable/option_button_bg"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:gravity="center"
+        android:focusable="true"
+        android:clickable="true"
         android:layout_marginStart="24dp"
         android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/regionSeekBar"
+        app:layout_constraintTop_toBottomOf="@id/regionLabel"
         app:layout_constraintStart_toStartOf="parent" />
 
     <!-- Качество -->
@@ -62,7 +59,7 @@
         android:textColor="@color/white"
         android:layout_marginStart="24dp"
         android:layout_marginTop="32dp"
-        app:layout_constraintTop_toBottomOf="@id/regionValueText"
+        app:layout_constraintTop_toBottomOf="@id/regionButton"
         app:layout_constraintStart_toStartOf="parent" />
 
     <LinearLayout

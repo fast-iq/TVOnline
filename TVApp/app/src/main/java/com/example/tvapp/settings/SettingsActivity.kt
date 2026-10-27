@@ -5,9 +5,7 @@ import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.ViewGroup
 import android.widget.LinearLayout
-import android.widget.SeekBar
 import android.widget.TextView
-import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
@@ -24,8 +22,7 @@ import kotlinx.coroutines.withContext
 
 class SettingsActivity : BaseActivity() {
 
-    private lateinit var regionSeekBar: SeekBar
-    private lateinit var regionValueText: TextView
+    private lateinit var regionButton: TextView
     private lateinit var qualityOptions: LinearLayout
     private lateinit var languageOptions: LinearLayout
     private lateinit var sourceOptions: LinearLayout
@@ -59,8 +56,7 @@ class SettingsActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
 
-        regionSeekBar = findViewById(R.id.regionSeekBar)
-        regionValueText = findViewById(R.id.regionValueText)
+        regionButton = findViewById(R.id.regionButton)
         qualityOptions = findViewById(R.id.qualityOptions)
         languageOptions = findViewById(R.id.languageOptions)
         sourceOptions = findViewById(R.id.sourceOptions)
@@ -75,30 +71,26 @@ class SettingsActivity : BaseActivity() {
     private fun setupRegionSelector() {
         regions = fallbackRegions()
         currentRegionIndex = indexOfRegion(preferences.limehdRegion)
-        applySeekBar()
         updateRegionDisplay()
 
-        regionSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser && progress in regions.indices) {
-                    currentRegionIndex = progress
-                    applyRegion(regions[progress])
-                    updateRegionDisplay()
-                }
-            }
+        regionButton.setOnClickListener { showRegionDialog() }
+    }
 
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                if (currentRegionIndex in regions.indices) {
-                    Toast.makeText(
-                        this@SettingsActivity,
-                        getString(R.string.region_value, displayRegionName(regions[currentRegionIndex].first)),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
+    private fun showRegionDialog() {
+        if (regions.isEmpty()) return
+        val labels = regions.map { (code, name) ->
+            val base = if (code == 0) getString(R.string.region_auto) else name
+            if (code == regions[currentRegionIndex].first) "$base ${getString(R.string.source_current)}" else base
+        }
+        android.app.AlertDialog.Builder(this)
+            .setTitle(getString(R.string.region_select_title))
+            .setSingleChoiceItems(labels.toTypedArray(), currentRegionIndex) { dialog, which ->
+                currentRegionIndex = which
+                applyRegion(regions[which])
+                updateRegionDisplay()
+                dialog.dismiss()
             }
-        })
+            .show()
     }
 
     private fun loadLimeHdRegions() {
@@ -115,7 +107,6 @@ class SettingsActivity : BaseActivity() {
                 applyRegion(regions[currentRegionIndex])
             }
 
-            applySeekBar()
             updateRegionDisplay()
         }
     }
@@ -141,11 +132,6 @@ class SettingsActivity : BaseActivity() {
         return result
     }
 
-    private fun applySeekBar() {
-        regionSeekBar.max = (regions.size - 1).coerceAtLeast(0)
-        regionSeekBar.progress = currentRegionIndex
-    }
-
     private fun indexOfRegion(code: Int): Int = regions.indexOfFirst { it.first == code }.takeIf { it != -1 } ?: 0
 
     private fun applyRegion(region: Pair<Int, String>) {
@@ -168,7 +154,7 @@ class SettingsActivity : BaseActivity() {
 
     private fun updateRegionDisplay() {
         if (currentRegionIndex in regions.indices) {
-            regionValueText.text = displayRegionName(regions[currentRegionIndex].first)
+            regionButton.text = displayRegionName(regions[currentRegionIndex].first)
         }
     }
 
