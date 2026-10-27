@@ -12,7 +12,7 @@ import com.example.tvapp.R
 import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
-import com.example.tvapp.data.RegionList
+import com.example.tvapp.data.StreamSelector
 import com.example.tvapp.player.TVPlayerManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -98,7 +98,10 @@ class PlayerActivity : BaseActivity() {
             if (currentChannel != null) {
                 infoText.text = getString(R.string.loading_channel, channelName)
                 infoText.visibility = View.VISIBLE
-                playerManager.playChannel(currentChannel!!, preferredUrl(currentChannel!!) ?: streamUrl)
+                playerManager.playChannel(
+                    currentChannel!!,
+                    StreamSelector.preferredUrl(currentChannel!!, preferences.regionId) ?: streamUrl
+                )
                 showProgramOverlay(currentChannel!!)
             } else if (!streamUrl.isNullOrEmpty()) {
                 val url = streamUrl!!
@@ -170,7 +173,10 @@ class PlayerActivity : BaseActivity() {
         channelId = newChannel.id
         channelName = newChannel.name
         currentChannel = newChannel
-        playerManager.playChannel(newChannel, preferredUrl(newChannel))
+        playerManager.playChannel(
+            newChannel,
+            StreamSelector.preferredUrl(newChannel, preferences.regionId) ?: newChannel.streamUrl
+        )
         showProgramOverlay(newChannel)
         infoText.text = getString(R.string.loading_channel, newChannel.name)
         infoText.visibility = View.VISIBLE
@@ -193,7 +199,7 @@ class PlayerActivity : BaseActivity() {
         val currentIndex = playerManager.getCurrentUrlIndex()
         val items = mutableListOf<String>()
         for (i in urls.indices) {
-            val offset = regionOffsetOf(urls[i])
+            val offset = StreamSelector.regionOffsetOf(urls[i])
             val label = when {
                 i == 0 -> getString(R.string.source_official)
                 offset != null -> getString(R.string.source_region_offset, offset)
@@ -212,30 +218,6 @@ class PlayerActivity : BaseActivity() {
                 infoText.visibility = View.VISIBLE
             }
             .show()
-    }
-
-    private fun regionOffsetOf(url: String): Int? {
-        val match = Regex("/hls/CH_[A-Z0-9]+_(\\d+)/variant\\.m3u8").find(url)
-        return match?.groupValues?.get(1)?.toIntOrNull()
-    }
-
-    private fun preferredUrl(channel: Channel): String? {
-        val offset = RegionList.offset(preferences.regionId)
-        if (offset <= 0) return null
-        val urls = listOf(channel.streamUrl) + channel.fallbackStreamUrls
-        var best: String? = null
-        var bestDelta = Int.MAX_VALUE
-        for (url in urls) {
-            val o = regionOffsetOf(url)
-            if (o != null && o > 0) {
-                val delta = Math.abs(o - offset)
-                if (delta < bestDelta) {
-                    bestDelta = delta
-                    best = url
-                }
-            }
-        }
-        return best
     }
 
     private fun showProgramOverlay(channel: Channel) {

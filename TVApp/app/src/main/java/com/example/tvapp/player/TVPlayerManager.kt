@@ -221,14 +221,9 @@ private class GzipDetectingDataSource(private val delegate: DataSource) : DataSo
                 delegate.close()
             }
         }
-        val buffered = BufferedInputStream(upstream)
-        buffered.mark(2)
-        val b1 = buffered.read()
-        val b2 = buffered.read()
-        buffered.reset()
-        val isGzip = b1 == 0x1F && b2 == 0x8B
-        input = if (isGzip) GZIPInputStream(buffered) else buffered
-        return if (isGzip) C.LENGTH_UNSET.toLong() else remaining
+        val result = wrapGzipResponse(upstream, remaining)
+        input = result.first
+        return result.second
     }
 
     override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
@@ -246,5 +241,18 @@ private class GzipDetectingDataSource(private val delegate: DataSource) : DataSo
         } finally {
             input = null
         }
+    }
+}
+
+internal fun wrapGzipResponse(stream: InputStream, remaining: Long): Pair<InputStream, Long> {
+    val buffered = BufferedInputStream(stream)
+    buffered.mark(2)
+    val b1 = buffered.read()
+    val b2 = buffered.read()
+    buffered.reset()
+    return if (b1 == 0x1F && b2 == 0x8B) {
+        Pair(GZIPInputStream(buffered), C.LENGTH_UNSET.toLong())
+    } else {
+        Pair(buffered, remaining)
     }
 }

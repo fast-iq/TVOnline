@@ -635,6 +635,15 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 
 **Verification:** `:app:testDebugUnitTest` 36/36, `:app:ktlintCheck`, `:app:assembleDebug` PASSED.
 
+### 2026-10-27 Session 25 — extracted PlayerActivity selection logic + gzip logic into tests
+
+- New `data/StreamSelector.kt` (object): `regionOffsetOf(url)`, `allUrls(channel)`, `preferredUrl(channel, regionId)` — the ngenix region-variant selection moved out of PlayerActivity verbatim; PlayerActivity now calls it (RegionList import removed).
+- `TVPlayerManager.kt`: gzip detection extracted from `GzipDetectingDataSource.open()` into top-level `internal fun wrapGzipResponse(stream, remaining): Pair<InputStream, Long>` (pure java.io + C.LENGTH_UNSET) so JVM unit tests don't need android Uri/DataSpec mocking.
+- New tests: `StreamSelectorTest` (8: offset parsing, zero/negative region -> null, exact/closest/tie selection, no-variant channel), `GzipResponseTest` (5: gzip unwrap + LENGTH_UNSET, passthrough plain/empty/1-byte).
+- Test total: 49.
+
+**Verification:** `:app:testDebugUnitTest` 49/49, `:app:compileDebugKotlin`, `:app:ktlintCheck`, `:app:lintDebug` PASSED (only machine-specific `local.properties` PropertyEscape error).
+
 ## Do NOT
 - Do not use `via.placeholder.com` (dead service)
 - Do not use `static.wikia.nocookie.net` for channel logos (unreliable)
