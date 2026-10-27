@@ -644,6 +644,25 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 
 **Verification:** `:app:testDebugUnitTest` 49/49, `:app:compileDebugKotlin`, `:app:ktlintCheck`, `:app:lintDebug` PASSED (only machine-specific `local.properties` PropertyEscape error).
 
+### 2026-10-27 Session 26 — region EPG refresh, overlay auto-hide, icon redesign
+
+**1. Region change didn't update program data:**
+- Verified live: LimeHD `/api/v4/playlist` `current` programs and `/api/v4/epg` are IDENTICAL for all regions (tested region 77 vs 66 vs 24 — 0 program diffs). Only stream config (vitrina-config, hlsarchive tokens) differs per region. So a "refresh" alone can never change program text.
+- What actually differs per region: the region's UTC offset. LimeHD `/api/v4/config` regions carry `tz` = UTC offset (Москва=3, Свердловская=5, Красноярский/Новосибирская=7). Program times are now displayed in the selected region's timezone.
+- `AppPreferences.programTimeZone()`: region tz offset (first of `limehdRegionTzOffsets`, when `limehdRegion != 0`) else legacy `timezoneOffset`. Used by PlayerActivity overlay and EPGActivity grid.
+- `ChannelRepository` companion `contentVersion` counter + `invalidateContent()`; every `getChannels()` re-fetches when version changed. SettingsActivity bumps it on real region/source change.
+- `EPGRepository.limehdEpgCache` key now includes `limehdRegion` and is cleared when `contentVersion` changes.
+
+**2. Player program overlay:** auto-hides after 5s (`OVERLAY_VISIBLE_MS`, coroutine `delay` in existing scope); re-shown on channel switch.
+
+**3. Icons redesigned (all vector):**
+- `ic_launcher`/`tv_banner`: dark gradient rounded tile, white TV with red screen/play, antennas, legs (aapt linearGradient).
+- `ic_settings`: Material "tune" sliders icon (was gear).
+- `ic_epg`: program-guide card (evenOdd rounded frame + 3 bars). Old one drew invisible strokes (fill-only path with line commands).
+- `ic_channel_placeholder`: dark TV glyph with play triangle.
+- Button icons are monochrome white; `app:tint` in activity_main still applies.
+
+**Verification:** `:app:compileDebugKotlin`, `:app:ktlintCheck`, `:app:testDebugUnitTest` (49/49), `:app:lintDebug`, `:app:assembleDebug` PASSED (only machine-specific local.properties PropertyEscape).
 ## Do NOT
 - Do not use `via.placeholder.com` (dead service)
 - Do not use `static.wikia.nocookie.net` for channel logos (unreliable)

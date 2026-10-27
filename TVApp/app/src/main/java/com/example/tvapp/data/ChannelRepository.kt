@@ -13,12 +13,23 @@ import java.util.*
 
 class ChannelRepository(private val context: Context) {
 
+    companion object {
+        @Volatile
+        var contentVersion: Int = 0
+            private set
+
+        fun invalidateContent() {
+            contentVersion++
+        }
+    }
+
     private val prefs by lazy { AppPreferences(context) }
     private val limeHdClient by lazy { LimeHdClient(context) }
     private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
     private var cachedChannels: List<Channel>? = null
     private var cacheKey: String? = null
+    private var cachedContentVersion: Int = -1
     private var lastFetchTime: Long = 0L
     private val cacheDurationMs = 10 * 60 * 1000L
 
@@ -27,7 +38,8 @@ class ChannelRepository(private val context: Context) {
 
     suspend fun getChannels(forceRefresh: Boolean = false): List<Channel> {
         val key = currentCacheKey()
-        val fresh = cacheKey == key && System.currentTimeMillis() - lastFetchTime < cacheDurationMs
+        val versionChanged = cachedContentVersion != contentVersion
+        val fresh = !versionChanged && cacheKey == key && System.currentTimeMillis() - lastFetchTime < cacheDurationMs
         if (!forceRefresh && cachedChannels != null && fresh) {
             return cachedChannels!!
         }
@@ -37,6 +49,7 @@ class ChannelRepository(private val context: Context) {
                 if (channels.isNotEmpty()) {
                     cachedChannels = channels
                     cacheKey = key
+                    cachedContentVersion = contentVersion
                     lastFetchTime = System.currentTimeMillis()
                     ChannelList.updateChannels(channels)
                     channels

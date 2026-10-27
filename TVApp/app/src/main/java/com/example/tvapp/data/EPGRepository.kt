@@ -14,10 +14,12 @@ class EPGRepository(context: Context? = null) {
     private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     private val epgApiBase = "https://api.epgservice.ru"
     private val epgToken = AppPreferences.EPG_SERVICE_TOKEN
+    private val prefs = context?.let { AppPreferences(it) }
     private val limeHdClient by lazy { context?.let { LimeHdClient(it) } }
 
     private var channelHrefCache: Map<String, String>? = null
     private val limehdEpgCache = mutableMapOf<String, List<Program>>()
+    private var cachedEpgVersion: Int = -1
 
     suspend fun getProgramForChannel(channelId: String, date: Date): List<Program> = withContext(Dispatchers.IO) {
         try {
@@ -48,7 +50,8 @@ class EPGRepository(context: Context? = null) {
         if (channel.programs.isNotEmpty()) return channel.programs
         val limehdId = channel.epgId ?: return null
         val dayKey = SimpleDateFormat("yyyyMMdd", Locale.US).format(date)
-        val cacheKey = "${channel.id}_$dayKey"
+        val cacheKey = "${channel.id}_${prefs?.limehdRegion ?: 0}_$dayKey"
+        ensureEpgCacheFresh()
         limehdEpgCache[cacheKey]?.let { return it }
 
         val client = limeHdClient ?: return null
@@ -56,6 +59,13 @@ class EPGRepository(context: Context? = null) {
         if (programs.isEmpty()) return null
         limehdEpgCache[cacheKey] = programs
         return programs
+    }
+
+    private fun ensureEpgCacheFresh() {
+        if (cachedEpgVersion != ChannelRepository.contentVersion) {
+            limehdEpgCache.clear()
+            cachedEpgVersion = ChannelRepository.contentVersion
+        }
     }
 
     private fun fetchEpgServiceSchedule(channelId: String, date: Date): List<Program>? {

@@ -57,7 +57,7 @@ class EPGActivity : BaseActivity() {
         setContentView(R.layout.activity_epg)
 
         val prefs = AppPreferences(applicationContext)
-        displayTz = createOffsetTimeZone(prefs.timezoneOffset)
+        displayTz = prefs.programTimeZone()
 
         currentTimeText = findViewById(R.id.currentTimeText)
         timeScaleContainer = findViewById(R.id.timeScaleContainer)
@@ -72,12 +72,6 @@ class EPGActivity : BaseActivity() {
         loadEPGForDate()
         updateCurrentTimeDisplay()
         setupScrollSync()
-    }
-
-    private fun createOffsetTimeZone(offsetHours: Int): TimeZone {
-        val offsetMinutes = offsetHours * 60
-        val tzId = "GMT" + (if (offsetMinutes >= 0) "+" else "-") + String.format(Locale.US, "%02d:%02d", Math.abs(offsetMinutes / 60), Math.abs(offsetMinutes % 60))
-        return TimeZone.getTimeZone(tzId)
     }
 
     private fun setupScrollSync() {

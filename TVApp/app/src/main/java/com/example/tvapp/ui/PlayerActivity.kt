@@ -18,12 +18,17 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.TimeZone
 
 class PlayerActivity : BaseActivity() {
+
+    companion object {
+        private const val OVERLAY_VISIBLE_MS = 5000L
+    }
 
     private var channelId: String? = null
     private var streamUrl: String? = null
@@ -39,6 +44,7 @@ class PlayerActivity : BaseActivity() {
 
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private val preferences by lazy { AppPreferences(applicationContext) }
+    private var overlayHideJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -222,11 +228,12 @@ class PlayerActivity : BaseActivity() {
 
     private fun showProgramOverlay(channel: Channel) {
         val title = channel.currentProgramTitle
-        if (title == null || title.isBlank()) return
+        if (title == null || title.isBlank()) {
+            programOverlay.visibility = View.GONE
+            return
+        }
 
-        val tzOffset = AppPreferences(applicationContext).timezoneOffset
-        val tzId = "GMT" + (if (tzOffset >= 0) "+" else "-") + String.format(Locale.US, "%02d:00", Math.abs(tzOffset))
-        val tz = TimeZone.getTimeZone(tzId)
+        val tz = preferences.programTimeZone()
         val sdf = SimpleDateFormat("HH:mm", Locale.getDefault()).apply { timeZone = tz }
 
         val start = channel.currentProgramStart
@@ -244,5 +251,14 @@ class PlayerActivity : BaseActivity() {
         }
 
         programOverlay.visibility = View.VISIBLE
+        scheduleOverlayHide()
+    }
+
+    private fun scheduleOverlayHide() {
+        overlayHideJob?.cancel()
+        overlayHideJob = scope.launch {
+            delay(OVERLAY_VISIBLE_MS)
+            programOverlay.visibility = View.GONE
+        }
     }
 }

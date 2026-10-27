@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat
 import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
 import com.example.tvapp.data.AppPreferences
+import com.example.tvapp.data.ChannelRepository
 import com.example.tvapp.data.LimeHdClient
 import com.example.tvapp.data.LimeHdRegion
 import com.example.tvapp.data.RegionList
@@ -138,6 +139,10 @@ class SettingsActivity : BaseActivity() {
         val code = region.first
         val name = if (code == 0) getString(R.string.region_auto) else region.second
 
+        if (code != preferences.limehdRegion) {
+            ChannelRepository.invalidateContent()
+        }
+
         preferences.limehdRegion = code
         preferences.limehdRegionName = name
 
@@ -227,6 +232,9 @@ class SettingsActivity : BaseActivity() {
         }
         val selected = sources.indexOf(preferences.contentSource).takeIf { it != -1 } ?: 0
         buildOptionRow(sourceOptions, labels, selected) { index ->
+            if (sources[index] != preferences.contentSource) {
+                ChannelRepository.invalidateContent()
+            }
             preferences.contentSource = sources[index]
         }
     }

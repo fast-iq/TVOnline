@@ -1,13 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <path android:pathData="M20,0 L88,0 A20,20 0 0 1 108,20 L108,88 A20,20 0 0 1 88,108 L20,108 A20,20 0 0 1 0,88 L0,20 A20,20 0 0 1 20,0 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="0" android:startY="0"
+                android:endX="108" android:endY="108"
+                android:type="linear">
+                <item android:offset="0" android:color="#FF2B2D42"/>
+                <item android:offset="1" android:color="#FF14152B"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:strokeColor="#E94560"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round"
+        android:pathData="M54,40 L38,20 M54,40 L70,20"/>
     <path
         android:fillColor="#E94560"
-        android:pathData="M54,54m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0"/>
+        android:pathData="M38,20m-3.5,0a3.5,3.5 0,1 1,7 0a3.5,3.5 0,1 1,-7 0"/>
+    <path
+        android:fillColor="#E94560"
+        android:pathData="M70,20m-3.5,0a3.5,3.5 0,1 1,7 0a3.5,3.5 0,1 1,-7 0"/>
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M42,38 L66,54 L42,70 Z"/>
+        android:pathData="M30,40 L78,40 A8,8 0 0 1 86,48 L86,76 A8,8 0 0 1 78,84 L30,84 A8,8 0 0 1 22,76 L22,48 A8,8 0 0 1 30,40 Z"/>
+    <path
+        android:fillColor="#1A1A2E"
+        android:pathData="M33,47 L75,47 A4,4 0 0 1 79,51 L79,73 A4,4 0 0 1 75,77 L33,77 A4,4 0 0 1 29,73 L29,51 A4,4 0 0 1 33,47 Z"/>
+    <path
+        android:fillColor="#E94560"
+        android:pathData="M49,54 L67,62 L49,70 Z"/>
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round"
+        android:pathData="M36,84 L30,94 M72,84 L78,94"/>
 </vector>

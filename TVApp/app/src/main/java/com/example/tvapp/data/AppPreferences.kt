@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
+import java.util.Locale
+import java.util.TimeZone
 
 class AppPreferences(private val prefs: SharedPreferences) {
     constructor(context: Context) : this(PreferenceManager.getDefaultSharedPreferences(context.applicationContext))
@@ -113,6 +115,13 @@ class AppPreferences(private val prefs: SharedPreferences) {
         set(value) {
             prefs.edit { putString(KEY_LIMEHD_REGION_TZ, value.joinToString(",")) }
         }
+
+    fun programTimeZone(): java.util.TimeZone {
+        val regionOffset = if (limehdRegion != 0) limehdRegionTzOffsets.firstOrNull() else null
+        val offset = regionOffset ?: timezoneOffset
+        val id = "GMT" + (if (offset >= 0) "+" else "-") + String.format(java.util.Locale.US, "%02d:00", Math.abs(offset))
+        return java.util.TimeZone.getTimeZone(id)
+    }
 
     enum class QualityMode {
         MINIMUM,
