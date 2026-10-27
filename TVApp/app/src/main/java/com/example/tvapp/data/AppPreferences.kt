@@ -15,6 +15,9 @@ class AppPreferences(context: Context) {
         private const val KEY_QUALITY_MODE = "quality_mode"
         private const val KEY_LANGUAGE = "language"
         private const val KEY_CONTENT_SOURCE = "content_source"
+        private const val KEY_LIMEHD_DEVICE_ID = "limehd_device_id"
+        private const val KEY_LIMEHD_REGION = "limehd_region"
+        private const val KEY_CONTENT_SOURCE_MIGRATED = "content_source_limehd_migrated"
         const val DEFAULT_MOSCOW_OFFSET = 3
 
         // epgservice.ru API token (получается через https://t.me/EPGServiceSupportBot)
@@ -64,11 +67,33 @@ class AppPreferences(context: Context) {
 
     var contentSource: ContentSource
         get() {
-            val idx = prefs.getInt(KEY_CONTENT_SOURCE, ContentSource.PREMIER.ordinal)
-            return if (idx in ContentSource.values().indices) ContentSource.values()[idx] else ContentSource.PREMIER
+            val idx = prefs.getInt(KEY_CONTENT_SOURCE, -1)
+            if (idx !in ContentSource.values().indices || !prefs.getBoolean(KEY_CONTENT_SOURCE_MIGRATED, false)) {
+                prefs.edit {
+                    putInt(KEY_CONTENT_SOURCE, ContentSource.LIMEHD.ordinal)
+                    putBoolean(KEY_CONTENT_SOURCE_MIGRATED, true)
+                }
+                return ContentSource.LIMEHD
+            }
+            return ContentSource.values()[idx]
         }
         set(value) {
-            prefs.edit { putInt(KEY_CONTENT_SOURCE, value.ordinal) }
+            prefs.edit {
+                putInt(KEY_CONTENT_SOURCE, value.ordinal)
+                putBoolean(KEY_CONTENT_SOURCE_MIGRATED, true)
+            }
+        }
+
+    var limehdDeviceId: String?
+        get() = prefs.getString(KEY_LIMEHD_DEVICE_ID, null)
+        set(value) {
+            prefs.edit { putString(KEY_LIMEHD_DEVICE_ID, value) }
+        }
+
+    var limehdRegion: Int
+        get() = prefs.getInt(KEY_LIMEHD_REGION, 1)
+        set(value) {
+            prefs.edit { putInt(KEY_LIMEHD_REGION, value) }
         }
 
     enum class QualityMode {
@@ -81,6 +106,7 @@ class AppPreferences(context: Context) {
     enum class ContentSource {
         PREMIER,
         IVI,
-        SMOTRESHKA
+        SMOTRESHKA,
+        LIMEHD
     }
 }

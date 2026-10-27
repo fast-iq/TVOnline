@@ -1,5 +1,6 @@
 package com.example.tvapp.data
 
+import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -8,16 +9,20 @@ import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
 
-class EPGRepository {
+class EPGRepository(context: Context? = null) {
 
     private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     private val epgApiBase = "https://api.epgservice.ru"
     private val epgToken = AppPreferences.EPG_SERVICE_TOKEN
+    private val limeHdClient by lazy { context?.let { LimeHdClient(it) } }
 
     private var channelHrefCache: Map<String, String>? = null
+    private val limehdEpgCache = mutableMapOf<String, List<Program>>()
 
     suspend fun getProgramForChannel(channelId: String, date: Date): List<Program> = withContext(Dispatchers.IO) {
         try {
+            val limehd = fetchLimeHdSchedule(channelId, date)
+            if (limehd != null && limehd.isNotEmpty()) return@withContext limehd
             fetchEpgServiceSchedule(channelId, date) ?: generateFallbackEPG(channelId, date)
         } catch (e: Exception) {
             generateFallbackEPG(channelId, date)
@@ -35,6 +40,22 @@ class EPGRepository {
             }
         }
         programs
+    }
+
+    private fun fetchLimeHdSchedule(channelId: String, date: Date): List<Program>? {
+        val channel = ChannelList.channels.find { it.id == channelId } ?: return null
+        if (!channel.id.startsWith("limehd_")) return null
+        if (channel.programs.isNotEmpty()) return channel.programs
+        val limehdId = channel.epgId ?: return null
+        val dayKey = SimpleDateFormat("yyyyMMdd", Locale.US).format(date)
+        val cacheKey = "${channel.id}_$dayKey"
+        limehdEpgCache[cacheKey]?.let { return it }
+
+        val client = limeHdClient ?: return null
+        val programs = client.fetchEpg(limehdId, channel.id)
+        if (programs.isEmpty()) return null
+        limehdEpgCache[cacheKey] = programs
+        return programs
     }
 
     private fun fetchEpgServiceSchedule(channelId: String, date: Date): List<Program>? {

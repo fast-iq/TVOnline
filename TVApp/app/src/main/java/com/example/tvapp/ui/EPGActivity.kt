@@ -39,7 +39,7 @@ class EPGActivity : BaseActivity() {
     private lateinit var epgVerticalScroll: NestedScrollView
     private lateinit var channelLabelsScroll: NestedScrollView
 
-    private val epgRepository = EPGRepository()
+    private val epgRepository by lazy { EPGRepository(applicationContext) }
     private var channels: List<Channel> = emptyList()
 
     private val scope = CoroutineScope(Dispatchers.Main + Job())

@@ -36,6 +36,7 @@ class SettingsActivity : BaseActivity() {
     private val languages = listOf("ru" to "Русский", "en" to "English")
 
     private val sources = listOf(
+        AppPreferences.ContentSource.LIMEHD,
         AppPreferences.ContentSource.PREMIER,
         AppPreferences.ContentSource.IVI,
         AppPreferences.ContentSource.SMOTRESHKA
@@ -116,6 +117,7 @@ class SettingsActivity : BaseActivity() {
     private fun setupSourceSelector() {
         val labels = sources.map { source ->
             when (source) {
+                AppPreferences.ContentSource.LIMEHD -> getString(R.string.source_limehd)
                 AppPreferences.ContentSource.PREMIER -> getString(R.string.source_premier)
                 AppPreferences.ContentSource.IVI -> getString(R.string.source_ivi)
                 AppPreferences.ContentSource.SMOTRESHKA -> getString(R.string.source_smotreshka)

@@ -16,6 +16,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Channel
+import com.example.tvapp.data.LimeHdClient
 import java.io.BufferedInputStream
 import java.io.IOException
 import java.io.InputStream
@@ -26,6 +27,7 @@ class TVPlayerManager(private val context: Context) {
     private var exoPlayer: ExoPlayer? = null
     private var trackSelector: androidx.media3.exoplayer.trackselection.DefaultTrackSelector? = null
     private val preferences = AppPreferences(context)
+    private val limeHdClient = LimeHdClient(context)
     private var currentChannel: Channel? = null
     private var fallbackIndex = 0
     private var pendingUrl: String? = null
@@ -108,12 +110,14 @@ class TVPlayerManager(private val context: Context) {
 
     private fun createDataSourceFactory(): DataSource.Factory = object : DataSource.Factory {
         override fun createDataSource(): DataSource {
-            val http = DefaultHttpDataSource.Factory()
+            val factory = DefaultHttpDataSource.Factory()
                 .setAllowCrossProtocolRedirects(true)
                 .setConnectTimeoutMs(10_000)
                 .setReadTimeoutMs(20_000)
-                .createDataSource()
-            return GzipDetectingDataSource(http)
+            if (currentChannel?.id?.startsWith("limehd_") == true) {
+                factory.setDefaultRequestProperties(limeHdClient.playerRequestHeaders())
+            }
+            return GzipDetectingDataSource(factory.createDataSource())
         }
     }
 
@@ -139,7 +143,8 @@ class TVPlayerManager(private val context: Context) {
 
         exoPlayer?.apply {
             clearMediaItems()
-            val mediaItem = MediaItem.fromUri(url).buildUpon()
+            val mediaItem = MediaItem.Builder()
+                .setUri(url)
                 .setTag(channel.id)
                 .build()
             setMediaItem(mediaItem)

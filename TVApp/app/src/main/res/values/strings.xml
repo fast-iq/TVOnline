@@ -49,6 +49,7 @@
     <string name="quality_label">Качество видео:</string>
     <string name="language_label">Язык интерфейса:</string>
     <string name="source_label">Источник каналов:</string>
+    <string name="source_limehd">LimeHD</string>
     <string name="source_premier">Premier.one</string>
     <string name="source_ivi">IVI</string>
     <string name="source_smotreshka">Смотрешка</string>

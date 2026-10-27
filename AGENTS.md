@@ -8,8 +8,9 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 
 ## Key Files
 - TVApp/[AWS_SECRET_KEY_REDACTED]/Models.kt - Channel list, data models (Channel has currentProgramTitle/Start/End)
-- TVApp/[AWS_SECRET_KEY_REDACTED]/ChannelRepository.kt - Fetches channels from premier.one (primary source for grid)
-- TVApp/[AWS_SECRET_KEY_REDACTED]/EPGRepository.kt - EPG loading (epgservice.ru, used by EPGActivity only)
+- TVApp/[AWS_SECRET_KEY_REDACTED]/LimeHdClient.kt - LimeHD auth/payload, playlist, EPG and stream headers
+- TVApp/[AWS_SECRET_KEY_REDACTED]/ChannelRepository.kt - Fetches channels from premier.one (legacy source for grid)
+- TVApp/[AWS_SECRET_KEY_REDACTED]/EPGRepository.kt - EPG loading (LimeHD programs first, then epgservice.ru, used by EPGActivity only)
 - `TVApp/app/src/main/java/com/example/tvapp/data/AppPreferences.kt` - Settings storage
 - `TVApp/app/src/main/java/com/example/tvapp/player/TVPlayerManager.kt` - ExoPlayer wrapper
 - TVApp[AWS_SECRET_KEY_REDACTED]MainActivity.kt - Channel grid (uses ChannelRepository, no EPGRepository)
@@ -482,6 +483,46 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 - Full local pipeline (same as CI): `$env:JAVA_HOME='C:\Users\Sidelnikov\.jdks\corretto-17.0.15'; $env:ANDROID_HOME="$env:LOCALAPPDATA\Android\Sdk"; .\gradlew.bat lintDebug ktlintCheck testDebugUnitTest assembleDebug` — **BUILD SUCCESSFUL** (8m22s; only known warnings: OldTargetApi/GradleDependency/NewerVersionAvailable).
 
 **Lesson:** do NOT claim "verify via CI" when a compile error would be caught — install/use local SDK and run `compileDebugKotlin` before pushing. ktlintCheck only parses; it does not type-check.
+
+### 2026-10-27 Session 18 — LimeHD source integration
+
+**Goal:** Change the app so channel list, program data and stream URLs come from LimeHD (`pl.iptv2021.com`) instead of premier.one/IVI/epgservice as the default source.
+
+**Verified LimeHD endpoints:**
+- `GET https://pl.iptv2021.com/auth` → JSON `public_key`, `valid`, server `Date`.
+- `POST https://pl.iptv2021.com/api/v4/playlist?...&epg=1&epgcnt=4&epg_limit=4...`
+  - form body: `payload=<base64 RSA encrypted JSON>`.
+  - payload JSON uses single quotes: `{'request_time':<epoch>,'device_id':'<id>','signature':'<sha256>'}`.
+  - RSA on Android: `RSA/NONE/PKCS1Padding` with `public_key` from `/auth` or captured fallback key.
+  - original LimeHD signature used for testing: `909adaa8726a311c84469dc7687245890768cf1a8c6445ad601f1a2c15409321`.
+  - required headers: `User-Agent` and `X-LHD-Agent` containing the same JSON user-agent.
+  - response `channels[].stream.common` contains playable HLS URLs; example `mhd.iptv2022.com` m3u8 returned 200 with HLS variants.
+  - `channels[].current` with `epgcnt=4` returns current + upcoming programs (`timestart`, `timestop`, `title`, `desc`, `preview`).
+- `GET https://pl.iptv2021.com/api/v4/epg?id=<our_id>&tz=<offset>&epg_from=-1&epg_limit=3&grouping=1&region=1&lang=ru`
+  - works with `User-Agent`/`X-LHD-Agent`; response `epg[].data[].timestart/timestop` are UTC epoch seconds.
+
+**Code changes:**
+- Added `TVApp/app/src/main/java/com/example/tvapp/data/LimeHdClient.kt`:
+  - builds LimeHD `User-Agent` / `X-LHD-Agent` JSON;
+  - persists stable LimeHD `device_id` in `AppPreferences`;
+  - auth + RSA payload + playlist fetch + EPG fallback fetch;
+  - maps LimeHD JSON to existing `Channel`/`Program` models.
+- `Channel` now has `programs: List<Program>` and `isDrm: Boolean`.
+- `AppPreferences.ContentSource` has `LIMEHD`, default/migration flag `content_source_limehd_migrated`, plus `KEY_LIMEHD_DEVICE_ID` and `KEY_LIMEHD_REGION`.
+- `ChannelRepository` tries LimeHD first, then premier/IVI/Smotreshka fallback. It sets `lastFetchWasLimeHd` so MainActivity skips old NTV enrichment for LimeHD channels.
+- `EPGRepository(context)` uses `Channel.programs` from LimeHD when present; otherwise falls back to LimeHD `/api/v4/epg`, then epgservice.ru, then local fallback.
+- `TVPlayerManager` applies LimeHD `User-Agent`, `X-LHD-Agent`, and `X-Session-ID` only when current channel id starts with `limehd_`.
+- Settings source selector shows `LimeHD` first. Added `source_limehd` strings in ru/en and missing `region_label`/`region_value` translations in en.
+
+**Verification:**
+- Standalone Java test at `C:\Users\Sidelnikov\AppData\Local\Temp\opencode\limehdtest\LimeTest.java` and `T.java` confirmed `/auth`, playlist and HLS stream HTTP 200.
+- Local Gradle pipeline with Android SDK passed:
+  - `:app:compileDebugKotlin`
+  - `:app:ktlintCheck`
+  - `:app:lintDebug`
+  - `:app:testDebugUnitTest`
+  - `:app:assembleDebug`
+- Local lint has machine-specific `local.properties` `PropertyEscape` error; CI normally does not see that file.
 
 ## Do NOT
 - Do not use `via.placeholder.com` (dead service)

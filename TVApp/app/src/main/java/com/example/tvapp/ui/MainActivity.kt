@@ -78,6 +78,7 @@ class MainActivity : BaseActivity() {
     }
 
     private suspend fun enrichWithNtvEpg(channels: List<Channel>): List<Channel> {
+        if (channelRepository.lastFetchWasLimeHd) return channels
         return try {
             val ntvPrograms = channelRepository.fetchNtvCurrentPrograms()
             if (ntvPrograms.isEmpty()) return channels

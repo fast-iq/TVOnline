@@ -46,7 +46,10 @@
     <!-- Settings -->
     <string name="quality_label">Video quality:</string>
     <string name="language_label">Interface language:</string>
+    <string name="region_label">Region:</string>
+    <string name="region_value">Region: %1$s</string>
     <string name="source_label">Channel source:</string>
+    <string name="source_limehd">LimeHD</string>
     <string name="source_premier">Premier.one</string>
     <string name="source_ivi">IVI</string>
     <string name="source_smotreshka">Smotreshka</string>

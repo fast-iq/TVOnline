@@ -14,11 +14,15 @@ import java.util.*
 class ChannelRepository(private val context: Context) {
 
     private val prefs by lazy { AppPreferences(context) }
+    private val limeHdClient by lazy { LimeHdClient(context) }
     private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
     private var cachedChannels: List<Channel>? = null
     private var lastFetchTime: Long = 0L
     private val cacheDurationMs = 10 * 60 * 1000L
+
+    var lastFetchWasLimeHd: Boolean = false
+        private set
 
     suspend fun getChannels(forceRefresh: Boolean = false): List<Channel> {
         if (!forceRefresh && cachedChannels != null && System.currentTimeMillis() - lastFetchTime < cacheDurationMs) {
@@ -47,9 +51,23 @@ class ChannelRepository(private val context: Context) {
 
     private fun fetchFromPreferredSource(): List<Channel> {
         val preferred = prefs.contentSource
+        lastFetchWasLimeHd = false
         Log.d("ChannelRepo", "Preferred source: $preferred")
 
         when (preferred) {
+            AppPreferences.ContentSource.LIMEHD -> {
+                val result = tryFetchLimeHd()
+                if (result.isNotEmpty()) return result
+                Log.w("ChannelRepo", "LimeHD failed, trying Premier")
+                val premierResult = tryFetchPremier()
+                if (premierResult.isNotEmpty()) return premierResult
+                Log.w("ChannelRepo", "Premier failed, trying IVI")
+                val iviResult = tryFetchIvi()
+                if (iviResult.isNotEmpty()) return iviResult
+                Log.w("ChannelRepo", "IVI failed, trying Smotreshka")
+                val smotreshkaResult = tryFetchSmotreshka()
+                if (smotreshkaResult.isNotEmpty()) return smotreshkaResult
+            }
             AppPreferences.ContentSource.PREMIER -> {
                 val result = tryFetchPremier()
                 if (result.isNotEmpty()) return result
@@ -82,6 +100,19 @@ class ChannelRepository(private val context: Context) {
             }
         }
         return emptyList()
+    }
+
+    // ========== LIMEHD ==========
+
+    private fun tryFetchLimeHd(): List<Channel> = try {
+        val channels = limeHdClient.getChannels()
+        Log.d("ChannelRepo", "LimeHD: ${channels.size} channels")
+        lastFetchWasLimeHd = channels.isNotEmpty()
+        channels
+    } catch (e: Exception) {
+        Log.e("ChannelRepo", "LimeHD error: ${e.message}")
+        lastFetchWasLimeHd = false
+        emptyList()
     }
 
     // ========== PREMIER.ONE ==========

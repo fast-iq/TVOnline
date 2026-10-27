@@ -12,7 +12,9 @@ data class Channel(
     val epgHref: String? = null,
     val currentProgramTitle: String? = null,
     val currentProgramStart: Long? = null,
-    val currentProgramEnd: Long? = null
+    val currentProgramEnd: Long? = null,
+    val programs: List<Program> = emptyList(),
+    val isDrm: Boolean = false
 )
 
 data class Program(
