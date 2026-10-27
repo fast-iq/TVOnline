@@ -132,206 +132,9 @@ class ChannelRepository(private val context: Context) {
         emptyList()
     }
 
-    private val premierSlugToIdMap = mapOf(
-        "pervyi" to "c1r",
-        "rossiya_1" to "rossiya1",
-        "ntv" to "ntv",
-        "pyatyi_kanal" to "5tv",
-        "kultura" to "kultura",
-        "rossiya_24" to "rossiya24",
-        "karusel" to "karusel",
-        "tvc" to "tvc",
-        "ren_tv" to "ren",
-        "spas" to "spas",
-        "sts" to "sts",
-        "domashniy" to "domashniy",
-        "tv3" to "tv3",
-        "pyatnica" to "pz",
-        "subbota" to "subbota",
-        "zvezda" to "zvezda",
-        "mir" to "mir",
-        "tnt" to "tnt",
-        "muztv" to "muztv",
-        "matchtv" to "match",
-        "utr" to "utv",
-        "sun" to "sun",
-        "otr" to "otv"
-    )
-
-    private val ntvCodeToIdMap = mapOf(
-        "1tvch" to "c1r",
-        "russia1_orbit2" to "rossiya1",
-        "matchtv" to "match",
-        "ntv2" to "ntv",
-        "5tv2" to "5tv",
-        "kultura" to "kultura",
-        "russia24" to "rossiya24",
-        "carusel" to "karusel",
-        "otr2" to "otv",
-        "tvc" to "tvc",
-        "ren2" to "ren",
-        "ctc_msk2" to "sts",
-        "domashniy2_ext" to "domashniy",
-        "tv3_2" to "tv3",
-        "friday2" to "pz",
-        "tvzvezda2" to "zvezda",
-        "mir" to "mir",
-        "tnt2" to "tnt",
-        "muztv" to "muztv",
-        "spas2" to "spas"
-    )
-
     private fun fetchChannelsFromPremier(): List<Channel> {
         val html = httpGet("https://premier.one/tv/categories/besplatnye") ?: return emptyList()
-        val nuxtData = extractNuxtData(html) ?: run {
-            Log.w("ChannelRepo", "Premier: extractNuxtData failed, html length=${html.length}")
-            return emptyList()
-        }
-        val arr = parseNuxtArray(nuxtData) ?: run {
-            Log.w("ChannelRepo", "Premier: parseNuxtArray failed")
-            return emptyList()
-        }
-
-        val hardcodedById = ChannelList.hardcodedChannels.associateBy { it.id.lowercase() }
-        val channels = mutableListOf<Channel>()
-
-        val tvChannelsListIdx = findKeyIndex(arr, "tv-channels-list") ?: return emptyList()
-        val channelIndices = arr[tvChannelsListIdx] as? List<*> ?: return emptyList()
-
-        for (item in channelIndices) {
-            val idx = item as? Number ?: continue
-            val chIdx = idx.toInt()
-            if (chIdx >= arr.size) continue
-            val chObj = arr[chIdx] as? Map<*, *> ?: continue
-
-            val nameRef = chObj["name"] as? Number ?: continue
-            val slugRef = chObj["slug"] as? Number ?: continue
-            val logoRef = chObj["logoImage"] as? Number ?: continue
-
-            val name = resolveString(arr, nameRef) ?: continue
-            val slug = resolveString(arr, slugRef) ?: continue
-            val logoUrl = resolveString(arr, logoRef) ?: ""
-
-            val channelId = premierSlugToIdMap[slug.lowercase()] ?: slug
-            val hardcoded = hardcodedById[channelId.lowercase()]
-            val streamUrl = hardcoded?.streamUrl ?: ""
-
-            var progTitle: String? = null
-            var progStart: Long? = null
-            var progEnd: Long? = null
-
-            val tvProgramsRef = chObj["tvPrograms"] as? Number
-            if (tvProgramsRef != null) {
-                val progListIdx = tvProgramsRef.toInt()
-                if (progListIdx < arr.size) {
-                    val progListVal = arr[progListIdx]
-                    val firstProgIdx: Int? = when (progListVal) {
-                        is Number -> progListVal.toInt()
-                        is List<*> -> (progListVal.firstOrNull() as? Number)?.toInt()
-                        else -> null
-                    }
-                    if (firstProgIdx != null && firstProgIdx < arr.size) {
-                        val progObj = arr[firstProgIdx] as? Map<*, *>
-                        if (progObj != null) {
-                            val titleRef = progObj["title"] as? Number
-                            val startRef = progObj["startTs"] as? Number
-                            val endRef = progObj["endTs"] as? Number
-                            progTitle = resolveString(arr, titleRef)
-                            progStart = resolveDateTime(arr, startRef)
-                            progEnd = resolveDateTime(arr, endRef)
-                        }
-                    }
-                }
-            }
-
-            channels.add(
-                Channel(
-                    id = channelId,
-                    name = name,
-                    logoUrl = logoUrl,
-                    streamUrl = streamUrl,
-                    category = hardcoded?.category ?: "general",
-                    fallbackStreamUrls = hardcoded?.fallbackStreamUrls ?: emptyList(),
-                    currentProgramTitle = progTitle,
-                    currentProgramStart = progStart,
-                    currentProgramEnd = progEnd
-                )
-            )
-        }
-        return channels
-    }
-
-    private fun extractNuxtData(html: String): String? {
-        val marker = "id=\"__NUXT_DATA__\""
-        val startIdx = html.indexOf(marker)
-        if (startIdx < 0) return null
-        val contentStart = html.indexOf('>', startIdx) + 1
-        val endIdx = html.indexOf("</script>", contentStart)
-        if (contentStart <= 0 || endIdx < contentStart) return null
-        return html.substring(contentStart, endIdx)
-    }
-
-    private fun parseNuxtArray(json: String): List<Any?>? {
-        return try {
-            val trimmed = json.trim()
-            if (!trimmed.startsWith("[")) return null
-            JSONArray(trimmed).let { arr ->
-                val list = mutableListOf<Any?>()
-                for (i in 0 until arr.length()) {
-                    list.add(jsonValueToKotlin(arr.get(i)))
-                }
-                list
-            }
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    private fun jsonValueToKotlin(value: Any?): Any? = when (value) {
-        is JSONObject -> {
-            val map = mutableMapOf<String, Any?>()
-            val keys = value.keys()
-            while (keys.hasNext()) {
-                val key = keys.next()
-                map[key] = jsonValueToKotlin(value.get(key))
-            }
-            map
-        }
-        is JSONArray -> {
-            val list = mutableListOf<Any?>()
-            for (i in 0 until value.length()) {
-                list.add(jsonValueToKotlin(value.get(i)))
-            }
-            list
-        }
-        else -> value
-    }
-
-    private fun findKeyIndex(arr: List<Any?>, key: String): Int? {
-        for (i in arr.indices) {
-            val item = arr[i] as? Map<*, *> ?: continue
-            if (item.containsKey(key)) return i
-        }
-        return null
-    }
-
-    private fun resolveString(arr: List<Any?>, ref: Number?): String? {
-        if (ref == null) return null
-        val idx = ref.toInt()
-        if (idx < 0 || idx >= arr.size) return null
-        return arr[idx] as? String
-    }
-
-    private fun resolveDateTime(arr: List<Any?>, ref: Number?): Long? {
-        if (ref == null) return null
-        val idx = ref.toInt()
-        if (idx < 0 || idx >= arr.size) return null
-        val value = arr[idx] ?: return null
-        return when (value) {
-            is String -> parseIsoDateTime(value)
-            is Number -> value.toLong()
-            else -> null
-        }
+        return ChannelParsers.parsePremierChannels(html)
     }
 
     // ========== IVI.RU ==========
@@ -345,117 +148,9 @@ class ChannelRepository(private val context: Context) {
         emptyList()
     }
 
-    private val iviHruToIdMap = mapOf(
-        "russia1" to "rossiya1",
-        "5tv" to "5tv",
-        "russia24" to "rossiya24",
-        "sts" to "sts",
-        "domashniy" to "domashniy",
-        "ntv" to "ntv",
-        "perviy" to "c1r",
-        "kultura" to "kultura",
-        "zvezda" to "zvezda",
-        "piatnitsa" to "pz",
-        "tnt" to "tnt",
-        "ren" to "ren",
-        "karusel" to "karusel",
-        "matchtv" to "match",
-        "tvc" to "tvc",
-        "spas" to "spas",
-        "tv3" to "tv3",
-        "mir" to "mir",
-        "muztv" to "muztv"
-    )
-
     private fun fetchChannelsFromIvi(): List<Channel> {
         val html = httpGet("https://www.ivi.ru/tvplus/tvchannels/federalnye-kanaly") ?: return emptyList()
-        val stateJson = extractIviInitialState(html) ?: run {
-            Log.w("ChannelRepo", "IVI: extractIviInitialState failed, html length=${html.length}")
-            return emptyList()
-        }
-
-        val root = JSONObject(stateJson)
-        val tvChannelsObj = root.optJSONObject("state")
-            ?.optJSONObject("tvChannels")
-            ?.optJSONObject("tvChannels") ?: run {
-            Log.w("ChannelRepo", "IVI: state.tvChannels.tvChannels not found, keys=${root.keys()}")
-            return emptyList()
-        }
-
-        val hardcodedById = ChannelList.hardcodedChannels.associateBy { it.id.lowercase() }
-        val channels = mutableListOf<Channel>()
-        val keys = tvChannelsObj.keys()
-
-        while (keys.hasNext()) {
-            val key = keys.next()
-            val chObj = tvChannelsObj.optJSONObject(key) ?: continue
-            val title = chObj.optString("title", "")
-            if (title.isEmpty()) continue
-            val hru = chObj.optString("hru", "").lowercase()
-
-            val logoUrl = chObj.optJSONArray("logo")
-                ?.optJSONObject(0)
-                ?.optString("path", "") ?: ""
-            val fullLogo = if (logoUrl.startsWith("http")) logoUrl else "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_logo_rendered/${logoUrl.removePrefix("/")}"
-
-            val channelId = iviHruToIdMap[hru] ?: hru
-            val hardcoded = hardcodedById[channelId.lowercase()]
-            val streamUrl = hardcoded?.streamUrl ?: ""
-
-            var progTitle: String? = null
-            var progStart: Long? = null
-            var progEnd: Long? = null
-
-            val currentObj = chObj.optJSONObject("current")
-            if (currentObj != null) {
-                progTitle = currentObj.optString("title", "").takeIf { it.isNotEmpty() }
-                progStart = parseIsoDateTime(currentObj.optString("start", ""))
-                progEnd = parseIsoDateTime(currentObj.optString("end", ""))
-            }
-
-            channels.add(
-                Channel(
-                    id = channelId,
-                    name = title,
-                    logoUrl = fullLogo,
-                    streamUrl = streamUrl,
-                    category = hardcoded?.category ?: "general",
-                    fallbackStreamUrls = hardcoded?.fallbackStreamUrls ?: emptyList(),
-                    currentProgramTitle = progTitle,
-                    currentProgramStart = progStart,
-                    currentProgramEnd = progEnd
-                )
-            )
-        }
-        return channels
-    }
-
-    private fun extractIviInitialState(html: String): String? {
-        val marker = "window.__INITIAL_STATE__"
-        val startIdx = html.indexOf(marker)
-        if (startIdx < 0) return null
-        val jsonStart = html.indexOf('{', startIdx)
-        if (jsonStart < 0) return null
-        var depth = 0
-        var inString = false
-        var escaped = false
-        for (i in jsonStart until html.length) {
-            val c = html[i]
-            if (escaped) {
-                escaped = false
-                continue
-            }
-            when {
-                c == '\\' && inString -> escaped = true
-                c == '"' -> inString = !inString
-                !inString && c == '{' -> depth++
-                !inString && c == '}' -> {
-                    depth--
-                    if (depth == 0) return html.substring(jsonStart, i + 1)
-                }
-            }
-        }
-        return null
+        return ChannelParsers.parseIviChannels(html)
     }
 
     // ========== SMOTRESHKA.TV ==========
@@ -468,28 +163,6 @@ class ChannelRepository(private val context: Context) {
         Log.e("ChannelRepo", "Smotreshka error: ${e.message}")
         emptyList()
     }
-
-    private val smotreshkaNameToIdMap = mapOf(
-        "первый канал" to "c1r",
-        "россия 1" to "rossiya1",
-        "нтв" to "ntv",
-        "пятый канал" to "5tv",
-        "культура" to "kultura",
-        "звезда" to "zvezda",
-        "пятница!" to "pz",
-        "стс" to "sts",
-        "домашний" to "domashniy",
-        "тнт" to "tnt",
-        "рен тв" to "ren",
-        "карусель" to "karusel",
-        "матч тв" to "match",
-        "россия 24" to "rossiya24",
-        "тв центр" to "tvc",
-        "спас" to "spas",
-        "тв-3" to "tv3",
-        "мир" to "mir",
-        "муз-тв" to "muztv"
-    )
 
     private fun fetchChannelsFromSmotreshka(): List<Channel> {
         val token = httpGet("https://fe.smotreshka.tv/user/v1/asset-tokens") ?: return emptyList()
@@ -569,20 +242,20 @@ class ChannelRepository(private val context: Context) {
                 val now = System.currentTimeMillis()
                 val currentEvent = events.firstOrNull { ev ->
                     val sf = ev.optJSONObject("scheduledFor") ?: return@firstOrNull false
-                    val begin = parseIsoDateTime(sf.optString("begin", ""))
-                    val end = parseIsoDateTime(sf.optString("end", ""))
+                    val begin = ChannelParsers.parseIsoDateTime(sf.optString("begin", ""))
+                    val end = ChannelParsers.parseIsoDateTime(sf.optString("end", ""))
                     begin != null && end != null && now in begin..end
                 }
                 if (currentEvent != null) {
                     progTitle = currentEvent.optString("title", "").takeIf { it.isNotEmpty() }
                     val sf = currentEvent.optJSONObject("scheduledFor")
-                    progStart = parseIsoDateTime(sf?.optString("begin", "") ?: "")
-                    progEnd = parseIsoDateTime(sf?.optString("end", "") ?: "")
+                    progStart = ChannelParsers.parseIsoDateTime(sf?.optString("begin", "") ?: "")
+                    progEnd = ChannelParsers.parseIsoDateTime(sf?.optString("end", "") ?: "")
                 }
             }
 
             val normalizedTitle = title.lowercase().trim()
-            val channelId = smotreshkaNameToIdMap[normalizedTitle] ?: chId
+            val channelId = ChannelParsers.smotreshkaNameToIdMap[normalizedTitle] ?: chId
             val hardcoded = hardcodedById[channelId.lowercase()]
             val streamUrl = hardcoded?.streamUrl ?: ""
 
@@ -609,63 +282,15 @@ class ChannelRepository(private val context: Context) {
 
     suspend fun fetchNtvCurrentPrograms(): Map<String, NtvProgram> {
         return withContext(Dispatchers.IO) {
-            val result = mutableMapOf<String, NtvProgram>()
             try {
                 val json = httpGetWithHeaders(
                     "https://api.ntv.ru/vitrina/v1/channels/current_programs",
                     mapOf("x-platform" to "website")
-                ) ?: return@withContext result
-                val root = JSONObject(json)
-                val dataArr = root.optJSONArray("data") ?: return@withContext result
-                for (i in 0 until dataArr.length()) {
-                    val item = dataArr.optJSONObject(i) ?: continue
-                    val channelObj = item.optJSONObject("channel") ?: continue
-                    val programObj = item.optJSONObject("program") ?: continue
-                    val code = channelObj.optString("code", "")
-                    val title = programObj.optString("title", "")
-                    val startMs = parseNtvDate(programObj.optString("date_start", ""))
-                    val endMs = parseNtvDate(programObj.optString("date_stop", ""))
-                    if (startMs == null || endMs == null) continue
-                    val channelId = ntvCodeToIdMap[code] ?: code
-                    result[channelId] = NtvProgram(title, startMs, endMs)
-                }
+                ) ?: return@withContext emptyMap()
+                ChannelParsers.parseNtvPrograms(json)
             } catch (e: Exception) {
                 Log.e("ChannelRepo", "NTV EPG error: ${e.message}")
-            }
-            result
-        }
-    }
-
-    private fun parseNtvDate(str: String): Long? {
-        if (str.isEmpty()) return null
-        return try {
-            val sdf = SimpleDateFormat("MM/dd/yyyy HH:mm:ss", Locale.US)
-            val tz = TimeZone.getTimeZone("GMT+05:00")
-            sdf.timeZone = tz
-            sdf.parse(str)?.time
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    // ========== SHARED UTILS ==========
-
-    private fun parseIsoDateTime(str: String): Long? {
-        if (str.isEmpty()) return null
-        return try {
-            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US)
-            sdf.parse(str)?.time
-        } catch (e: Exception) {
-            try {
-                val sdf2 = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US)
-                sdf2.parse(str)?.time
-            } catch (e2: Exception) {
-                try {
-                    val sdf3 = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US)
-                    sdf3.parse(str)?.time
-                } catch (e3: Exception) {
-                    null
-                }
+                emptyMap()
             }
         }
     }
@@ -711,6 +336,382 @@ class ChannelRepository(private val context: Context) {
             null
         } finally {
             connection.disconnect()
+        }
+    }
+}
+internal object ChannelParsers {
+
+    val premierSlugToIdMap = mapOf(
+        "pervyi" to "c1r",
+        "rossiya_1" to "rossiya1",
+        "ntv" to "ntv",
+        "pyatyi_kanal" to "5tv",
+        "kultura" to "kultura",
+        "rossiya_24" to "rossiya24",
+        "karusel" to "karusel",
+        "tvc" to "tvc",
+        "ren_tv" to "ren",
+        "spas" to "spas",
+        "sts" to "sts",
+        "domashniy" to "domashniy",
+        "tv3" to "tv3",
+        "pyatnica" to "pz",
+        "subbota" to "subbota",
+        "zvezda" to "zvezda",
+        "mir" to "mir",
+        "tnt" to "tnt",
+        "muztv" to "muztv",
+        "matchtv" to "match",
+        "utr" to "utv",
+        "sun" to "sun",
+        "otr" to "otv"
+    )
+
+    val ntvCodeToIdMap = mapOf(
+        "1tvch" to "c1r",
+        "russia1_orbit2" to "rossiya1",
+        "matchtv" to "match",
+        "ntv2" to "ntv",
+        "5tv2" to "5tv",
+        "kultura" to "kultura",
+        "russia24" to "rossiya24",
+        "carusel" to "karusel",
+        "otr2" to "otv",
+        "tvc" to "tvc",
+        "ren2" to "ren",
+        "ctc_msk2" to "sts",
+        "domashniy2_ext" to "domashniy",
+        "tv3_2" to "tv3",
+        "friday2" to "pz",
+        "tvzvezda2" to "zvezda",
+        "mir" to "mir",
+        "tnt2" to "tnt",
+        "muztv" to "muztv",
+        "spas2" to "spas"
+    )
+
+    val iviHruToIdMap = mapOf(
+        "russia1" to "rossiya1",
+        "5tv" to "5tv",
+        "russia24" to "rossiya24",
+        "sts" to "sts",
+        "domashniy" to "domashniy",
+        "ntv" to "ntv",
+        "perviy" to "c1r",
+        "kultura" to "kultura",
+        "zvezda" to "zvezda",
+        "piatnitsa" to "pz",
+        "tnt" to "tnt",
+        "ren" to "ren",
+        "karusel" to "karusel",
+        "matchtv" to "match",
+        "tvc" to "tvc",
+        "spas" to "spas",
+        "tv3" to "tv3",
+        "mir" to "mir",
+        "muztv" to "muztv"
+    )
+
+    val smotreshkaNameToIdMap = mapOf(
+        "первый канал" to "c1r",
+        "россия 1" to "rossiya1",
+        "нтв" to "ntv",
+        "пятый канал" to "5tv",
+        "культура" to "kultura",
+        "звезда" to "zvezda",
+        "пятница!" to "pz",
+        "стс" to "sts",
+        "домашний" to "domashniy",
+        "тнт" to "tnt",
+        "рен тв" to "ren",
+        "карусель" to "karusel",
+        "матч тв" to "match",
+        "россия 24" to "rossiya24",
+        "тв центр" to "tvc",
+        "спас" to "spas",
+        "тв-3" to "tv3",
+        "мир" to "mir",
+        "муз-тв" to "muztv"
+    )
+
+    fun parsePremierChannels(html: String): List<Channel> {
+        val nuxtData = extractNuxtData(html) ?: return emptyList()
+        val arr = parseNuxtArray(nuxtData) ?: return emptyList()
+
+        val hardcodedById = ChannelList.hardcodedChannels.associateBy { it.id.lowercase() }
+        val channels = mutableListOf<Channel>()
+
+        val containerIdx = findKeyIndex(arr, "tv-channels-list") ?: return emptyList()
+        val listRef = (arr[containerIdx] as? Map<*, *>)?.get("tv-channels-list") as? Number ?: return emptyList()
+        val channelIndices = arr[listRef.toInt()] as? List<*> ?: return emptyList()
+
+        for (item in channelIndices) {
+            val idx = item as? Number ?: continue
+            val chIdx = idx.toInt()
+            if (chIdx >= arr.size) continue
+            val chObj = arr[chIdx] as? Map<*, *> ?: continue
+
+            val nameRef = chObj["name"] as? Number ?: continue
+            val slugRef = chObj["slug"] as? Number ?: continue
+            val logoRef = chObj["logoImage"] as? Number ?: continue
+
+            val name = resolveString(arr, nameRef) ?: continue
+            val slug = resolveString(arr, slugRef) ?: continue
+            val logoUrl = resolveString(arr, logoRef) ?: ""
+
+            val channelId = premierSlugToIdMap[slug.lowercase()] ?: slug
+            val hardcoded = hardcodedById[channelId.lowercase()]
+            val streamUrl = hardcoded?.streamUrl ?: ""
+
+            var progTitle: String? = null
+            var progStart: Long? = null
+            var progEnd: Long? = null
+
+            val tvProgramsRef = chObj["tvPrograms"] as? Number
+            if (tvProgramsRef != null) {
+                val progListIdx = tvProgramsRef.toInt()
+                if (progListIdx < arr.size) {
+                    val progListVal = arr[progListIdx]
+                    val firstProgIdx: Int? = when (progListVal) {
+                        is Number -> progListVal.toInt()
+                        is List<*> -> (progListVal.firstOrNull() as? Number)?.toInt()
+                        else -> null
+                    }
+                    if (firstProgIdx != null && firstProgIdx < arr.size) {
+                        val progObj = arr[firstProgIdx] as? Map<*, *>
+                        if (progObj != null) {
+                            val titleRef = progObj["title"] as? Number
+                            val startRef = progObj["startTs"] as? Number
+                            val endRef = progObj["endTs"] as? Number
+                            progTitle = resolveString(arr, titleRef)
+                            progStart = resolveDateTime(arr, startRef)
+                            progEnd = resolveDateTime(arr, endRef)
+                        }
+                    }
+                }
+            }
+
+            channels.add(
+                Channel(
+                    id = channelId,
+                    name = name,
+                    logoUrl = logoUrl,
+                    streamUrl = streamUrl,
+                    category = hardcoded?.category ?: "general",
+                    fallbackStreamUrls = hardcoded?.fallbackStreamUrls ?: emptyList(),
+                    currentProgramTitle = progTitle,
+                    currentProgramStart = progStart,
+                    currentProgramEnd = progEnd
+                )
+            )
+        }
+        return channels
+    }
+
+    fun parseIviChannels(html: String): List<Channel> {
+        val stateJson = extractIviInitialState(html) ?: return emptyList()
+        val root = JSONObject(stateJson)
+        val tvChannelsObj = root.optJSONObject("state")
+            ?.optJSONObject("tvChannels")
+            ?.optJSONObject("tvChannels") ?: return emptyList()
+
+        val hardcodedById = ChannelList.hardcodedChannels.associateBy { it.id.lowercase() }
+        val channels = mutableListOf<Channel>()
+        val keys = tvChannelsObj.keys()
+
+        while (keys.hasNext()) {
+            val key = keys.next()
+            val chObj = tvChannelsObj.optJSONObject(key) ?: continue
+            val title = chObj.optString("title", "")
+            if (title.isEmpty()) continue
+            val hru = chObj.optString("hru", "").lowercase()
+
+            val logoUrl = chObj.optJSONArray("logo")
+                ?.optJSONObject(0)
+                ?.optString("path", "") ?: ""
+            val fullLogo = if (logoUrl.startsWith("http")) logoUrl else "https://s3.dfs.ivi.ru/f3d320408efc5ab66630b9ffc6c6cf2b/files_tv_channel_logo_rendered/${logoUrl.removePrefix("/")}"
+
+            val channelId = iviHruToIdMap[hru] ?: hru
+            val hardcoded = hardcodedById[channelId.lowercase()]
+            val streamUrl = hardcoded?.streamUrl ?: ""
+
+            var progTitle: String? = null
+            var progStart: Long? = null
+            var progEnd: Long? = null
+
+            val currentObj = chObj.optJSONObject("current")
+            if (currentObj != null) {
+                progTitle = currentObj.optString("title", "").takeIf { it.isNotEmpty() }
+                progStart = parseIsoDateTime(currentObj.optString("start", ""))
+                progEnd = parseIsoDateTime(currentObj.optString("end", ""))
+            }
+
+            channels.add(
+                Channel(
+                    id = channelId,
+                    name = title,
+                    logoUrl = fullLogo,
+                    streamUrl = streamUrl,
+                    category = hardcoded?.category ?: "general",
+                    fallbackStreamUrls = hardcoded?.fallbackStreamUrls ?: emptyList(),
+                    currentProgramTitle = progTitle,
+                    currentProgramStart = progStart,
+                    currentProgramEnd = progEnd
+                )
+            )
+        }
+        return channels
+    }
+
+    fun parseNtvPrograms(json: String): Map<String, ChannelRepository.NtvProgram> {
+        val result = mutableMapOf<String, ChannelRepository.NtvProgram>()
+        val root = JSONObject(json)
+        val dataArr = root.optJSONArray("data") ?: return result
+        for (i in 0 until dataArr.length()) {
+            val item = dataArr.optJSONObject(i) ?: continue
+            val channelObj = item.optJSONObject("channel") ?: continue
+            val programObj = item.optJSONObject("program") ?: continue
+            val code = channelObj.optString("code", "")
+            if (code.isBlank()) continue
+            val title = programObj.optString("title", "")
+            val startMs = parseNtvDate(programObj.optString("date_start", ""))
+            val endMs = parseNtvDate(programObj.optString("date_stop", ""))
+            if (startMs == null || endMs == null) continue
+            val channelId = ntvCodeToIdMap[code] ?: code
+            result[channelId] = ChannelRepository.NtvProgram(title, startMs, endMs)
+        }
+        return result
+    }
+
+    fun extractNuxtData(html: String): String? {
+        val marker = "id=\"__NUXT_DATA__\""
+        val startIdx = html.indexOf(marker)
+        if (startIdx < 0) return null
+        val contentStart = html.indexOf('>', startIdx) + 1
+        val endIdx = html.indexOf("</script>", contentStart)
+        if (contentStart <= 0 || endIdx < contentStart) return null
+        return html.substring(contentStart, endIdx)
+    }
+
+    fun parseNuxtArray(json: String): List<Any?>? {
+        return try {
+            val trimmed = json.trim()
+            if (!trimmed.startsWith("[")) return null
+            JSONArray(trimmed).let { arr ->
+                val list = mutableListOf<Any?>()
+                for (i in 0 until arr.length()) {
+                    list.add(jsonValueToKotlin(arr.get(i)))
+                }
+                list
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun jsonValueToKotlin(value: Any?): Any? = when (value) {
+        is JSONObject -> {
+            val map = mutableMapOf<String, Any?>()
+            val keys = value.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                map[key] = jsonValueToKotlin(value.get(key))
+            }
+            map
+        }
+        is JSONArray -> {
+            val list = mutableListOf<Any?>()
+            for (i in 0 until value.length()) {
+                list.add(jsonValueToKotlin(value.get(i)))
+            }
+            list
+        }
+        else -> value
+    }
+
+    fun findKeyIndex(arr: List<Any?>, key: String): Int? {
+        for (i in arr.indices) {
+            val item = arr[i] as? Map<*, *> ?: continue
+            if (item.containsKey(key)) return i
+        }
+        return null
+    }
+
+    fun resolveString(arr: List<Any?>, ref: Number?): String? {
+        if (ref == null) return null
+        val idx = ref.toInt()
+        if (idx < 0 || idx >= arr.size) return null
+        return arr[idx] as? String
+    }
+
+    fun resolveDateTime(arr: List<Any?>, ref: Number?): Long? {
+        if (ref == null) return null
+        val idx = ref.toInt()
+        if (idx < 0 || idx >= arr.size) return null
+        val value = arr[idx] ?: return null
+        return when (value) {
+            is String -> parseIsoDateTime(value)
+            is Number -> value.toLong()
+            else -> null
+        }
+    }
+
+    fun extractIviInitialState(html: String): String? {
+        val marker = "window.__INITIAL_STATE__"
+        val startIdx = html.indexOf(marker)
+        if (startIdx < 0) return null
+        val jsonStart = html.indexOf('{', startIdx)
+        if (jsonStart < 0) return null
+        var depth = 0
+        var inString = false
+        var escaped = false
+        for (i in jsonStart until html.length) {
+            val c = html[i]
+            if (escaped) {
+                escaped = false
+                continue
+            }
+            when {
+                c == '\\' && inString -> escaped = true
+                c == '"' -> inString = !inString
+                !inString && c == '{' -> depth++
+                !inString && c == '}' -> {
+                    depth--
+                    if (depth == 0) return html.substring(jsonStart, i + 1)
+                }
+            }
+        }
+        return null
+    }
+
+    fun parseNtvDate(str: String): Long? {
+        if (str.isEmpty()) return null
+        return try {
+            val sdf = SimpleDateFormat("MM/dd/yyyy HH:mm:ss", Locale.US)
+            sdf.timeZone = TimeZone.getTimeZone("GMT+05:00")
+            sdf.parse(str)?.time
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun parseIsoDateTime(str: String): Long? {
+        if (str.isEmpty()) return null
+        return try {
+            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US)
+            sdf.parse(str)?.time
+        } catch (e: Exception) {
+            try {
+                val sdf2 = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US)
+                sdf2.parse(str)?.time
+            } catch (e2: Exception) {
+                try {
+                    val sdf3 = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US)
+                    sdf3.parse(str)?.time
+                } catch (e3: Exception) {
+                    null
+                }
+            }
         }
     }
 }

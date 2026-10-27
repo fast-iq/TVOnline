@@ -64,7 +64,7 @@ class EPGRepository(context: Context? = null) {
             val channel = ChannelList.channels.find { it.id == channelId } ?: return null
             val href = channel.epgHref ?: loadChannelHrefs()?.get(channelId) ?: return null
 
-            val weekMonday = getWeekMondayDate(date)
+            val weekMonday = EpgParser.getWeekMondayDate(date)
             val weekStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(weekMonday)
             val url = href.replace("http://", "https://") + "?week=$weekStr"
 
@@ -145,70 +145,9 @@ class EPGRepository(context: Context? = null) {
         }
     }
 
-    private fun computeNameMatchScore(ourName: String, epgName: String): Int {
-        if (ourName == epgName) return 10
-        if (epgName.contains(ourName)) return 8
-        if (ourName.contains(epgName)) return 6
-        val ourWords = ourName.split(" ").filter { it.length > 2 }.toSet()
-        val epgWords = epgName.split(" ").filter { it.length > 2 }.toSet()
-        if (ourWords.isEmpty() || epgWords.isEmpty()) return 0
-        val common = ourWords.intersect(epgWords).size
-        val minSize = minOf(ourWords.size, epgWords.size)
-        return when {
-            common >= minSize && common >= 2 -> 4
-            common == 1 -> 1
-            else -> 0
-        }
-    }
+    private fun computeNameMatchScore(ourName: String, epgName: String): Int = EpgParser.computeNameMatchScore(ourName, epgName)
 
-    private fun parseXmltvTime(timeStr: String): Long? {
-        val match = Regex("^(\\d{8})(\\d{2})(\\d{2})(\\d{2})\\s*([+-]\\d{4})").find(timeStr) ?: return null
-        val (datePart, hh, mm, ss, tzPart) = match.destructured
-        val year = datePart.substring(0, 4).toInt()
-        val month = datePart.substring(4, 6).toInt()
-        val day = datePart.substring(6, 8).toInt()
-        val hour = hh.toInt()
-        val minute = mm.toInt()
-        val second = ss.toInt()
-        val tzSign = if (tzPart.startsWith("+")) 1 else -1
-        val tzHours = tzPart.substring(1, 3).toInt()
-        val tzMinutes = tzPart.substring(3, 5).toInt()
-
-        val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
-            clear()
-            set(year, month - 1, day, hour, minute, second)
-        }
-        val utcMillis = cal.timeInMillis - (tzSign * (tzHours * 3600 + tzMinutes * 60) * 1000L)
-        return utcMillis
-    }
-
-    private fun getWeekMonday(date: Date): String {
-        val calendar = Calendar.getInstance(TimeZone.getTimeZone("Europe/Moscow")).apply {
-            time = date
-            while (get(Calendar.DAY_OF_WEEK) != Calendar.MONDAY) {
-                add(Calendar.DAY_OF_MONTH, -1)
-            }
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        return SimpleDateFormat("yyyyMMdd", Locale.US).format(calendar.time)
-    }
-
-    private fun getWeekMondayDate(date: Date): Date {
-        val calendar = Calendar.getInstance(TimeZone.getTimeZone("Europe/Moscow")).apply {
-            time = date
-            while (get(Calendar.DAY_OF_WEEK) != Calendar.MONDAY) {
-                add(Calendar.DAY_OF_MONTH, -1)
-            }
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        return calendar.time
-    }
+    private fun parseXmltvTime(timeStr: String): Long? = EpgParser.parseXmltvTime(timeStr)
 
     private fun fetchC1RSchedule(date: Date): List<Program> {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
@@ -252,20 +191,7 @@ class EPGRepository(context: Context? = null) {
         }
     }
 
-    private fun findMatchingBrace(text: String, openIdx: Int): Int? {
-        if (openIdx >= text.length || text[openIdx] != '{') return null
-        var depth = 0
-        for (i in openIdx until text.length) {
-            when (text[i]) {
-                '{' -> depth++
-                '}' -> {
-                    depth--
-                    if (depth == 0) return i
-                }
-            }
-        }
-        return null
-    }
+    private fun findMatchingBrace(text: String, openIdx: Int): Int? = EpgParser.findMatchingBrace(text, openIdx)
 
     private fun httpGet(url: String, authHeader: String? = null): String? {
         val connection = URL(url).openConnection() as HttpURLConnection
@@ -288,7 +214,83 @@ class EPGRepository(context: Context? = null) {
         }
     }
 
-    private fun generateFallbackEPG(channelId: String, baseDate: Date): List<Program> {
+    private fun generateFallbackEPG(channelId: String, baseDate: Date): List<Program> = EpgParser.generateFallbackEPG(channelId, baseDate)
+
+    private fun getChannelTemplates(channelId: String): List<Pair<String, Int>> = EpgParser.getChannelTemplates(channelId)
+
+    fun getCurrentProgram(programs: List<Program>, currentTime: Long = System.currentTimeMillis()): Program? = programs.find { it.isLive(currentTime) }
+
+    fun getNextProgram(programs: List<Program>, currentTime: Long = System.currentTimeMillis()): Program? = programs.filter { it.startTime > currentTime }.minByOrNull { it.startTime }
+}
+
+internal object EpgParser {
+
+    fun parseXmltvTime(timeStr: String): Long? {
+        val match = Regex("^(\\d{8})(\\d{2})(\\d{2})(\\d{2})\\s*([+-]\\d{4})").find(timeStr) ?: return null
+        val (datePart, hh, mm, ss, tzPart) = match.destructured
+        val year = datePart.substring(0, 4).toInt()
+        val month = datePart.substring(4, 6).toInt()
+        val day = datePart.substring(6, 8).toInt()
+        val hour = hh.toInt()
+        val minute = mm.toInt()
+        val second = ss.toInt()
+        val tzSign = if (tzPart.startsWith("+")) 1 else -1
+        val tzHours = tzPart.substring(1, 3).toInt()
+        val tzMinutes = tzPart.substring(3, 5).toInt()
+
+        val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+            clear()
+            set(year, month - 1, day, hour, minute, second)
+        }
+        return cal.timeInMillis - (tzSign * (tzHours * 3600 + tzMinutes * 60) * 1000L)
+    }
+
+    fun getWeekMondayDate(date: Date): Date {
+        val calendar = Calendar.getInstance(TimeZone.getTimeZone("Europe/Moscow")).apply {
+            time = date
+            while (get(Calendar.DAY_OF_WEEK) != Calendar.MONDAY) {
+                add(Calendar.DAY_OF_MONTH, -1)
+            }
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        return calendar.time
+    }
+
+    fun computeNameMatchScore(ourName: String, epgName: String): Int {
+        if (ourName == epgName) return 10
+        if (epgName.contains(ourName)) return 8
+        if (ourName.contains(epgName)) return 6
+        val ourWords = ourName.split(" ").filter { it.length > 2 }.toSet()
+        val epgWords = epgName.split(" ").filter { it.length > 2 }.toSet()
+        if (ourWords.isEmpty() || epgWords.isEmpty()) return 0
+        val common = ourWords.intersect(epgWords).size
+        val minSize = minOf(ourWords.size, epgWords.size)
+        return when {
+            common >= minSize && common >= 2 -> 4
+            common == 1 -> 1
+            else -> 0
+        }
+    }
+
+    fun findMatchingBrace(text: String, openIdx: Int): Int? {
+        if (openIdx >= text.length || text[openIdx] != '{') return null
+        var depth = 0
+        for (i in openIdx until text.length) {
+            when (text[i]) {
+                '{' -> depth++
+                '}' -> {
+                    depth--
+                    if (depth == 0) return i
+                }
+            }
+        }
+        return null
+    }
+
+    fun generateFallbackEPG(channelId: String, baseDate: Date): List<Program> {
         val channel = ChannelList.channels.find { it.id == channelId } ?: return emptyList()
         val moscowTz = TimeZone.getTimeZone("Europe/Moscow")
         val calendar = Calendar.getInstance(moscowTz).apply {
@@ -322,7 +324,7 @@ class EPGRepository(context: Context? = null) {
         return programs
     }
 
-    private fun getChannelTemplates(channelId: String): List<Pair<String, Int>> {
+    fun getChannelTemplates(channelId: String): List<Pair<String, Int>> {
         val channel = ChannelList.channels.find { it.id == channelId }
         return when (channel?.category) {
             "news" -> listOf(
@@ -479,8 +481,4 @@ class EPGRepository(context: Context? = null) {
             )
         }
     }
-
-    fun getCurrentProgram(programs: List<Program>, currentTime: Long = System.currentTimeMillis()): Program? = programs.find { it.isLive(currentTime) }
-
-    fun getNextProgram(programs: List<Program>, currentTime: Long = System.currentTimeMillis()): Program? = programs.filter { it.startTime > currentTime }.minByOrNull { it.startTime }
 }

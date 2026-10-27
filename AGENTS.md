@@ -566,6 +566,50 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 - Use `region=0` for auto, or `77` for Moscow when checking regional content.
 - Bruno `.bru` syntax was corrected to use `headers {`, `params:query {`, and root request files matching the local working example.
 
+### 2026-10-27 Session 21 — Region SeekBar replaced with dialog list
+
+**Goal:** Region SeekBar in Settings was unusable/broken on TV remote (100 regions, touch-oriented widget).
+
+**Changes:**
+- `activity_settings.xml` — removed `regionSeekBar` + `regionValueText`; added `regionButton` (TextView styled like option buttons: `option_button_bg`/`option_button_text`, focusable/clickable, minWidth 320dp) showing the current region name. Quality label constraint re-pointed to `regionButton`.
+- `SettingsActivity.kt` — `setupRegionSelector()` now only wires `regionButton.setOnClickListener { showRegionDialog() }`. New `showRegionDialog()`: `AlertDialog.setSingleChoiceItems` over the region list (Автоопределение + LimeHD regions, current marked with `source_current`), selection applies immediately via existing `applyRegion()` (persists `limehdRegion`/`limehdRegionName`/`limehdRegionTzOffsets` + legacy `regionId`) and dismisses. Removed `applySeekBar`, SeekBar/Toast imports and the Toast on stop-tracking.
+- `strings.xml` (ru+en) — removed unused `region_value`, added `region_select_title` ("Выбор региона" / "Select region").
+
+**Verification:** Local Gradle with SDK: `:app:ktlintCheck`, `:app:compileDebugKotlin`, `:app:lintDebug`, `:app:testDebugUnitTest`, `:app:assembleDebug` all PASSED (only known machine-specific `local.properties` PropertyEscape lint error).
+
+### 2026-10-27 Session 22 — Settings persistence test + region shown on main screen
+
+**Goal:** Verify region (and all settings) survive app exit/entry; show current region on the main screen.
+
+**Persistence (verified):** all settings live in default SharedPreferences, written immediately on selection. Added first unit tests in repo: `app/src/test/java/com/example/tvapp/data/AppPreferencesTest.kt` — `FakeSharedPreferences` in-memory store, `AppPreferences` refactored to `AppPreferences(private val prefs: SharedPreferences)` with secondary `AppPreferences(context)` constructor; tests create a new `AppPreferences` over the same store (simulating app restart) and assert region code/name/tz, legacy regionId, quality, language, contentSource, lastChannelId, timezoneOffset all round-trip. `testImplementation 'junit:junit:4.13.2'` added (first test dependency).
+
+**Main screen region display:**
+- `activity_main.xml` — `regionText` TextView between `currentProgramText` and the grid.
+- `MainActivity.kt` — `updateRegionDisplay()` called in `onCreate` and `onResume`: `limehdRegion == 0` → `region_auto`, else saved `limehdRegionName` ?: code; format string `region_prefix` ("Регион: %1$s" / "Region: %1$s", ru+en).
+
+**Ktlint gotcha repeated:** body-expression function must start on the same line as signature (getStringSet in test file).
+
+**Verification:** `:app:testDebugUnitTest` (2 tests PASSED — first real tests), `:app:ktlintCheck`, `:app:lintDebug`, `:app:assembleDebug` PASSED (only known machine-specific `local.properties` PropertyEscape error).
+
+### 2026-10-27 Session 23 — Unit test coverage for data layer + premier parser bug fix
+
+**Goal:** Cover working code with tests. Extracted pure parsing logic from Context-bound classes into `internal object`s so JVM unit tests can call them without Android/network:
+- `LimeHdParser` (in LimeHdClient.kt): parseRegions, parseTzOffsets, parseChannels, parseEpg (+ private program helpers).
+- `ChannelParsers` (in ChannelRepository.kt): premier/IVI/NTV parsers, slug↔id maps, extractNuxtData, parseNuxtArray, extractIviInitialState, parseIsoDateTime, parseNtvDate.
+- `EpgParser` (in EPGRepository.kt): parseXmltvTime, getWeekMondayDate, computeNameMatchScore, findMatchingBrace, generateFallbackEPG, getChannelTemplates.
+
+**Test infra:** `testImplementation 'org.json:json:20240303'` (real JSON on JVM test classpath; put BEFORE android.jar stubs) + `testOptions { unitTests.returnDefaultValues = true }` (android.util.Log returns defaults instead of throwing).
+
+**Tests (36 total):** LimeHdParserTest (playlist/regions/EPG filtering, number sort, fallback dedup, DRM, UTC epochs), ChannelParsersTest (Nuxt index refs, IVI state extraction with nested braces/escapes, ISO+NTV date parsing w/ timezones, slug maps), EpgParserTest (XMLTV ±tz, name match scores, brace matching, fallback EPG contiguity, current/next program), ModelsTest (unique ids, required federal channels present, Program.isLive bounds, RegionList offsets).
+
+**REAL BUGS FIXED:**
+1. `parsePremierChannels` used `arr[findKeyIndex(...)]` — that's the CONTAINER MAP, not the channel list; the key's VALUE is the index ref (`"tv-channels-list":1078`). Premier fallback always returned empty. Fixed: read the map, get the numeric ref, then `arr[ref] as? List`. Verified against live premier.one HTML.
+2. `parseNtvPrograms` accepted entries with blank channel code (created "" key). Now skipped.
+
+**Gotchas:** PS7 `Set-Content` writes CRLF — repo requires LF; convert with `[System.IO.File]::WriteAllText` after PowerShell line surgery.
+
+**Verification:** `:app:testDebugUnitTest` 36/36 PASSED, `:app:ktlintCheck`, `:app:lintDebug`, `:app:assembleDebug` PASSED.
+
 ## Do NOT
 - Do not use `via.placeholder.com` (dead service)
 - Do not use `static.wikia.nocookie.net` for channel logos (unreliable)
