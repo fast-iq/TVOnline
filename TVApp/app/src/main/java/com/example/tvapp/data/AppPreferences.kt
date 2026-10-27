@@ -17,7 +17,10 @@ class AppPreferences(context: Context) {
         private const val KEY_CONTENT_SOURCE = "content_source"
         private const val KEY_LIMEHD_DEVICE_ID = "limehd_device_id"
         private const val KEY_LIMEHD_REGION = "limehd_region"
+        private const val KEY_LIMEHD_REGION_NAME = "limehd_region_name"
+        private const val KEY_LIMEHD_REGION_TZ = "limehd_region_tz"
         private const val KEY_CONTENT_SOURCE_MIGRATED = "content_source_limehd_migrated"
+        private const val DEFAULT_LIMEHD_REGION = 0
         const val DEFAULT_MOSCOW_OFFSET = 3
 
         // epgservice.ru API token (получается через https://t.me/EPGServiceSupportBot)
@@ -91,9 +94,24 @@ class AppPreferences(context: Context) {
         }
 
     var limehdRegion: Int
-        get() = prefs.getInt(KEY_LIMEHD_REGION, 1)
+        get() = prefs.getInt(KEY_LIMEHD_REGION, DEFAULT_LIMEHD_REGION)
         set(value) {
             prefs.edit { putInt(KEY_LIMEHD_REGION, value) }
+        }
+
+    var limehdRegionName: String?
+        get() = prefs.getString(KEY_LIMEHD_REGION_NAME, null)
+        set(value) {
+            prefs.edit { putString(KEY_LIMEHD_REGION_NAME, value) }
+        }
+
+    var limehdRegionTzOffsets: List<Int>
+        get() {
+            val raw = prefs.getString(KEY_LIMEHD_REGION_TZ, "") ?: ""
+            return raw.split(",").mapNotNull { it.trim().toIntOrNull() }
+        }
+        set(value) {
+            prefs.edit { putString(KEY_LIMEHD_REGION_TZ, value.joinToString(",")) }
         }
 
     enum class QualityMode {

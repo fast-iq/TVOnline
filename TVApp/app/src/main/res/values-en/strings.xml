@@ -47,6 +47,8 @@
     <string name="quality_label">Video quality:</string>
     <string name="language_label">Interface language:</string>
     <string name="region_label">Region:</string>
+    <string name="region_auto">Auto-detect</string>
+    <string name="region_default_moscow">Moscow</string>
     <string name="region_value">Region: %1$s</string>
     <string name="source_label">Channel source:</string>
     <string name="source_limehd">LimeHD</string>

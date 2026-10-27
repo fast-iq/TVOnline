@@ -25,6 +25,8 @@ class LimeHdClient(context: Context) {
     private val sessionUuid = UUID.randomUUID().toString()
     private var cachedPublicKey: String? = null
     private var cachedTimeOffset: Long = 0L
+    private var cachedRegions: List<LimeHdRegion>? = null
+    private var currentRegionCode: Int? = null
 
     private val userAgent: String by lazy { buildUserAgent() }
     private val playerHeaders: Map<String, String> by lazy {
@@ -80,7 +82,61 @@ class LimeHdClient(context: Context) {
         }
     }
 
+    fun getRegions(): List<LimeHdRegion> {
+        cachedRegions?.let { return it }
+        return try {
+            val body = httpGet(BASE_URL + "api/v4/config", apiHeaders()) ?: return emptyList()
+            val root = JSONObject(body)
+            val data = root.optJSONObject("data")
+            val regionsArray = root.optJSONArray("regions") ?: data?.optJSONArray("regions")
+            val parsed = parseRegions(regionsArray)
+            if (parsed.isNotEmpty()) {
+                cachedRegions = parsed
+            }
+            val region = root.optJSONObject("region") ?: data?.optJSONObject("region")
+            if (region != null) {
+                val code = region.optInt("code", 0)
+                if (code > 0) currentRegionCode = code
+            }
+            parsed
+        } catch (e: Exception) {
+            Log.e(TAG, "getRegions failed: ${e.message}")
+            emptyList()
+        }
+    }
+
+    fun autoRegionCode(): Int? = currentRegionCode
+
     fun playerRequestHeaders(): Map<String, String> = playerHeaders
+
+    private fun parseRegions(array: JSONArray?): List<LimeHdRegion> {
+        if (array == null) return emptyList()
+        val result = mutableListOf<LimeHdRegion>()
+        for (i in 0 until array.length()) {
+            val item = array.optJSONObject(i) ?: continue
+            val code = item.optInt("code", 0)
+            val name = item.optString("name", "")
+            if (code <= 0 || name.isBlank()) continue
+            result.add(
+                LimeHdRegion(
+                    code = code,
+                    name = name,
+                    tzOffsets = parseTzOffsets(item.optJSONArray("tz"))
+                )
+            )
+        }
+        return result.sortedBy { it.name }
+    }
+
+    private fun parseTzOffsets(array: JSONArray?): List<Int> {
+        if (array == null) return emptyList()
+        val result = mutableListOf<Int>()
+        for (i in 0 until array.length()) {
+            val value = array.optInt(i, Int.MIN_VALUE)
+            if (value != Int.MIN_VALUE) result.add(value)
+        }
+        return result.toList()
+    }
 
     private fun parseChannels(array: JSONArray): List<Channel> {
         val entries = mutableListOf<Pair<Int, Channel>>()
@@ -362,5 +418,11 @@ class LimeHdClient(context: Context) {
         if (!list.contains(url)) list.add(url)
     }
 }
+
+data class LimeHdRegion(
+    val code: Int,
+    val name: String,
+    val tzOffsets: List<Int> = emptyList()
+)
 
 private data class LimeHdProgram(val title: String?, val startMs: Long?, val endMs: Long?)

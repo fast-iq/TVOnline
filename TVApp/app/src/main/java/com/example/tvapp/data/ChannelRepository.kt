@@ -18,6 +18,7 @@ class ChannelRepository(private val context: Context) {
     private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
     private var cachedChannels: List<Channel>? = null
+    private var cacheKey: String? = null
     private var lastFetchTime: Long = 0L
     private val cacheDurationMs = 10 * 60 * 1000L
 
@@ -25,7 +26,9 @@ class ChannelRepository(private val context: Context) {
         private set
 
     suspend fun getChannels(forceRefresh: Boolean = false): List<Channel> {
-        if (!forceRefresh && cachedChannels != null && System.currentTimeMillis() - lastFetchTime < cacheDurationMs) {
+        val key = currentCacheKey()
+        val fresh = cacheKey == key && System.currentTimeMillis() - lastFetchTime < cacheDurationMs
+        if (!forceRefresh && cachedChannels != null && fresh) {
             return cachedChannels!!
         }
         return withContext(Dispatchers.IO) {
@@ -33,6 +36,7 @@ class ChannelRepository(private val context: Context) {
                 val channels = fetchFromPreferredSource()
                 if (channels.isNotEmpty()) {
                     cachedChannels = channels
+                    cacheKey = key
                     lastFetchTime = System.currentTimeMillis()
                     ChannelList.updateChannels(channels)
                     channels
@@ -48,6 +52,8 @@ class ChannelRepository(private val context: Context) {
     }
 
     suspend fun refreshChannels(): List<Channel> = getChannels(forceRefresh = true)
+
+    private fun currentCacheKey(): String = prefs.contentSource.name + "_" + prefs.limehdRegion
 
     private fun fetchFromPreferredSource(): List<Channel> {
         val preferred = prefs.contentSource

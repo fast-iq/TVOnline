@@ -524,6 +524,48 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
   - `:app:assembleDebug`
 - Local lint has machine-specific `local.properties` `PropertyEscape` error; CI normally does not see that file.
 
+### 2026-10-27 Session 19 — LimeHD region selector wiring
+
+**Goal:** Make the app region switcher affect LimeHD content like the original LimeHD app.
+
+**Original LimeHD behavior:**
+- `ConfigService.loadConfig` calls `GET /api/v4/config` with `User-Agent` and `X-LHD-Agent`.
+- Response contains top-level `regions` array and `region` object with current/auto region.
+- Regions have `code`, `name`, `capital`, `channel`, `tz`.
+- Playlist query sends `region=<userRegion>`; saved user region comes from `PresetsRepository.getUserRegion()I`.
+- Region `0` means auto/server-detected region.
+
+**Live endpoint checks:**
+- `GET https://pl.iptv2021.com/api/v4/config` returns 100 regions; current `region.code` is `77` (Москва).
+- `POST /api/v4/playlist` with `region=0`, `region=1`, and `region=77` all return 343 channels, but response body hash differs.
+
+**Code changes:**
+- `LimeHdClient.kt` added `LimeHdRegion(code, name, tzOffsets)`, `getRegions()` for `/api/v4/config`, and `autoRegionCode()` from current `region.code`.
+- `AppPreferences.kt` added `limehd_region_name`, `limehd_region_tz`, changed default `limehdRegion` to `0` (auto), matching original user-region behavior.
+- `SettingsActivity.kt` loads LimeHD regions asynchronously, rebuilds region SeekBar with LimeHD `code` values plus `0 = Автоопределение`, and saves `limehdRegion`/`limehdRegionName`/`limehdRegionTzOffsets`.
+- `ChannelRepository.kt` cache key now includes `contentSource` and `limehdRegion`, so returning from Settings forces LimeHD re-fetch when region changes.
+- `strings.xml` / `values-en/strings.xml` added `region_auto` and `region_default_moscow`.
+
+**Verification:**
+- `:app:ktlintCheck` passed.
+- `:app:lintDebug`, `:app:testDebugUnitTest`, `:app:assembleDebug` passed; local lint still shows only machine-specific `local.properties` `PropertyEscape` error.
+
+### 2026-10-27 Session 20 — Bruno collection for LimeHD
+
+**Added:**
+- `bruno/bruno.json`
+- `bruno/collection.bru`
+- `bruno/environments/LimeHD.bru`
+- `bruno/01 - LimeHD auth.bru` — `GET /auth`.
+- `bruno/02 - LimeHD config.bru` — `GET /api/v4/config`, returns `regions[]` and current `region.code`.
+- `bruno/03 - LimeHD playlist.bru` — `POST /api/v4/playlist`, form body `payload={{payload}}`; payload is RSA-encrypted JSON and must be supplied/generated manually.
+- `bruno/04 - LimeHD epg.bru` — `GET /api/v4/epg` using `id={{id}}` and `region={{region}}`.
+
+**Usage:**
+- Open `bruno/` in Bruno, select the `LimeHD` environment.
+- Use `region=0` for auto, or `77` for Moscow when checking regional content.
+- Bruno `.bru` syntax was corrected to use `headers {`, `params:query {`, and root request files matching the local working example.
+
 ## Do NOT
 - Do not use `via.placeholder.com` (dead service)
 - Do not use `static.wikia.nocookie.net` for channel logos (unreliable)

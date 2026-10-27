@@ -1,0 +1,27 @@
+meta {
+  name: LimeHD epg
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base}}/api/v4/epg
+  body: none
+  auth: none
+}
+
+params:query {
+  id: {{id}}
+  tz: {{tz}}
+  epg_from: -1
+  epg_limit: 3
+  grouping: 1
+  region: {{region}}
+  lang: ru
+}
+
+headers {
+  User-Agent: {"platform":"android.tv","app":"limehd.ru.lite","version_name":"4.1.2","version_code":"514","sdk":"36","name":"Android TV","device_id":"7f3c8f0b1b2e4f5a","is_huawei":"0"}
+  X-LHD-Agent: {"platform":"android.tv","app":"limehd.ru.lite","version_name":"4.1.2","version_code":"514","sdk":"36","name":"Android TV","device_id":"7f3c8f0b1b2e4f5a","is_huawei":"0"}
+  Accept: application/json
+}

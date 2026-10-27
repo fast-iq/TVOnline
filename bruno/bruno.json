@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "TVOnline LimeHD",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
