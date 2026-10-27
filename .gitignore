@@ -63,3 +63,12 @@ htmlcov/
 *.keystore
 release-key.jks
 local.properties
+
+# Tool reports
+lint-results*
+dependency-check-report.*
+
+# Scratch / third-party reference material
+/fix_kt.ps1
+/APK_other/
+/efir_tv_pro_4_0_6/
