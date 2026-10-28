@@ -840,3 +840,14 @@ Verified from live playlist dump: LimeHD `number` field matches official TV numb
 **Gotcha:** `awaitAll` needs explicit import `kotlinx.coroutines.awaitAll` (not covered by async import).
 
 **Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED (EpgParserTest updated for 48h fallback).
+
+
+### 2026-10-28 Session 37 — EPG stage-1 day range fix (epg_limit is inclusive offset)
+
+**User report:** EPG behaves like "two different codes": first open shows past+current but no future; second open shows current+future (liked, but missing programs that ended within the last 30 min).
+
+**Root cause (verified live):** LimeHD `epg_limit` counts days AFTER `epg_from` (range inclusive, total = limit+1 days). Session 36's stage-1 `epg_from=-1&epg_limit=0` = YESTERDAY ONLY (no today!). So stage 1 render = yesterday only (+instant playlist current+3) and only stage 2 `(0,1)` brought today+tomorrow — the visible "mode" depended on which stage finished first / cache state.
+
+**Fix:** `EPG_PAST_LIMIT = 1` → stage 1 = yesterday+today (covers ended-within-30-min programs, current, rest of today); stage 2 `(0,1)` adds tomorrow; merged with dedup. Both entries now render identical content.
+
+**Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest` PASSED.
