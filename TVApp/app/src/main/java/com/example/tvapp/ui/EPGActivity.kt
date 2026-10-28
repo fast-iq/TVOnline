@@ -51,8 +51,10 @@ class EPGActivity : BaseActivity() {
 
     private var pixelsPerMinute = 2.5f
     private val rowHeight = 70
-    private val totalMinutes = 90
-    private val leadMinutes = 30
+    private val totalMinutes = 720
+    private val leadMinutes = 180
+    private val visibleMinutes = 90
+    private val nowViewportOffsetMinutes = 30
 
     private lateinit var displayTz: TimeZone
 
@@ -99,7 +101,7 @@ class EPGActivity : BaseActivity() {
         channels = ChannelList.channels.take(EPG_MAX_CHANNELS)
         val viewportWidth = epgHorizontalScroll.width
         if (viewportWidth <= 0) return
-        pixelsPerMinute = viewportWidth.toFloat() / totalMinutes
+        pixelsPerMinute = viewportWidth.toFloat() / visibleMinutes
         createTimeScale()
         createChannelLabels()
         val totalWidth = (totalMinutes * pixelsPerMinute).toInt()
@@ -157,12 +159,13 @@ class EPGActivity : BaseActivity() {
             channelPrograms.forEach { program ->
                 val startTimeOffset = (program.startTime - baseTime) / 1000f / 60f
                 val endTimeOffset = (program.endTime - baseTime) / 1000f / 60f
-                val duration = (program.endTime - program.startTime) / 1000f / 60f
 
                 if (endTimeOffset < 0f || startTimeOffset > totalMinutes) return@forEach
 
-                val leftMargin = (startTimeOffset * pixelsPerMinute).toInt().coerceAtLeast(0)
-                val width = (duration * pixelsPerMinute).toInt().coerceAtLeast(40)
+                val leftMinutes = startTimeOffset.coerceAtLeast(0f)
+                val rightMinutes = endTimeOffset.coerceAtMost(totalMinutes.toFloat())
+                val leftMargin = (leftMinutes * pixelsPerMinute).toInt()
+                val width = ((rightMinutes - leftMinutes) * pixelsPerMinute).toInt().coerceAtLeast(40)
                 val programView = createProgramBlock(program, width)
                 val params = FrameLayout.LayoutParams(width, rowHeight - 8).apply {
                     marginStart = leftMargin
@@ -171,6 +174,15 @@ class EPGActivity : BaseActivity() {
                 epgGridContainer.addView(programView, params)
             }
         }
+
+        val nowOffset = ((System.currentTimeMillis() - baseTime) / 1000f / 60f).coerceIn(0f, totalMinutes.toFloat())
+        val nowLine = View(this).apply {
+            setBackgroundColor(getColor(R.color.accent))
+        }
+        val nowParams = FrameLayout.LayoutParams(3, channels.size * rowHeight).apply {
+            marginStart = (nowOffset * pixelsPerMinute).toInt()
+        }
+        epgGridContainer.addView(nowLine, nowParams)
     }
 
     private fun createProgramBlock(program: Program, width: Int): View {
@@ -230,7 +242,7 @@ class EPGActivity : BaseActivity() {
         scope.launch {
             try {
                 val programs = withContext(Dispatchers.IO) {
-                    epgRepository.getProgramsForAllChannels(channels, Date())
+                    epgRepository.getProgramsWithSurroundings(channels, Date())
                 }
                 renderPrograms(programs)
                 epgGridContainer.post { scrollToCurrentTime() }
@@ -243,7 +255,7 @@ class EPGActivity : BaseActivity() {
     private fun scrollToCurrentTime() {
         val baseTime = getStartTimeMillis()
         val nowOffsetMin = (System.currentTimeMillis() - baseTime) / 1000f / 60f
-        val targetX = ((nowOffsetMin - leadMinutes) * pixelsPerMinute).toInt().coerceAtLeast(0)
+        val targetX = ((nowOffsetMin - nowViewportOffsetMinutes) * pixelsPerMinute).toInt().coerceAtLeast(0)
         epgHorizontalScroll.scrollTo(targetX, 0)
     }
     private fun updateCurrentTimeDisplay() {

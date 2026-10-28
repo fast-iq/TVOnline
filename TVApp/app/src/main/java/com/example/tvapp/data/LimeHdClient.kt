@@ -69,12 +69,12 @@ class LimeHdClient(context: Context) {
         }
     }
 
-    fun fetchEpg(epgId: String, channelId: String): List<Program> {
+    fun fetchEpg(epgId: String, channelId: String, epgFrom: Int = -1, epgLimit: Int = 1): List<Program> {
         return try {
             val tz = effectiveTz()
             val region = prefs.limehdRegion
             val url = BASE_URL +
-                "api/v4/epg?id=$epgId&tz=$tz&epg_from=-1&epg_limit=3&grouping=1&region=$region&lang=ru"
+                "api/v4/epg?id=$epgId&tz=$tz&epg_from=$epgFrom&epg_limit=$epgLimit&grouping=1&region=$region&lang=ru"
             val body = JSONObject(httpGet(url, apiHeaders()) ?: return emptyList())
             parseEpg(body, channelId)
         } catch (e: Exception) {

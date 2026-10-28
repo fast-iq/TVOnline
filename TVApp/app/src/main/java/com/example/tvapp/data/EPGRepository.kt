@@ -2,6 +2,8 @@ package com.example.tvapp.data
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -10,6 +12,12 @@ import java.util.Locale
 import java.util.TimeZone
 
 class EPGRepository(context: Context? = null) {
+
+    companion object {
+        const val EPG_FETCH_FROM = -1
+        const val EPG_FETCH_LIMIT = 2
+        private const val PARALLEL_FETCH_LIMIT = 6
+    }
 
     private val prefs = context?.let { AppPreferences(it) }
     private val limeHdClient by lazy { context?.let { LimeHdClient(it) } }
@@ -38,6 +46,38 @@ class EPGRepository(context: Context? = null) {
             }
         }
         programs
+    }
+
+    suspend fun getProgramsWithSurroundings(channels: List<Channel>, date: Date): Map<String, List<Program>> = coroutineScope {
+        channels.chunked(PARALLEL_FETCH_LIMIT)
+            .flatMap { chunk ->
+                chunk.map { channel ->
+                    async(Dispatchers.IO) {
+                        val programs = try {
+                            fetchWideSchedule(channel, date)
+                        } catch (e: Exception) {
+                            emptyList()
+                        }
+                        Pair(channel.id, if (programs.isEmpty()) generateFallbackEPG(channel.id, date) else programs)
+                    }
+                }
+            }
+            .map { it.await() }
+            .toMap()
+    }
+
+    private fun fetchWideSchedule(channel: Channel, date: Date): List<Program> {
+        if (!channel.id.startsWith("limehd_")) return emptyList()
+        val limehdId = channel.epgId ?: return emptyList()
+        val dayKey = SimpleDateFormat("yyyyMMdd", Locale.US).format(date)
+        val cacheKey = "${channel.id}_${prefs?.limehdRegion ?: 0}_${prefs?.programTimezoneOffset() ?: 0}_${EPG_FETCH_FROM}_${EPG_FETCH_LIMIT}_$dayKey"
+        ensureEpgCacheFresh()
+        limehdEpgCache[cacheKey]?.let { return it }
+        val client = limeHdClient ?: return emptyList()
+        val programs = client.fetchEpg(limehdId, channel.id, EPG_FETCH_FROM, EPG_FETCH_LIMIT)
+        if (programs.isEmpty()) return emptyList()
+        limehdEpgCache[cacheKey] = programs
+        return programs
     }
 
     private fun fetchLimeHdSchedule(channelId: String, date: Date): List<Program>? {

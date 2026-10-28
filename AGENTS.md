@@ -804,3 +804,21 @@ Verified from live playlist dump: LimeHD `number` field matches official TV numb
 - `PlayerActivity.kt` + `activity_player.xml` — same `numberOverlay` (last child, elevation) + controller; digits switch the playing channel (`playSelectedChannel`: playChannel + program overlay + infoText + save lastChannelId); BACK while typing only cancels input; `release()` in onDestroy.
 
 **Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.
+
+
+### 2026-10-28 Session 35 — EPG 12h window with scroll, past programs
+
+**User report:** EPG left of "now" is empty; horizontal scroll "almost works but content not filled".
+
+**Causes:**
+- Grid used `Channel.programs` (playlist `current`, epgcnt=4 → only current + 3 upcoming). No past, nothing beyond ~2h.
+- Session 33 made window width == viewport width → maxScroll ≈ 0, no horizontal scroll.
+
+**LimeHD EPG API semantics (verified live):** `epg_from`/`epg_limit` are DAY offsets/counts (not program counts). `from=-1&limit=2` → yesterday…tomorrow. `from=-1&limit=3` returned 4 days.
+
+**Changes:**
+- `LimeHdClient.fetchEpg(epgId, channelId, epgFrom = -1, epgLimit = 1)` — params now explicit (player path keeps default).
+- `EPGRepository.getProgramsWithSurroundings(channels, date)` — wide schedule for grid: fetchEpg(from=-1, limit=2) per channel, parallel `chunked(6)` via `async(Dispatchers.IO)`, separate cache key `..._{from}_{limit}_{day}`; empty → `generateFallbackEPG`.
+- `EPGActivity`: window now 12h (`totalMinutes=720`, `leadMinutes=180`), zoom unchanged (`visibleMinutes=90` → ppm = viewport/90); now-moment sits 30 min from left after `scrollToCurrentTime`. DPAD left/right scrolls through the 12h. Program blocks clamped to window edges (old code kept full duration width past edges). Accent vertical "now" line across grid.
+
+**Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.
