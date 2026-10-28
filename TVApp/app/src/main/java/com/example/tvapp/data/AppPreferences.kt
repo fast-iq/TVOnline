@@ -13,21 +13,14 @@ class AppPreferences(private val prefs: SharedPreferences) {
     companion object {
         private const val KEY_LAST_CHANNEL = "last_channel_id"
         private const val KEY_TIMEZONE_OFFSET = "timezone_offset"
-        private const val KEY_REGION_ID = "region_id"
         private const val KEY_QUALITY_MODE = "quality_mode"
         private const val KEY_LANGUAGE = "language"
-        private const val KEY_CONTENT_SOURCE = "content_source"
         private const val KEY_LIMEHD_DEVICE_ID = "limehd_device_id"
         private const val KEY_LIMEHD_REGION = "limehd_region"
         private const val KEY_LIMEHD_REGION_NAME = "limehd_region_name"
         private const val KEY_LIMEHD_REGION_TZ = "limehd_region_tz"
-        private const val KEY_CONTENT_SOURCE_MIGRATED = "content_source_limehd_migrated"
         private const val DEFAULT_LIMEHD_REGION = 0
         const val DEFAULT_MOSCOW_OFFSET = 3
-
-        // epgservice.ru API token (получается через https://t.me/EPGServiceSupportBot)
-        // Пустая строка = EPG-сервис отключён, используется фолбэк
-        const val EPG_SERVICE_TOKEN = "987c6312-e354-4abe-b964-6862ab29175"
     }
 
     var lastChannelId: String?
@@ -49,12 +42,6 @@ class AppPreferences(private val prefs: SharedPreferences) {
             prefs.edit { putInt(KEY_TIMEZONE_OFFSET, value) }
         }
 
-    var regionId: Int
-        get() = prefs.getInt(KEY_REGION_ID, 1)
-        set(value) {
-            prefs.edit { putInt(KEY_REGION_ID, value) }
-        }
-
     var qualityMode: QualityMode
         get() {
             val idx = prefs.getInt(KEY_QUALITY_MODE, QualityMode.AUTO.ordinal)
@@ -68,25 +55,6 @@ class AppPreferences(private val prefs: SharedPreferences) {
         get() = prefs.getString(KEY_LANGUAGE, "ru") ?: "ru"
         set(value) {
             prefs.edit { putString(KEY_LANGUAGE, value) }
-        }
-
-    var contentSource: ContentSource
-        get() {
-            val idx = prefs.getInt(KEY_CONTENT_SOURCE, -1)
-            if (idx !in ContentSource.values().indices || !prefs.getBoolean(KEY_CONTENT_SOURCE_MIGRATED, false)) {
-                prefs.edit {
-                    putInt(KEY_CONTENT_SOURCE, ContentSource.LIMEHD.ordinal)
-                    putBoolean(KEY_CONTENT_SOURCE_MIGRATED, true)
-                }
-                return ContentSource.LIMEHD
-            }
-            return ContentSource.values()[idx]
-        }
-        set(value) {
-            prefs.edit {
-                putInt(KEY_CONTENT_SOURCE, value.ordinal)
-                putBoolean(KEY_CONTENT_SOURCE_MIGRATED, true)
-            }
         }
 
     var limehdDeviceId: String?
@@ -128,12 +96,5 @@ class AppPreferences(private val prefs: SharedPreferences) {
         MEDIUM,
         MAXIMUM,
         AUTO
-    }
-
-    enum class ContentSource {
-        PREMIER,
-        IVI,
-        SMOTRESHKA,
-        LIMEHD
     }
 }

@@ -35,7 +35,6 @@
     <string name="source_official">Официальный</string>
     <string name="source_alternative">Альтернативный</string>
     <string name="source_alternative_indexed">Альтернативный %1$d</string>
-    <string name="source_region_offset">Время МСК+%1$d ч</string>
     <string name="only_one_source">Доступен только один источник</string>
     <string name="source_current">(текущий)</string>
 
@@ -52,11 +51,6 @@
     <string name="region_changed">Регион изменён: %1$s</string>
     <string name="quality_label">Качество видео:</string>
     <string name="language_label">Язык интерфейса:</string>
-    <string name="source_label">Источник каналов:</string>
-    <string name="source_limehd">LimeHD</string>
-    <string name="source_premier">Premier.one</string>
-    <string name="source_ivi">IVI</string>
-    <string name="source_smotreshka">Смотрешка</string>
     <string name="settings_help">Используйте пульт для навигации. Нажмите OK для выбора опции.</string>
 
     <!-- Quality modes -->

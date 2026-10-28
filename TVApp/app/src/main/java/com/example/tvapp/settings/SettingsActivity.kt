@@ -13,7 +13,6 @@ import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.ChannelRepository
 import com.example.tvapp.data.LimeHdClient
 import com.example.tvapp.data.LimeHdRegion
-import com.example.tvapp.data.RegionList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -26,7 +25,6 @@ class SettingsActivity : BaseActivity() {
     private lateinit var regionButton: TextView
     private lateinit var qualityOptions: LinearLayout
     private lateinit var languageOptions: LinearLayout
-    private lateinit var sourceOptions: LinearLayout
 
     private val preferences by lazy { AppPreferences(applicationContext) }
     private val limeHdClient by lazy { LimeHdClient(applicationContext) }
@@ -44,13 +42,6 @@ class SettingsActivity : BaseActivity() {
 
     private val languages = listOf("ru" to "Русский", "en" to "English")
 
-    private val sources = listOf(
-        AppPreferences.ContentSource.LIMEHD,
-        AppPreferences.ContentSource.PREMIER,
-        AppPreferences.ContentSource.IVI,
-        AppPreferences.ContentSource.SMOTRESHKA
-    )
-
     private var currentRegionIndex = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,13 +51,11 @@ class SettingsActivity : BaseActivity() {
         regionButton = findViewById(R.id.regionButton)
         qualityOptions = findViewById(R.id.qualityOptions)
         languageOptions = findViewById(R.id.languageOptions)
-        sourceOptions = findViewById(R.id.sourceOptions)
 
         setupRegionSelector()
         loadLimeHdRegions()
         setupQualitySelector()
         setupLanguageSelector()
-        setupSourceSelector()
     }
 
     private fun setupRegionSelector() {
@@ -118,7 +107,6 @@ class SettingsActivity : BaseActivity() {
     private fun fallbackRegions(): List<Pair<Int, String>> {
         val savedCode = preferences.limehdRegion
         val savedName = preferences.limehdRegionName
-            ?: RegionList.regions.firstOrNull { it.first == savedCode }?.second
             ?: getString(R.string.region_default_moscow)
 
         val result = mutableListOf<Pair<Int, String>>()
@@ -155,9 +143,10 @@ class SettingsActivity : BaseActivity() {
 
         preferences.limehdRegionTzOffsets = regionData?.tzOffsets ?: emptyList()
 
-        val legacyId = legacyRegionId(effectiveCode, regionData?.name ?: name)
-        if (legacyId != 0) {
-            preferences.regionId = legacyId
+        val regionTz = regionData?.tzOffsets?.firstOrNull()
+        if (regionTz != null && regionTz != preferences.timezoneOffset) {
+            preferences.timezoneOffset = regionTz
+            ChannelRepository.invalidateContent()
         }
     }
 
@@ -181,21 +170,6 @@ class SettingsActivity : BaseActivity() {
         }
         return getString(R.string.region_auto)
     }
-
-    private fun legacyRegionId(code: Int, name: String): Int {
-        val exact = RegionList.regions.firstOrNull { it.second.equals(name, ignoreCase = true) }?.first
-        if (exact != null) return exact
-
-        val normalized = normalizeRegionName(name)
-        if (normalized.isBlank()) return 0
-
-        return RegionList.regions.firstOrNull {
-            val oldName = normalizeRegionName(it.second)
-            !oldName.isBlank() && (oldName.contains(normalized) || normalized.contains(oldName))
-        }?.first ?: 0
-    }
-
-    private fun normalizeRegionName(value: String): String = value.lowercase().replace(",", " ").replace(".", " ").replace("  ", " ").trim()
 
     override fun onDestroy() {
         super.onDestroy()
@@ -222,24 +196,6 @@ class SettingsActivity : BaseActivity() {
         buildOptionRow(languageOptions, languages.map { it.second }, selected) { index ->
             preferences.language = languages[index].first
             recreate()
-        }
-    }
-
-    private fun setupSourceSelector() {
-        val labels = sources.map { source ->
-            when (source) {
-                AppPreferences.ContentSource.LIMEHD -> getString(R.string.source_limehd)
-                AppPreferences.ContentSource.PREMIER -> getString(R.string.source_premier)
-                AppPreferences.ContentSource.IVI -> getString(R.string.source_ivi)
-                AppPreferences.ContentSource.SMOTRESHKA -> getString(R.string.source_smotreshka)
-            }
-        }
-        val selected = sources.indexOf(preferences.contentSource).takeIf { it != -1 } ?: 0
-        buildOptionRow(sourceOptions, labels, selected) { index ->
-            if (sources[index] != preferences.contentSource) {
-                ChannelRepository.invalidateContent()
-            }
-            preferences.contentSource = sources[index]
         }
     }
 

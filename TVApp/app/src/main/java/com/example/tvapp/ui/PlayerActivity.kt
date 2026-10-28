@@ -12,7 +12,6 @@ import com.example.tvapp.R
 import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
-import com.example.tvapp.data.StreamSelector
 import com.example.tvapp.player.TVPlayerManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -106,7 +105,7 @@ class PlayerActivity : BaseActivity() {
                 infoText.visibility = View.VISIBLE
                 playerManager.playChannel(
                     currentChannel!!,
-                    StreamSelector.preferredUrl(currentChannel!!, preferences.regionId) ?: streamUrl
+                    currentChannel!!.streamUrl.ifBlank { streamUrl ?: "" }
                 )
                 showProgramOverlay(currentChannel!!)
             } else if (!streamUrl.isNullOrEmpty()) {
@@ -181,7 +180,7 @@ class PlayerActivity : BaseActivity() {
         currentChannel = newChannel
         playerManager.playChannel(
             newChannel,
-            StreamSelector.preferredUrl(newChannel, preferences.regionId) ?: newChannel.streamUrl
+            newChannel.streamUrl
         )
         showProgramOverlay(newChannel)
         infoText.text = getString(R.string.loading_channel, newChannel.name)
@@ -205,10 +204,8 @@ class PlayerActivity : BaseActivity() {
         val currentIndex = playerManager.getCurrentUrlIndex()
         val items = mutableListOf<String>()
         for (i in urls.indices) {
-            val offset = StreamSelector.regionOffsetOf(urls[i])
             val label = when {
                 i == 0 -> getString(R.string.source_official)
-                offset != null -> getString(R.string.source_region_offset, offset)
                 i == 1 -> getString(R.string.source_alternative)
                 else -> getString(R.string.source_alternative_indexed, i - 1)
             }

@@ -5,68 +5,31 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.text.SimpleDateFormat
-import java.time.Instant
+import java.util.Calendar
 import java.util.Date
-import java.util.Locale
 import java.util.TimeZone
 
 class EpgParserTest {
 
     @Test
-    fun parseXmltvTimeConvertsWithTimezone() {
-        assertEquals(Instant.parse("2026-09-27T03:00:00Z").toEpochMilli(), EpgParser.parseXmltvTime("20260927060000 +0300"))
-        assertEquals(Instant.parse("2026-09-27T17:00:00Z").toEpochMilli(), EpgParser.parseXmltvTime("20260927120000 -0500"))
-        assertEquals(Instant.parse("2026-09-27T00:00:00Z").toEpochMilli(), EpgParser.parseXmltvTime("20260927000000 +0000"))
-    }
-
-    @Test
-    fun parseXmltvTimeRejectsMalformed() {
-        assertNull(EpgParser.parseXmltvTime("2026-09-27 06:00"))
-        assertNull(EpgParser.parseXmltvTime(""))
-        assertNull(EpgParser.parseXmltvTime("20260927060000"))
-    }
-
-    @Test
-    fun computeNameMatchScore() {
-        assertEquals(10, EpgParser.computeNameMatchScore("нтв", "нтв"))
-        assertEquals(8, EpgParser.computeNameMatchScore("нтв", "нтв мир"))
-        assertEquals(6, EpgParser.computeNameMatchScore("первый канал", "первый"))
-        assertEquals(4, EpgParser.computeNameMatchScore("россия сегодня", "россия 1 сегодня"))
-        assertEquals(1, EpgParser.computeNameMatchScore("матч тв", "матч планета"))
-        assertEquals(0, EpgParser.computeNameMatchScore("абвгд", "дёргф"))
-    }
-
-    @Test
-    fun findMatchingBrace() {
-        val text = "xx {a{b}c} yy"
-        val open = text.indexOf('{')
-        assertEquals(9, EpgParser.findMatchingBrace(text, open))
-        assertNull(EpgParser.findMatchingBrace(text, 0))
-        assertNull(EpgParser.findMatchingBrace("{unclosed", 0))
-    }
-
-    @Test
-    fun getWeekMondayReturnsMoscowWeekStart() {
-        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
-        sdf.timeZone = TimeZone.getTimeZone("Europe/Moscow")
-        val sunday = sdf.parse("2026-10-25 12:00")!!
-        val monday = sdf.parse("2026-10-19 23:59")!!
-        val formatter = SimpleDateFormat("yyyyMMdd", Locale.US)
-        formatter.timeZone = TimeZone.getTimeZone("Europe/Moscow")
-        assertEquals("20261019", formatter.format(EpgParser.getWeekMondayDate(sunday)))
-        assertEquals("20261019", formatter.format(EpgParser.getWeekMondayDate(monday)))
-    }
-
-    @Test
     fun generateFallbackEpgIsContinuousFromMoscowMidnight() {
-        val channel = ChannelList.hardcodedChannels.first { it.id == "c1r" }
+        ChannelList.updateChannels(
+            listOf(
+                Channel(
+                    id = "limehd_105",
+                    name = "Первый канал",
+                    logoUrl = "",
+                    streamUrl = "https://example.com/1.m3u8",
+                    category = "news"
+                )
+            )
+        )
         val baseDate = Date()
-        val programs = EpgParser.generateFallbackEPG("c1r", baseDate)
+        val programs = EpgParser.generateFallbackEPG("limehd_105", baseDate)
         assertTrue(programs.isNotEmpty())
-        assertEquals(channel.id, programs.first().channelId)
+        assertEquals("limehd_105", programs.first().channelId)
 
-        val templates = EpgParser.getChannelTemplates("c1r")
+        val templates = EpgParser.getChannelTemplates("limehd_105")
         assertEquals(templates.size, programs.size)
 
         for (i in 1 until programs.size) {
@@ -74,8 +37,14 @@ class EpgParserTest {
         }
         assertTrue(programs.first().title.isNotBlank())
 
-        val midnight = EpgParser.getWeekMondayDate(baseDate).time
-        assertTrue(programs.first().startTime >= midnight)
+        val moscowMidnight = Calendar.getInstance(TimeZone.getTimeZone("Europe/Moscow")).apply {
+            time = baseDate
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        assertEquals(moscowMidnight, programs.first().startTime)
     }
 
     @Test

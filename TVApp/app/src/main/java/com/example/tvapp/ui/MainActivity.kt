@@ -66,10 +66,9 @@ class MainActivity : BaseActivity() {
                     channelRepository.getChannels()
                 }
                 if (channels.isNotEmpty()) {
-                    val enriched = enrichWithNtvEpg(channels)
-                    channelAdapter.updateChannels(enriched)
+                    channelAdapter.updateChannels(channels)
                     restoreLastChannel()
-                    updateHeaderProgram(enriched)
+                    updateHeaderProgram(channels)
                     if (pendingFocusRestore && lastFocusedPosition >= 0) {
                         pendingFocusRestore = false
                         focusOnPosition(lastFocusedPosition)
@@ -77,28 +76,6 @@ class MainActivity : BaseActivity() {
                 }
             } catch (e: Exception) {
             }
-        }
-    }
-
-    private suspend fun enrichWithNtvEpg(channels: List<Channel>): List<Channel> {
-        if (channelRepository.lastFetchWasLimeHd) return channels
-        return try {
-            val ntvPrograms = channelRepository.fetchNtvCurrentPrograms()
-            if (ntvPrograms.isEmpty()) return channels
-            channels.map { ch ->
-                val prog = ntvPrograms[ch.id]
-                if (prog != null) {
-                    ch.copy(
-                        currentProgramTitle = prog.title,
-                        currentProgramStart = prog.startMs,
-                        currentProgramEnd = prog.endMs
-                    )
-                } else {
-                    ch
-                }
-            }
-        } catch (e: Exception) {
-            channels
         }
     }
 

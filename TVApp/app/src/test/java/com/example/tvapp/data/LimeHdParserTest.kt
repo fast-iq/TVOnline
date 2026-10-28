@@ -40,6 +40,7 @@ class LimeHdParserTest {
             [
               {
                 "number": 2, "our_id": 123, "name_ru": "Первый канал", "available": true,
+                "is_federal": true,
                 "stream": {"common": "https://a/common.m3u8", "cdn": "https://a/cdn.m3u8"},
                 "foreign_url": "https://a/foreign.m3u8",
                 "url": "https://a/common.m3u8",
@@ -72,12 +73,11 @@ class LimeHdParserTest {
         assertEquals("limehd_123", second.id)
         assertEquals("Первый канал", second.name)
         assertEquals("https://a/common.m3u8", second.streamUrl)
-        val ng = "https://zabava-htlive.cdn.ngenix.net/hls/"
         assertEquals(
             listOf(
-                "https://a/common.m3u8", "https://a/foreign.m3u8", "https://a/cdn.m3u8",
-                ng + "CH_1TVSD/variant.m3u8", ng + "CH_1TVSD_2/variant.m3u8", ng + "CH_1TVSD_3/variant.m3u8",
-                ng + "CH_1TVSD_4/variant.m3u8", ng + "CH_1TVSD_6/variant.m3u8", ng + "CH_1TVSD_8/variant.m3u8"
+                "https://a/common.m3u8",
+                "https://a/foreign.m3u8",
+                "https://a/cdn.m3u8"
             ),
             second.fallbackStreamUrls
         )

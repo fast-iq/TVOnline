@@ -18,13 +18,11 @@ class AppPreferencesTest {
         first.limehdRegion = 77
         first.limehdRegionName = "Москва"
         first.limehdRegionTzOffsets = listOf(0, 3, 5)
-        first.regionId = 29
 
         val second = AppPreferences(store)
         assertEquals(77, second.limehdRegion)
         assertEquals("Москва", second.limehdRegionName)
         assertEquals(listOf(0, 3, 5), second.limehdRegionTzOffsets)
-        assertEquals(29, second.regionId)
     }
 
     @Test
@@ -33,14 +31,12 @@ class AppPreferencesTest {
         val first = AppPreferences(store)
         first.qualityMode = AppPreferences.QualityMode.MINIMUM
         first.language = "en"
-        first.contentSource = AppPreferences.ContentSource.IVI
         first.lastChannelId = "ntv"
         first.timezoneOffset = 5
 
         val second = AppPreferences(store)
         assertEquals(AppPreferences.QualityMode.MINIMUM, second.qualityMode)
         assertEquals("en", second.language)
-        assertEquals(AppPreferences.ContentSource.IVI, second.contentSource)
         assertEquals("ntv", second.lastChannelId)
         assertEquals(5, second.timezoneOffset)
     }

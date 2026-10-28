@@ -7,38 +7,30 @@ import org.junit.Test
 
 class ModelsTest {
 
-    private val requiredFederalIds = setOf(
-        "c1r", "rossiya1", "ntv", "5tv", "kultura", "zvezda", "pz", "sts",
-        "domashniy", "tnt", "ren", "karusel", "match", "rossiya24", "tvc", "spas"
-    )
-
     @Test
-    fun hardcodedChannelIdsAreUnique() {
-        val ids = ChannelList.hardcodedChannels.map { it.id }
-        assertEquals(ids.size, ids.toSet().size)
+    fun channelListUpdatesAtomically() {
+        val first = listOf(Channel("limehd_1", "Первый", "", "https://example.com/1.m3u8"))
+        ChannelList.updateChannels(first)
+        assertEquals(1, ChannelList.channels.size)
+        assertEquals("limehd_1", ChannelList.channels[0].id)
+
+        val second = listOf(
+            Channel("limehd_2", "Россия 1", "", "https://example.com/2.m3u8"),
+            Channel("limehd_3", "НТВ", "", "https://example.com/3.m3u8")
+        )
+        ChannelList.updateChannels(second)
+        assertEquals(2, ChannelList.channels.size)
+        assertEquals("limehd_3", ChannelList.channels[1].id)
     }
 
     @Test
-    fun allFederalChannelsRequiredBySpecArePresent() {
-        val ids = ChannelList.hardcodedChannels.map { it.id }.toSet()
-        assertTrue(requiredFederalIds.all { it in ids })
-    }
-
-    @Test
-    fun channelsHaveNameAndStream() {
-        for (channel in ChannelList.hardcodedChannels) {
-            assertTrue("empty name for ${channel.id}", channel.name.isNotBlank())
-            assertTrue("empty stream for ${channel.id}", channel.streamUrl.isNotBlank())
-            assertTrue("id must be lowercase ascii: ${channel.id}", channel.id.matches(Regex("[a-z0-9_]+")))
-        }
-    }
-
-    @Test
-    fun fallbackStreamsDoNotContainPrimary() {
-        for (channel in ChannelList.hardcodedChannels) {
-            assertFalse("duplicate fallback in ${channel.id}", channel.fallbackStreamUrls.contains(channel.streamUrl))
-            assertTrue("unique fallbacks in ${channel.id}", channel.fallbackStreamUrls.size == channel.fallbackStreamUrls.toSet().size)
-        }
+    fun channelDefaultsAreSane() {
+        val channel = Channel("limehd_1", "Канал", "", "https://example.com/1.m3u8")
+        assertEquals("general", channel.category)
+        assertEquals(emptyList<String>(), channel.fallbackStreamUrls)
+        assertEquals(emptyList<Program>(), channel.programs)
+        assertFalse(channel.isDrm)
+        assertEquals(0, channel.regionCode)
     }
 
     @Test
@@ -52,29 +44,5 @@ class ModelsTest {
         assertEquals(4000, program.getDuration())
         assertEquals(0, program.getElapsedTime(500))
         assertEquals(2000, program.getElapsedTime(3000))
-    }
-
-    @Test
-    fun regionIdsAreUnique() {
-        val ids = RegionList.regions.map { it.first }
-        assertEquals(ids.size, ids.toSet().size)
-        assertTrue(ids.none { it <= 0 })
-    }
-
-    @Test
-    fun regionOffsetsMatchTimezones() {
-        assertEquals(-1, RegionList.offset(25))
-        assertEquals(0, RegionList.offset(1))
-        assertEquals(0, RegionList.offset(3))
-        assertEquals(1, RegionList.offset(34))
-        assertEquals(2, RegionList.offset(29))
-        assertEquals(3, RegionList.offset(54))
-        assertEquals(4, RegionList.offset(46))
-        assertEquals(5, RegionList.offset(41))
-        assertEquals(6, RegionList.offset(71))
-        assertEquals(7, RegionList.offset(58))
-        assertEquals(8, RegionList.offset(48))
-        assertEquals(9, RegionList.offset(42))
-        assertEquals(0, RegionList.offset(99999))
     }
 }

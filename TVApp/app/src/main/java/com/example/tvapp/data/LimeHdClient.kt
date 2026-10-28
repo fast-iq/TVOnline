@@ -53,7 +53,7 @@ class LimeHdClient(context: Context) {
     fun getChannels(): List<Channel> {
         return try {
             ensureAuth()
-            val tz = prefs.timezoneOffset
+            val tz = effectiveTz()
             val region = prefs.limehdRegion
             val url = BASE_URL +
                 "api/v4/playlist?tz=$tz&region=$region&limit=0&epg=1&epgcnt=4&epg_limit=4" +
@@ -71,7 +71,7 @@ class LimeHdClient(context: Context) {
 
     fun fetchEpg(epgId: String, channelId: String): List<Program> {
         return try {
-            val tz = prefs.timezoneOffset
+            val tz = effectiveTz()
             val region = prefs.limehdRegion
             val url = BASE_URL +
                 "api/v4/epg?id=$epgId&tz=$tz&epg_from=-1&epg_limit=3&grouping=1&region=$region&lang=ru"
@@ -81,6 +81,13 @@ class LimeHdClient(context: Context) {
             Log.e(TAG, "fetchEpg failed: ${e.message}")
             emptyList()
         }
+    }
+
+    private fun effectiveTz(): Int {
+        if (prefs.limehdRegion != 0) {
+            prefs.limehdRegionTzOffsets.firstOrNull()?.let { return it }
+        }
+        return prefs.timezoneOffset
     }
 
     fun getRegions(): List<LimeHdRegion> {
@@ -314,19 +321,13 @@ internal object LimeHdParser {
 
             val current = parseCurrentProgram(item.optJSONArray("current") ?: item.optJSONObject("current"))
             val programs = parseProgramList(item.optJSONArray("current") ?: item.optJSONObject("current"), "limehd_$ourId")
-            val fallbackHardcoded = ChannelList.hardcodedChannels.firstOrNull {
-                it.name.equals(title, ignoreCase = true) || it.id.lowercase(Locale.US) == ourId.toString()
-            }
-            fallbackHardcoded?.fallbackStreamUrls?.forEach { url ->
-                if (url.contains("/hls/CH_")) addUrl(fallbacks, url)
-            }
 
             val channel = Channel(
                 id = "limehd_$ourId",
                 name = title,
                 logoUrl = logoUrl,
                 streamUrl = streamUrl,
-                category = fallbackHardcoded?.category ?: if (item.optBoolean("is_federal")) "federal" else "general",
+                category = if (item.optBoolean("is_federal")) "federal" else "general",
                 epgId = ourId.toString(),
                 channelImageUrl = logoUrl,
                 fallbackStreamUrls = fallbacks.toList(),

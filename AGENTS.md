@@ -683,3 +683,32 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
   - `CH` suffix = time offset vs Moscow: `_2`, `_3`, `_4`, `_6`, `_7`, `_8` (e.g. `CH_1TVSD_4` = МСК+4)
   - Source: IPTV_MEGA_PLAYLIST.m3u (group `GitHub - Zabava / Основные`)
 - **ntv.ru CDN (official)**: `https://cdn.ntv.ru/{stream_key}/index.m3u8` (see Session 10)
+
+
+### 2026-10-28 Session 27 — LimeHD-only cleanup + region/tz content switching wired
+
+**Goal:** Remove ALL non-LimeHD sources; make region selection change actual video content like the original LimeHD app.
+
+**Mechanism (confirmed by live tests + APK ANALYSIS.md grep):**
+- Playlist: `POST https://pl.iptv2021.com/api/v4/playlist?tz=<UTC offset>&region=<code>&...&drm=0`
+- `region` param: server returns region feed by path — NТВ id=10100: region 77=`ntv_msk-drm`, 66=`ntv_ekat-drm`, 24/0=`ntvnn-drm`. Regional-only channels appear/disappear (e.g. Среда id=15688 in 77/66, absent in 24/0).
+- `tz` param (device UTC offset) switches time-shifted feeds: tz=5 → `*plus2` (Первый/Россия/НТВ… 24 channels), tz=7 → `*plus4`. This is how "region changes video" works in the original app.
+- `stream_tz` field in channel JSON = feed time offset; server-side substitution only — client picks `stream.common`.
+- EPG (`/api/v4/epg`) not region-dependent for Moscow channels; programs identical.
+- `drm` stays 0; player must follow 301 redirects to `limehd.cdnvideo.ru` (cross-protocol redirect — TVPlayerManager already allows it; curl needs `-L`).
+- Playable test: 66/tz5 → `1kanalplus2-drm` returns `#EXTM3U` with full headers.
+- Headers: `User-Agent`/`X-LHD-Agent` = agent JSON (`limehd.ru.lite` 4.1.2).
+
+**Changes:**
+- `ChannelRepository.kt` — LimeHD only; cache key = `limehd_<region>_<tz>`; `contentVersion`/`invalidateContent()` retained.
+- `LimeHdClient.kt` — removed `ChannelList.hardcodedChannels`/ngenix fallback attach (b7ac74b reverted); `effectiveTz()` = first `limehdRegionTzOffsets` when region != 0 else `timezoneOffset`; applied to playlist AND EPG requests; category = `is_federal ? federal : general`.
+- `SettingsActivity.kt` — removed source selector + `RegionList` legacy; `applyRegion()` now ALSO saves region tz into `timezoneOffset` and invalidates content (region change → tz param changes → server swaps feeds). Region_changed toast kept.
+- `EPGRepository.kt` — LimeHD only (programs from playlist → client.fetchEpg → fallback templates); cache key includes tz+region.
+- `Models.kt` — deleted `hardcodedChannels` (85 channels, ~800 lines), `RegionList`, `NG`; `ChannelList.channels` now `@Volatile`, starts empty.
+- Deleted `StreamSelector.kt`, `ChannelParsersTest.kt`, `StreamSelectorTest.kt`.
+- `PlayerActivity.kt` — uses `channel.streamUrl` directly (region/tz handled server-side by request params).
+- `MainActivity.kt` — removed `enrichWithNtvEpg`/`lastFetchWasLimeHd`.
+- `AppPreferences.kt` — removed `EPG_SERVICE_TOKEN` (hardcoded secret gone), `ContentSource`, `regionId`.
+- Tests: 19/19 pass (`LimeHdParserTest` updated: no ngenix fallbacks, `is_federal`→federal category).
+
+**Verification:** local `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.
