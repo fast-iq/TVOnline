@@ -49,6 +49,7 @@
     <string name="region_select_title">Выбор региона</string>
     <string name="region_prefix">Регион: %1$s</string>
     <string name="region_changed">Регион изменён: %1$s</string>
+    <string name="regions_load_failed">Не удалось загрузить список регионов</string>
     <string name="quality_label">Качество видео:</string>
     <string name="language_label">Язык интерфейса:</string>
     <string name="settings_help">Используйте пульт для навигации. Нажмите OK для выбора опции.</string>

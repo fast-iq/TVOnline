@@ -712,3 +712,18 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 - Tests: 19/19 pass (`LimeHdParserTest` updated: no ngenix fallbacks, `is_federal`→federal category).
 
 **Verification:** local `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.
+
+
+### 2026-10-28 Session 28 — region dialog: always full list
+
+**User report:** region switching works on device, but first open of region dialog showed only "Автоопределение" + saved region; full list appeared only on second open.
+
+**Cause:** `SettingsActivity` preloaded LimeHD regions asynchronously; before load finished the dialog was built from `fallbackRegions()` (auto + saved only).
+
+**Fix (`SettingsActivity.kt`):**
+- `ensureRegionsLoaded(onLoaded)` — single-flight loader with `regionsLoading` flag + `pendingRegionCallbacks` queue; `onCreate` starts preload, clicking region button before load finished queues a callback that opens the dialog after load.
+- `showRegionDialog(waitedForLoad)` — if regions not yet loaded, waits for load then opens dialog with the FULL list; fallback short list only if network load failed (Toast `regions_load_failed`).
+- `rebuildRegionList()` — appends saved-but-missing region as before.
+- Strings `regions_load_failed` (ru/en).
+
+**Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest` PASSED.

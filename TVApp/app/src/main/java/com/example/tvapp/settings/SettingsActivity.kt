@@ -32,6 +32,8 @@ class SettingsActivity : BaseActivity() {
 
     private var regions: List<Pair<Int, String>> = emptyList()
     private var limeHdRegions: List<LimeHdRegion> = emptyList()
+    private var regionsLoading = false
+    private val pendingRegionCallbacks = mutableListOf<() -> Unit>()
 
     private val qualityModes = listOf(
         AppPreferences.QualityMode.MINIMUM,
@@ -53,7 +55,7 @@ class SettingsActivity : BaseActivity() {
         languageOptions = findViewById(R.id.languageOptions)
 
         setupRegionSelector()
-        loadLimeHdRegions()
+        ensureRegionsLoaded {}
         setupQualitySelector()
         setupLanguageSelector()
     }
@@ -66,11 +68,18 @@ class SettingsActivity : BaseActivity() {
         regionButton.setOnClickListener { showRegionDialog() }
     }
 
-    private fun showRegionDialog() {
+    private fun showRegionDialog(waitedForLoad: Boolean = false) {
+        if (!waitedForLoad && limeHdRegions.isEmpty()) {
+            ensureRegionsLoaded {
+                if (!isFinishing && !isDestroyed) showRegionDialog(waitedForLoad = true)
+            }
+            return
+        }
         if (regions.isEmpty()) return
+        val currentCode = regions[currentRegionIndex].first
         val labels = regions.map { (code, name) ->
             val base = if (code == 0) getString(R.string.region_auto) else name
-            if (code == regions[currentRegionIndex].first) "$base ${getString(R.string.source_current)}" else base
+            if (code == currentCode) "$base ${getString(R.string.source_current)}" else base
         }
         android.app.AlertDialog.Builder(this)
             .setTitle(getString(R.string.region_select_title))
@@ -83,25 +92,48 @@ class SettingsActivity : BaseActivity() {
             .show()
     }
 
-    private fun loadLimeHdRegions() {
+    private fun ensureRegionsLoaded(onLoaded: () -> Unit) {
+        if (limeHdRegions.isNotEmpty()) {
+            onLoaded()
+            return
+        }
+        if (regionsLoading) {
+            pendingRegionCallbacks.add(onLoaded)
+            return
+        }
+        regionsLoading = true
         uiScope.launch {
             val loaded = withContext(Dispatchers.IO) { limeHdClient.getRegions() }
-            if (loaded.isEmpty()) return@launch
-
-            limeHdRegions = loaded
-            regions = buildRegionList()
-
-            val savedCode = preferences.limehdRegion
-            val savedIndex = regions.indexOfFirst { it.first == savedCode }
-            if (savedCode != 0 && savedIndex < 0) {
-                regions = regions + (savedCode to (preferences.limehdRegionName ?: savedCode.toString()))
-                currentRegionIndex = regions.size - 1
+            regionsLoading = false
+            if (loaded.isNotEmpty()) {
+                limeHdRegions = loaded
+                rebuildRegionList()
+                updateRegionDisplay()
             } else {
-                currentRegionIndex = savedIndex.coerceAtLeast(0)
+                android.widget.Toast.makeText(
+                    this@SettingsActivity,
+                    R.string.regions_load_failed,
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
             }
-
-            updateRegionDisplay()
+            val pending = pendingRegionCallbacks.toList()
+            pendingRegionCallbacks.clear()
+            onLoaded()
+            pending.forEach { it() }
         }
+    }
+
+    private fun rebuildRegionList() {
+        val savedCode = preferences.limehdRegion
+        val list = buildRegionList().toMutableList()
+        val savedIndex = list.indexOfFirst { it.first == savedCode }
+        if (savedCode != 0 && savedIndex < 0) {
+            list.add(savedCode to (preferences.limehdRegionName ?: savedCode.toString()))
+            currentRegionIndex = list.size - 1
+        } else {
+            currentRegionIndex = savedIndex.coerceAtLeast(0)
+        }
+        regions = list
     }
 
     private fun fallbackRegions(): List<Pair<Int, String>> {
