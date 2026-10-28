@@ -779,3 +779,16 @@ Verified from live playlist dump: LimeHD `number` field matches official TV numb
 **Tests:** `ChannelNumberInputTest` (5): prefix set [1,11,12,111,113], exact wins, no-exact→first, number=0 ignored, empty/no-match. Total 31/31.
 
 **Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.
+
+
+### 2026-10-28 Session 33 — EPG timeline fills full width
+
+**Goal:** 3-hour EPG window must span the full width of the grid area (previously fixed 150px/hour → whole timeline ~225px, a narrow strip on the left).
+
+**Changes (`EPGActivity.kt`, `activity_epg.xml`):**
+- `pixelsPerMinute` is now a var computed as `epgHorizontalScroll.width / totalMinutes` (90-min window fits viewport exactly).
+- Grid built in `epgHorizontalScroll.doOnLayout { }` so real width is known before layout.
+- Time scale container switched from LinearLayout to FrameLayout; hour labels positioned absolutely at `offsetMin * pixelsPerMinute` (old sequential margins misaligned labels).
+- Horizontal DPAD scroll effectively disabled (content fits viewport; maxScroll≈0).
+
+**Verification:** `ktlintCheck compileDebugKotlin lintDebug` PASSED.

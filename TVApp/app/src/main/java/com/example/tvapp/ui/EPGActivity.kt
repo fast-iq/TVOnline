@@ -8,6 +8,7 @@ import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.view.doOnLayout
 import androidx.core.widget.NestedScrollView
 import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
@@ -35,7 +36,7 @@ class EPGActivity : BaseActivity() {
     }
 
     private lateinit var currentTimeText: TextView
-    private lateinit var timeScaleContainer: LinearLayout
+    private lateinit var timeScaleContainer: FrameLayout
     private lateinit var channelLabelsContainer: LinearLayout
     private lateinit var epgGridContainer: FrameLayout
     private lateinit var timeScaleScroll: HorizontalScrollView
@@ -48,8 +49,7 @@ class EPGActivity : BaseActivity() {
 
     private val scope = CoroutineScope(Dispatchers.Main + Job())
 
-    private val pixelsPerHour = 150f
-    private val pixelsPerMinute = pixelsPerHour / 60f
+    private var pixelsPerMinute = 2.5f
     private val rowHeight = 70
     private val totalMinutes = 90
     private val leadMinutes = 30
@@ -72,10 +72,12 @@ class EPGActivity : BaseActivity() {
         epgVerticalScroll = findViewById(R.id.epgVerticalScroll)
         channelLabelsScroll = findViewById(R.id.channelLabelsScroll)
 
-        setupEPGGrid()
-        loadEPGForDate()
-        updateCurrentTimeDisplay()
         setupScrollSync()
+        updateCurrentTimeDisplay()
+        epgHorizontalScroll.doOnLayout {
+            setupEPGGrid()
+            loadEPGForDate()
+        }
     }
 
     private fun setupScrollSync() {
@@ -95,6 +97,9 @@ class EPGActivity : BaseActivity() {
 
     private fun setupEPGGrid() {
         channels = ChannelList.channels.take(EPG_MAX_CHANNELS)
+        val viewportWidth = epgHorizontalScroll.width
+        if (viewportWidth <= 0) return
+        pixelsPerMinute = viewportWidth.toFloat() / totalMinutes
         createTimeScale()
         createChannelLabels()
         val totalWidth = (totalMinutes * pixelsPerMinute).toInt()
@@ -105,6 +110,7 @@ class EPGActivity : BaseActivity() {
     private fun createTimeScale() {
         timeScaleContainer.removeAllViews()
         val baseTime = getStartTimeMillis()
+        val pixelsPerHour = pixelsPerMinute * 60f
         val firstHourMark = (baseTime / 3600_000L * 3600_000L)
         for (hourStart in firstHourMark..(baseTime + totalMinutes * 60_000L) step 3600_000L) {
             val calendar = Calendar.getInstance(displayTz).apply { timeInMillis = hourStart }
@@ -115,11 +121,10 @@ class EPGActivity : BaseActivity() {
                 text = String.format(Locale.US, "%02d:00", hourVal)
                 textSize = 14f
                 setTextColor(getColor(R.color.text_secondary))
-                width = pixelsPerHour.toInt()
-                gravity = android.view.Gravity.CENTER
+                gravity = android.view.Gravity.START
             }
-            val params = LinearLayout.LayoutParams(pixelsPerHour.toInt(), LinearLayout.LayoutParams.MATCH_PARENT)
-            params.marginStart = ((offsetMin * pixelsPerMinute) - pixelsPerHour / 2).toInt().coerceAtLeast(0)
+            val params = FrameLayout.LayoutParams(pixelsPerHour.toInt(), FrameLayout.LayoutParams.MATCH_PARENT)
+            params.marginStart = (offsetMin * pixelsPerMinute).toInt().coerceAtLeast(0)
             timeScaleContainer.addView(timeText, params)
         }
     }

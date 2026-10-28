@@ -40,16 +40,15 @@
         app:layout_constraintStart_toEndOf="@id/channelLabelsArea"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <LinearLayout
+        <FrameLayout
             android:id="@+id/timeScaleContainer"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:orientation="horizontal"
             android:paddingStart="8dp"
             android:paddingEnd="16dp">
 
             <!-- Временные метки будут добавлены программно -->
-        </LinearLayout>
+        </FrameLayout>
     </HorizontalScrollView>
 
     <!-- Вертикальная прокрутка каналов -->
