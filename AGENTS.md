@@ -851,3 +851,17 @@ Verified from live playlist dump: LimeHD `number` field matches official TV numb
 **Fix:** `EPG_PAST_LIMIT = 1` → stage 1 = yesterday+today (covers ended-within-30-min programs, current, rest of today); stage 2 `(0,1)` adds tomorrow; merged with dedup. Both entries now render identical content.
 
 **Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest` PASSED.
+
+
+### 2026-10-28 Session 38 — EPG vertical scrolling: RecyclerView rows
+
+**Problem:** vertical EPG scroll lagged badly — one giant FrameLayout with ~80 channels x tens of program blocks (~1000-2000 Views) in a NestedScrollView; everything measured/drawn at once.
+
+**Fix:**
+- `activity_epg.xml`: `channelLabelsScroll` NestedScrollView+LinearLayout -> `epgLabelsList` RecyclerView; `epgVerticalScroll` NestedScrollView+`epgGridContainer` FrameLayout -> `epgRowsList` RecyclerView (direct child of the HorizontalScrollView, width set programmatically to `totalWidthPx`).
+- New `EpgRowAdapter` (per-row FrameLayout, `removeAllViews`+rebuild on bind: program blocks clamped to window + per-row segment of the accent "now" line -> visually continuous) and `EpgLabelAdapter` (fixed-height channel names) in `ui/EpgRowAdapter.kt`. `createProgramBlock` moved into the adapter.
+- `EPGActivity`: `rowAdapter.setData(...)` replaces `renderPrograms`; vertical sync is one-way via `rowsList.addOnScrollListener -> labelsList.scrollBy(0, dy)`; DPAD up/down -> `rowsList.smoothScrollBy(0, +/-rowHeight)`; horizontal logic unchanged (HorizontalScrollView, 12h window, 90-min zoom).
+
+**Ktlint gotcha:** multi-line `.apply { }` inside a call arg list triggers `standard:wrapping` ("Missing newline after ("); assign `LayoutParams` to a val first, set margins on separate lines.
+
+**Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.

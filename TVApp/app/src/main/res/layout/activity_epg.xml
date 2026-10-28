@@ -52,25 +52,15 @@
     </HorizontalScrollView>
 
     <!-- Вертикальная прокрутка каналов -->
-    <androidx.core.widget.NestedScrollView
-        android:id="@+id/channelLabelsScroll"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/epgLabelsList"
         android:layout_width="150dp"
         android:layout_height="0dp"
         android:layout_marginTop="8dp"
-        android:scrollbars="vertical"
+        android:scrollbars="none"
         app:layout_constraintTop_toBottomOf="@id/timeScaleScroll"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <LinearLayout
-            android:id="@+id/channelLabelsContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <!-- Названия каналов будут добавлены программно -->
-        </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
+        app:layout_constraintStart_toStartOf="parent" />
 
     <!-- Область для названий каналов над лентой -->
     <FrameLayout
@@ -101,24 +91,14 @@
         android:scrollbars="horizontal"
         app:layout_constraintTop_toBottomOf="@id/timeScaleScroll"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@id/channelLabelsScroll"
+        app:layout_constraintStart_toEndOf="@id/epgLabelsList"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <androidx.core.widget.NestedScrollView
-            android:id="@+id/epgVerticalScroll"
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/epgRowsList"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:fillViewport="true"
-            android:scrollbars="vertical">
-
-            <FrameLayout
-                android:id="@+id/epgGridContainer"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content">
-
-                <!-- Программа передач будет добавлена программно -->
-            </FrameLayout>
-        </androidx.core.widget.NestedScrollView>
+            android:scrollbars="none" />
     </HorizontalScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

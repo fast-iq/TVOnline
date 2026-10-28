@@ -2,14 +2,13 @@ package com.example.tvapp.ui
 
 import android.os.Bundle
 import android.view.KeyEvent
-import android.view.View
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
-import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.doOnLayout
-import androidx.core.widget.NestedScrollView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
 import com.example.tvapp.data.AppPreferences
@@ -37,19 +36,20 @@ class EPGActivity : BaseActivity() {
 
     private lateinit var currentTimeText: TextView
     private lateinit var timeScaleContainer: FrameLayout
-    private lateinit var channelLabelsContainer: LinearLayout
-    private lateinit var epgGridContainer: FrameLayout
+    private lateinit var labelsList: RecyclerView
+    private lateinit var rowsList: RecyclerView
     private lateinit var timeScaleScroll: HorizontalScrollView
     private lateinit var epgHorizontalScroll: HorizontalScrollView
-    private lateinit var epgVerticalScroll: NestedScrollView
-    private lateinit var channelLabelsScroll: NestedScrollView
 
     private val epgRepository by lazy { EPGRepository(applicationContext) }
     private var channels: List<Channel> = emptyList()
+    private lateinit var rowAdapter: EpgRowAdapter
+    private lateinit var labelAdapter: EpgLabelAdapter
 
     private val scope = CoroutineScope(Dispatchers.Main + Job())
 
     private var pixelsPerMinute = 2.5f
+    private var totalWidthPx = 0
     private val rowHeight = 70
     private val totalMinutes = 720
     private val leadMinutes = 30
@@ -67,12 +67,10 @@ class EPGActivity : BaseActivity() {
 
         currentTimeText = findViewById(R.id.currentTimeText)
         timeScaleContainer = findViewById(R.id.timeScaleContainer)
-        channelLabelsContainer = findViewById(R.id.channelLabelsContainer)
-        epgGridContainer = findViewById(R.id.epgGridContainer)
+        labelsList = findViewById(R.id.epgLabelsList)
+        rowsList = findViewById(R.id.epgRowsList)
         timeScaleScroll = findViewById(R.id.timeScaleScroll)
         epgHorizontalScroll = findViewById(R.id.epgHorizontalScroll)
-        epgVerticalScroll = findViewById(R.id.epgVerticalScroll)
-        channelLabelsScroll = findViewById(R.id.channelLabelsScroll)
 
         setupScrollSync()
         updateCurrentTimeDisplay()
@@ -89,12 +87,11 @@ class EPGActivity : BaseActivity() {
         epgHorizontalScroll.viewTreeObserver.addOnScrollChangedListener {
             if (!isChangingConfigurations) timeScaleScroll.scrollX = epgHorizontalScroll.scrollX
         }
-        channelLabelsScroll.viewTreeObserver.addOnScrollChangedListener {
-            if (!isChangingConfigurations) epgVerticalScroll.scrollY = channelLabelsScroll.scrollY
-        }
-        epgVerticalScroll.viewTreeObserver.addOnScrollChangedListener {
-            if (!isChangingConfigurations) channelLabelsScroll.scrollY = epgVerticalScroll.scrollY
-        }
+        rowsList.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                if (dy != 0) labelsList.scrollBy(0, dy)
+            }
+        })
     }
 
     private fun setupEPGGrid() {
@@ -102,11 +99,20 @@ class EPGActivity : BaseActivity() {
         val viewportWidth = epgHorizontalScroll.width
         if (viewportWidth <= 0) return
         pixelsPerMinute = viewportWidth.toFloat() / visibleMinutes
+        totalWidthPx = (totalMinutes * pixelsPerMinute).toInt()
         createTimeScale()
-        createChannelLabels()
-        val totalWidth = (totalMinutes * pixelsPerMinute).toInt()
-        val totalHeight = channels.size * rowHeight
-        epgGridContainer.layoutParams = FrameLayout.LayoutParams(totalWidth, totalHeight)
+
+        rowsList.layoutParams = rowsList.layoutParams.apply { width = totalWidthPx }
+        rowsList.layoutManager = LinearLayoutManager(this)
+        rowAdapter = EpgRowAdapter(this)
+        rowsList.adapter = rowAdapter
+
+        labelsList.layoutManager = LinearLayoutManager(this)
+        labelAdapter = EpgLabelAdapter(rowHeight)
+        labelsList.adapter = labelAdapter
+        labelAdapter.setChannels(channels)
+
+        updatePrograms(emptyMap())
     }
 
     private fun createTimeScale() {
@@ -131,103 +137,9 @@ class EPGActivity : BaseActivity() {
         }
     }
 
-    private fun createChannelLabels() {
-        channelLabelsContainer.removeAllViews()
-        for (channel in channels) {
-            val channelText = TextView(this).apply {
-                text = channel.name
-                textSize = 14f
-                setTextColor(getColor(R.color.white))
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    rowHeight
-                ).apply {
-                    gravity = android.view.Gravity.CENTER_VERTICAL
-                    setPadding(16, 0, 16, 0)
-                }
-            }
-            channelLabelsContainer.addView(channelText)
-        }
+    private fun updatePrograms(programs: Map<String, List<Program>>) {
+        rowAdapter.setData(channels, programs, getStartTimeMillis(), pixelsPerMinute, totalMinutes, rowHeight, totalWidthPx, displayTz)
     }
-
-    private fun renderPrograms(programs: Map<String, List<Program>>) {
-        epgGridContainer.removeAllViews()
-        val baseTime = getStartTimeMillis()
-
-        channels.forEachIndexed { index, channel ->
-            val channelPrograms = programs[channel.id] ?: return@forEachIndexed
-            channelPrograms.forEach { program ->
-                val startTimeOffset = (program.startTime - baseTime) / 1000f / 60f
-                val endTimeOffset = (program.endTime - baseTime) / 1000f / 60f
-
-                if (endTimeOffset < 0f || startTimeOffset > totalMinutes) return@forEach
-
-                val leftMinutes = startTimeOffset.coerceAtLeast(0f)
-                val rightMinutes = endTimeOffset.coerceAtMost(totalMinutes.toFloat())
-                val leftMargin = (leftMinutes * pixelsPerMinute).toInt()
-                val width = ((rightMinutes - leftMinutes) * pixelsPerMinute).toInt().coerceAtLeast(40)
-                val programView = createProgramBlock(program, width)
-                val params = FrameLayout.LayoutParams(width, rowHeight - 8).apply {
-                    marginStart = leftMargin
-                    topMargin = index * rowHeight + 4
-                }
-                epgGridContainer.addView(programView, params)
-            }
-        }
-
-        val nowOffset = ((System.currentTimeMillis() - baseTime) / 1000f / 60f).coerceIn(0f, totalMinutes.toFloat())
-        val nowLine = View(this).apply {
-            setBackgroundColor(getColor(R.color.accent))
-        }
-        val nowParams = FrameLayout.LayoutParams(3, channels.size * rowHeight).apply {
-            marginStart = (nowOffset * pixelsPerMinute).toInt()
-        }
-        epgGridContainer.addView(nowLine, nowParams)
-    }
-
-    private fun createProgramBlock(program: Program, width: Int): View {
-        val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-
-        val container = FrameLayout(this).apply {
-            setPadding(8, 8, 8, 8)
-            setBackgroundResource(R.drawable.program_item_background)
-            isClickable = true
-            isFocusable = true
-            setOnFocusChangeListener { view, hasFocus ->
-                if (hasFocus) {
-                    view.scaleX = 1.05f
-                    view.scaleY = 1.05f
-                    view.setBackgroundResource(R.drawable.focus_highlight)
-                } else {
-                    view.scaleX = 1.0f
-                    view.scaleY = 1.0f
-                    view.setBackgroundResource(R.drawable.program_item_background)
-                }
-            }
-        }
-
-        val startCal = Calendar.getInstance(displayTz).apply { timeInMillis = program.startTime }
-        val endCal = Calendar.getInstance(displayTz).apply { timeInMillis = program.endTime }
-        val timeStr = getString(R.string.time_range, dateFormat.format(startCal.time), dateFormat.format(endCal.time))
-
-        val programText = TextView(this).apply {
-            text = getString(R.string.epg_program_text, timeStr, program.title)
-            textSize = 12f
-            setTextColor(getColor(R.color.white))
-            maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
-        }
-        container.addView(programText)
-
-        val nowMoscow = getMoscowNow()
-        if (program.isLive(nowMoscow)) {
-            container.setBackgroundResource(R.drawable.live_indicator)
-        }
-
-        return container
-    }
-
-    private fun getMoscowNow(): Long = System.currentTimeMillis()
 
     private fun getStartTimeMillis(): Long {
         val calendar = Calendar.getInstance(displayTz).apply {
@@ -244,15 +156,15 @@ class EPGActivity : BaseActivity() {
                 val instant = channels.associate { channel -> channel.id to channel.programs }
                     .filterValues { it.isNotEmpty() }
                 if (instant.isNotEmpty()) {
-                    renderPrograms(instant)
-                    epgGridContainer.post { scrollToCurrentTime() }
+                    updatePrograms(instant)
+                    epgHorizontalScroll.post { scrollToCurrentTime() }
                 }
                 withContext(Dispatchers.IO) {
                     epgRepository.getProgramsWithSurroundings(channels, Date()) { partial ->
-                        renderPrograms(partial)
+                        updatePrograms(partial)
                     }
                 }
-                epgGridContainer.post { scrollToCurrentTime() }
+                epgHorizontalScroll.post { scrollToCurrentTime() }
             } catch (e: Exception) {
                 Toast.makeText(this@EPGActivity, R.string.epg_load_error, Toast.LENGTH_SHORT).show()
             }
@@ -265,6 +177,7 @@ class EPGActivity : BaseActivity() {
         val targetX = ((nowOffsetMin - nowViewportOffsetMinutes) * pixelsPerMinute).toInt().coerceAtLeast(0)
         epgHorizontalScroll.scrollTo(targetX, 0)
     }
+
     private fun updateCurrentTimeDisplay() {
         val cal = Calendar.getInstance(displayTz).apply { timeInMillis = System.currentTimeMillis() }
         val dateFormat = SimpleDateFormat("HH:mm dd.MM.yyyy", Locale.getDefault())
@@ -277,12 +190,11 @@ class EPGActivity : BaseActivity() {
             true
         }
         KeyEvent.KEYCODE_DPAD_UP -> {
-            if (channelLabelsScroll.scrollY > 0) channelLabelsScroll.smoothScrollBy(0, -rowHeight)
+            rowsList.smoothScrollBy(0, -rowHeight)
             true
         }
         KeyEvent.KEYCODE_DPAD_DOWN -> {
-            val maxScroll = channelLabelsContainer.height - channelLabelsScroll.height
-            if (channelLabelsScroll.scrollY < maxScroll) channelLabelsScroll.smoothScrollBy(0, rowHeight)
+            rowsList.smoothScrollBy(0, rowHeight)
             true
         }
         KeyEvent.KEYCODE_DPAD_LEFT -> {
@@ -297,7 +209,7 @@ class EPGActivity : BaseActivity() {
     }
 
     private fun scrollByMinutes(minutes: Int) {
-        val maxScroll = epgGridContainer.width - epgHorizontalScroll.width
+        val maxScroll = totalWidthPx - epgHorizontalScroll.width
         val newScrollX = (epgHorizontalScroll.scrollX + minutes * pixelsPerMinute).toInt().coerceIn(0, maxScroll.coerceAtLeast(0))
         epgHorizontalScroll.smoothScrollTo(newScrollX, 0)
     }
