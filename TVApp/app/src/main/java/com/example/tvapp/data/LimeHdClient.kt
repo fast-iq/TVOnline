@@ -62,7 +62,7 @@ class LimeHdClient(context: Context) {
             val body = JSONObject(httpPostForm(url, "payload=" + URLEncoder.encode(payload, "UTF-8")) ?: return emptyList())
             val channelsArray = body.optJSONArray("channels") ?: return emptyList()
             val parsed = parseChannels(channelsArray)
-            if (region != 0) parsed.sortedByDescending { it.regionCode == region } else parsed
+            parsed
         } catch (e: Exception) {
             Log.e(TAG, "getChannels failed: ${e.message}")
             emptyList()

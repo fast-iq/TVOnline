@@ -727,3 +727,10 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 - Strings `regions_load_failed` (ru/en).
 
 **Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest` PASSED.
+
+
+### 2026-10-28 Session 29 — channel order = TV numbering
+
+Verified from live playlist dump: LimeHD `number` field matches official TV numbering (1 Первый, 2 Россия 1, 3 Матч ТВ, 4 НТВ, 5 Пятый канал…). `parseChannels` already sorts by `number`; removed the `sortedByDescending { regionCode == region }` "regional channels first" reorder in `LimeHdClient.getChannels()` so the grid keeps pure TV order for any region.
+
+**Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest` PASSED.
