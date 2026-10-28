@@ -44,6 +44,7 @@ class PlayerActivity : BaseActivity() {
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private val preferences by lazy { AppPreferences(applicationContext) }
     private var overlayHideJob: Job? = null
+    private var numberInput: NumberInputController? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,6 +62,10 @@ class PlayerActivity : BaseActivity() {
             programOverlay = findViewById(R.id.programOverlay)
             programNowText = findViewById(R.id.programNowText)
             programNextText = findViewById(R.id.programNextText)
+
+            numberInput = NumberInputController(this, findViewById(R.id.numberOverlay)) { channel ->
+                playSelectedChannel(channel)
+            }
 
             playerManager = TVPlayerManager(this)
 
@@ -143,8 +148,14 @@ class PlayerActivity : BaseActivity() {
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean = when (keyCode) {
         KeyEvent.KEYCODE_BACK -> {
-            finish()
-            true
+            val input = numberInput
+            if (input != null && input.isActive()) {
+                input.cancel()
+                true
+            } else {
+                finish()
+                true
+            }
         }
         KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
             if (!playerManager.isPlaying()) {
@@ -164,7 +175,24 @@ class PlayerActivity : BaseActivity() {
             switchChannel(-1)
             true
         }
+        in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9 -> {
+            if ((event?.repeatCount ?: 0) == 0) {
+                numberInput?.onDigit('0' + (keyCode - KeyEvent.KEYCODE_0))
+            }
+            true
+        }
         else -> super.onKeyDown(keyCode, event)
+    }
+
+    private fun playSelectedChannel(channel: Channel) {
+        channelId = channel.id
+        channelName = channel.name
+        currentChannel = channel
+        preferences.lastChannelId = channel.id
+        playerManager.playChannel(channel, channel.streamUrl)
+        showProgramOverlay(channel)
+        infoText.text = getString(R.string.loading_channel, channel.name)
+        infoText.visibility = View.VISIBLE
     }
 
     private fun switchChannel(direction: Int) {
@@ -189,6 +217,7 @@ class PlayerActivity : BaseActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        numberInput?.release()
         scope.cancel()
         playerManager.releasePlayer()
     }

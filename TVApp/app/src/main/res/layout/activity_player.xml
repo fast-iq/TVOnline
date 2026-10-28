@@ -59,4 +59,20 @@
 
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/numberOverlay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/number_overlay_bg"
+        android:padding="10dp"
+        android:minWidth="180dp"
+        android:textSize="16sp"
+        android:textColor="@color/white"
+        android:elevation="8dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="24dp" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

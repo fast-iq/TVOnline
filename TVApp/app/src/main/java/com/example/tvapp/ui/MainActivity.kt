@@ -1,10 +1,7 @@
 package com.example.tvapp.ui
 
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.KeyEvent
-import android.view.View
 import android.widget.TextView
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -35,10 +32,7 @@ class MainActivity : BaseActivity() {
     private var lastFocusedPosition: Int = -1
     private var pendingFocusRestore: Boolean = false
 
-    private var numberOverlay: TextView? = null
-    private val typedDigits = StringBuilder()
-    private val numberHandler = Handler(Looper.getMainLooper())
-    private val numberCommitRunnable = Runnable { commitNumberInput() }
+    private var numberInput: NumberInputController? = null
 
     private val scope = CoroutineScope(Dispatchers.Main + Job())
 
@@ -49,7 +43,9 @@ class MainActivity : BaseActivity() {
         channelsRecyclerView = findViewById(R.id.channelsRecyclerView)
         currentProgramText = findViewById(R.id.currentProgramText)
         regionText = findViewById(R.id.regionText)
-        numberOverlay = findViewById(R.id.numberOverlay)
+        numberInput = NumberInputController(this, findViewById(R.id.numberOverlay)) { channel ->
+            selectChannelByNumber(channel)
+        }
         updateRegionDisplay()
         val settingsButton: android.widget.ImageView = findViewById(R.id.settingsButton)
         settingsButton.setOnClickListener { openSettings() }
@@ -190,49 +186,7 @@ class MainActivity : BaseActivity() {
         startActivity(intent)
     }
 
-    private fun handleDigit(digit: Char) {
-        if (typedDigits.length >= ChannelNumberInput.MAX_DIGITS) return
-        typedDigits.append(digit)
-        updateNumberOverlay()
-        numberHandler.removeCallbacks(numberCommitRunnable)
-        numberHandler.postDelayed(numberCommitRunnable, NUMBER_COMMIT_DELAY_MS)
-        if (typedDigits.length >= ChannelNumberInput.MAX_DIGITS) {
-            commitNumberInput()
-        }
-    }
-
-    private fun updateNumberOverlay() {
-        val overlay = numberOverlay ?: return
-        if (typedDigits.isEmpty()) {
-            overlay.visibility = View.GONE
-            overlay.text = ""
-            return
-        }
-        val digits = typedDigits.toString()
-        val matches = ChannelNumberInput.matches(ChannelList.channels, digits)
-        val sb = StringBuilder(getString(R.string.channel_number_typing, digits))
-        if (matches.isEmpty()) {
-            sb.append('\n').append(getString(R.string.channel_number_no_match))
-        } else {
-            matches.take(MAX_NUMBER_MATCHES_SHOWN).forEach { channel ->
-                sb.append('\n').append(getString(R.string.channel_number_item, channel.number, channel.name))
-            }
-        }
-        overlay.text = sb
-        overlay.visibility = View.VISIBLE
-    }
-
-    private fun clearNumberInput() {
-        typedDigits.setLength(0)
-        numberHandler.removeCallbacks(numberCommitRunnable)
-        updateNumberOverlay()
-    }
-
-    private fun commitNumberInput() {
-        val digits = typedDigits.toString()
-        clearNumberInput()
-        if (digits.isEmpty()) return
-        val channel = ChannelNumberInput.select(ChannelList.channels, digits) ?: return
+    private fun selectChannelByNumber(channel: Channel) {
         lastSelectedChannelId = channel.id
         preferences.lastChannelId = channel.id
         val position = ChannelList.channels.indexOf(channel)
@@ -253,8 +207,9 @@ class MainActivity : BaseActivity() {
             true
         }
         KeyEvent.KEYCODE_BACK -> {
-            if (typedDigits.isNotEmpty()) {
-                clearNumberInput()
+            val input = numberInput
+            if (input != null && input.isActive()) {
+                input.cancel()
                 true
             } else {
                 super.onKeyDown(keyCode, event)
@@ -262,7 +217,7 @@ class MainActivity : BaseActivity() {
         }
         in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9 -> {
             if ((event?.repeatCount ?: 0) == 0) {
-                handleDigit('0' + (keyCode - KeyEvent.KEYCODE_0))
+                numberInput?.onDigit('0' + (keyCode - KeyEvent.KEYCODE_0))
             }
             true
         }
@@ -271,12 +226,7 @@ class MainActivity : BaseActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        numberHandler.removeCallbacks(numberCommitRunnable)
+        numberInput?.release()
         scope.cancel()
-    }
-
-    companion object {
-        private const val NUMBER_COMMIT_DELAY_MS = 1200L
-        private const val MAX_NUMBER_MATCHES_SHOWN = 6
     }
 }

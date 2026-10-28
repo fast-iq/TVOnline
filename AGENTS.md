@@ -792,3 +792,15 @@ Verified from live playlist dump: LimeHD `number` field matches official TV numb
 - Horizontal DPAD scroll effectively disabled (content fits viewport; maxScroll≈0).
 
 **Verification:** `ktlintCheck compileDebugKotlin lintDebug` PASSED.
+
+
+### 2026-10-28 Session 34 — number input overlay z-order, compact size, works in player
+
+**User report:** digit-selection overlay rendered behind channel cards; wanted it smaller and also usable while playing.
+
+**Changes:**
+- `activity_main.xml` — `numberOverlay` moved AFTER `channelsRecyclerView` in ConstraintLayout (z-order = declaration order) + `elevation 8dp`; compact: 16sp, padding 10dp, minWidth 180dp, marginBottom 24dp; max matches shown 6 → 4.
+- New `ui/NumberInputController.kt`: shared digit-input logic (context + overlay TextView + onSelected callback) — digits/max-3/1200ms timeout/overlay rendering from `ChannelList.channels` via `ChannelNumberInput`; `isActive()`, `cancel()`, `release()`. MainActivity refactored to use it (`selectChannelByNumber` callback), old private functions/consts removed.
+- `PlayerActivity.kt` + `activity_player.xml` — same `numberOverlay` (last child, elevation) + controller; digits switch the playing channel (`playSelectedChannel`: playChannel + program overlay + infoText + save lastChannelId); BACK while typing only cancels input; `release()` in onDestroy.
+
+**Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.
