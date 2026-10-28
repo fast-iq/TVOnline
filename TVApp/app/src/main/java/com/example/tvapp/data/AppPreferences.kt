@@ -84,9 +84,13 @@ class AppPreferences(private val prefs: SharedPreferences) {
             prefs.edit { putString(KEY_LIMEHD_REGION_TZ, value.joinToString(",")) }
         }
 
-    fun programTimeZone(): java.util.TimeZone {
+    fun programTimezoneOffset(): Int {
         val regionOffset = if (limehdRegion != 0) limehdRegionTzOffsets.firstOrNull() else null
-        val offset = regionOffset ?: timezoneOffset
+        return regionOffset ?: timezoneOffset
+    }
+
+    fun programTimeZone(): java.util.TimeZone {
+        val offset = programTimezoneOffset()
         val id = "GMT" + (if (offset >= 0) "+" else "-") + String.format(java.util.Locale.US, "%02d:00", Math.abs(offset))
         return java.util.TimeZone.getTimeZone(id)
     }

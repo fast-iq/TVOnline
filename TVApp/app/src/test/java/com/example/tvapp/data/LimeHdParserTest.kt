@@ -34,6 +34,14 @@ class LimeHdParserTest {
     }
 
     @Test
+    fun parseTzOffsetsParsesValuesAndSkipsGarbage() {
+        assertEquals(listOf(5, 6), LimeHdParser.parseTzOffsets(JSONArray("[5, 6]")))
+        assertEquals(listOf(-1, 3), LimeHdParser.parseTzOffsets(JSONArray("[-1, \"x\", 3]")))
+        assertTrue(LimeHdParser.parseTzOffsets(null).isEmpty())
+        assertTrue(LimeHdParser.parseTzOffsets(JSONArray("[]")).isEmpty())
+    }
+
+    @Test
     fun parseChannelsFiltersInvalidAndSortsByNumber() {
         val array = JSONArray(
             """

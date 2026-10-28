@@ -83,12 +83,7 @@ class LimeHdClient(context: Context) {
         }
     }
 
-    private fun effectiveTz(): Int {
-        if (prefs.limehdRegion != 0) {
-            prefs.limehdRegionTzOffsets.firstOrNull()?.let { return it }
-        }
-        return prefs.timezoneOffset
-    }
+    private fun effectiveTz(): Int = prefs.programTimezoneOffset()
 
     fun getRegions(): List<LimeHdRegion> {
         cachedRegions?.let { return it }

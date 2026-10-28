@@ -40,6 +40,38 @@ class AppPreferencesTest {
         assertEquals("ntv", second.lastChannelId)
         assertEquals(5, second.timezoneOffset)
     }
+
+    @Test
+    fun programTimezoneOffsetUsesRegionTzOnlyWhenRegionSelected() {
+        val store = FakeSharedPreferences()
+        val prefs = AppPreferences(store)
+
+        prefs.timezoneOffset = 3
+        prefs.limehdRegion = 0
+        prefs.limehdRegionTzOffsets = listOf(5)
+        assertEquals(3, prefs.programTimezoneOffset())
+
+        prefs.limehdRegion = 66
+        prefs.limehdRegionTzOffsets = listOf(5, 6)
+        assertEquals(5, prefs.programTimezoneOffset())
+
+        prefs.limehdRegion = 66
+        prefs.limehdRegionTzOffsets = emptyList()
+        assertEquals(3, prefs.programTimezoneOffset())
+    }
+
+    @Test
+    fun programTimeZoneBuildsGmtId() {
+        val store = FakeSharedPreferences()
+        val prefs = AppPreferences(store)
+        prefs.limehdRegion = 66
+        prefs.limehdRegionTzOffsets = listOf(5)
+        assertEquals("GMT+05:00", prefs.programTimeZone().id)
+
+        prefs.limehdRegion = 0
+        prefs.timezoneOffset = -1
+        assertEquals("GMT-01:00", prefs.programTimeZone().id)
+    }
 }
 
 private class FakeSharedPreferences : SharedPreferences {

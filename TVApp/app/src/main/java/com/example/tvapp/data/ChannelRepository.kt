@@ -15,6 +15,8 @@ class ChannelRepository(private val context: Context) {
         fun invalidateContent() {
             contentVersion++
         }
+
+        internal fun cacheKeyFor(limehdRegion: Int, tz: Int): String = "limehd_${limehdRegion}_$tz"
     }
 
     private val prefs by lazy { AppPreferences(context) }
@@ -58,12 +60,5 @@ class ChannelRepository(private val context: Context) {
 
     suspend fun refreshChannels(): List<Channel> = getChannels(forceRefresh = true)
 
-    private fun currentCacheKey(): String {
-        val tz = if (prefs.limehdRegion != 0) {
-            prefs.limehdRegionTzOffsets.firstOrNull() ?: prefs.timezoneOffset
-        } else {
-            prefs.timezoneOffset
-        }
-        return "limehd_${prefs.limehdRegion}_$tz"
-    }
+    private fun currentCacheKey(): String = cacheKeyFor(prefs.limehdRegion, prefs.programTimezoneOffset())
 }

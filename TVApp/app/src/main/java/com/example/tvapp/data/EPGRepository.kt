@@ -46,7 +46,7 @@ class EPGRepository(context: Context? = null) {
         if (channel.programs.isNotEmpty()) return channel.programs
         val limehdId = channel.epgId ?: return null
         val dayKey = SimpleDateFormat("yyyyMMdd", Locale.US).format(date)
-        val cacheKey = "${channel.id}_${prefs?.limehdRegion ?: 0}_${prefs?.let { effectiveTz(it) } ?: 0}_$dayKey"
+        val cacheKey = "${channel.id}_${prefs?.limehdRegion ?: 0}_${prefs?.programTimezoneOffset() ?: 0}_$dayKey"
         ensureEpgCacheFresh()
         limehdEpgCache[cacheKey]?.let { return it }
 
@@ -55,13 +55,6 @@ class EPGRepository(context: Context? = null) {
         if (programs.isEmpty()) return null
         limehdEpgCache[cacheKey] = programs
         return programs
-    }
-
-    private fun effectiveTz(prefs: AppPreferences): Int {
-        if (prefs.limehdRegion != 0) {
-            prefs.limehdRegionTzOffsets.firstOrNull()?.let { return it }
-        }
-        return prefs.timezoneOffset
     }
 
     private fun ensureEpgCacheFresh() {

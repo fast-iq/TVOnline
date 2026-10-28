@@ -734,3 +734,13 @@ Android TV app for watching Russian live TV channels. Kotlin, ExoPlayer (Media3)
 Verified from live playlist dump: LimeHD `number` field matches official TV numbering (1 Первый, 2 Россия 1, 3 Матч ТВ, 4 НТВ, 5 Пятый канал…). `parseChannels` already sorts by `number`; removed the `sortedByDescending { regionCode == region }` "regional channels first" reorder in `LimeHdClient.getChannels()` so the grid keeps pure TV order for any region.
 
 **Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest` PASSED.
+
+
+### 2026-10-28 Session 30 — test coverage: tz/region selection + cache key
+
+- `AppPreferences.programTimezoneOffset()` — single source of truth for tz param (region tzOffsets first when region != 0, else legacy `timezoneOffset`); `LimeHdClient.effectiveTz()`, `EPGRepository` cache key and `ChannelRepository.currentCacheKey()` all use it (removed duplicated private helpers).
+- `ChannelRepository.cacheKeyFor(region, tz)` internal helper.
+- New/extended tests: `AppPreferencesTest` (region-tz precedence, negative GMT id), `ChannelRepositoryTest` (cache key changes with region and tz), `LimeHdParserTest.parseTzOffsets` (garbage/null/empty).
+- Test total: 23/23.
+
+**Verification:** `:app:testDebugUnitTest` 23/23, `:app:compileDebugKotlin`, `:app:ktlintCheck` PASSED.
