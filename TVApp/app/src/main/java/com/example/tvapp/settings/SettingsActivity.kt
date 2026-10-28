@@ -103,9 +103,12 @@ class SettingsActivity : BaseActivity() {
             regions = buildRegionList()
 
             val savedCode = preferences.limehdRegion
-            currentRegionIndex = indexOfRegion(savedCode)
-            if (regions.isNotEmpty() && regions[currentRegionIndex].first != savedCode && savedCode != 0) {
-                applyRegion(regions[currentRegionIndex])
+            val savedIndex = regions.indexOfFirst { it.first == savedCode }
+            if (savedCode != 0 && savedIndex < 0) {
+                regions = regions + (savedCode to (preferences.limehdRegionName ?: savedCode.toString()))
+                currentRegionIndex = regions.size - 1
+            } else {
+                currentRegionIndex = savedIndex.coerceAtLeast(0)
             }
 
             updateRegionDisplay()
@@ -141,6 +144,7 @@ class SettingsActivity : BaseActivity() {
 
         if (code != preferences.limehdRegion) {
             ChannelRepository.invalidateContent()
+            android.widget.Toast.makeText(this, getString(R.string.region_changed, name), android.widget.Toast.LENGTH_SHORT).show()
         }
 
         preferences.limehdRegion = code

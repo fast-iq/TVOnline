@@ -51,6 +51,7 @@
     <string name="region_default_moscow">Moscow</string>
     <string name="region_select_title">Select region</string>
     <string name="region_prefix">Region: %1$s</string>
+    <string name="region_changed">Region changed: %1$s</string>
     <string name="source_label">Channel source:</string>
     <string name="source_limehd">LimeHD</string>
     <string name="source_premier">Premier.one</string>
