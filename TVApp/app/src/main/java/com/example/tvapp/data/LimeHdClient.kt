@@ -317,6 +317,9 @@ internal object LimeHdParser {
             val fallbackHardcoded = ChannelList.hardcodedChannels.firstOrNull {
                 it.name.equals(title, ignoreCase = true) || it.id.lowercase(Locale.US) == ourId.toString()
             }
+            fallbackHardcoded?.fallbackStreamUrls?.forEach { url ->
+                if (url.contains("/hls/CH_")) addUrl(fallbacks, url)
+            }
 
             val channel = Channel(
                 id = "limehd_$ourId",

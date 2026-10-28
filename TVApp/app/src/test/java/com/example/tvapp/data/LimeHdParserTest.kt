@@ -72,7 +72,15 @@ class LimeHdParserTest {
         assertEquals("limehd_123", second.id)
         assertEquals("Первый канал", second.name)
         assertEquals("https://a/common.m3u8", second.streamUrl)
-        assertEquals(listOf("https://a/common.m3u8", "https://a/foreign.m3u8", "https://a/cdn.m3u8"), second.fallbackStreamUrls)
+        val ng = "https://zabava-htlive.cdn.ngenix.net/hls/"
+        assertEquals(
+            listOf(
+                "https://a/common.m3u8", "https://a/foreign.m3u8", "https://a/cdn.m3u8",
+                ng + "CH_1TVSD/variant.m3u8", ng + "CH_1TVSD_2/variant.m3u8", ng + "CH_1TVSD_3/variant.m3u8",
+                ng + "CH_1TVSD_4/variant.m3u8", ng + "CH_1TVSD_6/variant.m3u8", ng + "CH_1TVSD_8/variant.m3u8"
+            ),
+            second.fallbackStreamUrls
+        )
         assertEquals("https://logo/a.png", second.logoUrl)
         assertEquals("federal", second.category)
         assertEquals("123", second.epgId)
