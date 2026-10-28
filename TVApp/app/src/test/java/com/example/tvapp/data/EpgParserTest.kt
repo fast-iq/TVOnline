@@ -30,7 +30,7 @@ class EpgParserTest {
         assertEquals("limehd_105", programs.first().channelId)
 
         val templates = EpgParser.getChannelTemplates("limehd_105")
-        assertEquals(templates.size, programs.size)
+        assertTrue(programs.size >= templates.size)
 
         for (i in 1 until programs.size) {
             assertEquals(programs[i - 1].endTime, programs[i].startTime)
@@ -45,6 +45,7 @@ class EpgParserTest {
             set(Calendar.MILLISECOND, 0)
         }.timeInMillis
         assertEquals(moscowMidnight, programs.first().startTime)
+        assertTrue(programs.last().endTime >= moscowMidnight + 24L * 60L * 60L * 1000L)
     }
 
     @Test

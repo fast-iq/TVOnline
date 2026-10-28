@@ -52,7 +52,7 @@ class EPGActivity : BaseActivity() {
     private var pixelsPerMinute = 2.5f
     private val rowHeight = 70
     private val totalMinutes = 720
-    private val leadMinutes = 180
+    private val leadMinutes = 30
     private val visibleMinutes = 90
     private val nowViewportOffsetMinutes = 30
 
@@ -241,10 +241,17 @@ class EPGActivity : BaseActivity() {
     private fun loadEPGForDate() {
         scope.launch {
             try {
-                val programs = withContext(Dispatchers.IO) {
-                    epgRepository.getProgramsWithSurroundings(channels, Date())
+                val instant = channels.associate { channel -> channel.id to channel.programs }
+                    .filterValues { it.isNotEmpty() }
+                if (instant.isNotEmpty()) {
+                    renderPrograms(instant)
+                    epgGridContainer.post { scrollToCurrentTime() }
                 }
-                renderPrograms(programs)
+                withContext(Dispatchers.IO) {
+                    epgRepository.getProgramsWithSurroundings(channels, Date()) { partial ->
+                        renderPrograms(partial)
+                    }
+                }
                 epgGridContainer.post { scrollToCurrentTime() }
             } catch (e: Exception) {
                 Toast.makeText(this@EPGActivity, R.string.epg_load_error, Toast.LENGTH_SHORT).show()

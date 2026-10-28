@@ -822,3 +822,21 @@ Verified from live playlist dump: LimeHD `number` field matches official TV numb
 - `EPGActivity`: window now 12h (`totalMinutes=720`, `leadMinutes=180`), zoom unchanged (`visibleMinutes=90` → ppm = viewport/90); now-moment sits 30 min from left after `scrollToCurrentTime`. DPAD left/right scrolls through the 12h. Program blocks clamped to window edges (old code kept full duration width past edges). Accent vertical "now" line across grid.
 
 **Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.
+
+
+### 2026-10-28 Session 36 — EPG staged loading, past trimmed to 30 min
+
+**User requests:** (1) too much past shown — trim display to 30 min, long programs cut at window edge but keep real times in text; (2) future programs missing after now; (3) load in parts: past/current separately from next-8-hours.
+
+**Findings:** API day-range params (`epg_from`/`epg_limit`) ARE days: `[-1,0]` = yesterday+today, `[0,1]` = today+tomorrow. "No future" symptom matched fallback templates which stopped after ~10-14h from midnight (empty beyond) — fallback now cycles templates for 48h (test updated: coverage ≥ 24h, contiguity kept).
+
+**Changes:**
+- `EPGActivity`: `leadMinutes` 180 → 30 (window −30min…+11.5h, 12h scrollable, zoom 90min/viewport unchanged).
+- `EPGRepository.getProgramsWithSurroundings(channels, date, onStage)`: stage 1 = past (`epg_from=-1, epg_limit=0`), stage 2 = future (`epg_from=0, epg_limit=1`), merged `distinctBy(start,end,title)` sorted; per chunk of 6 `onStage` called on Main → progressive grid render; fallback only when BOTH stages empty.
+- `EPGActivity.loadEPGForDate`: instant render from `Channel.programs` (playlist current+upcoming) before network, then staged renders.
+- `fetchWideSchedule(channel, date, epgFrom, epgLimit)` parametrized, exceptions caught per-request (one failure no longer cancels the scope); cache keys include from/limit.
+- `LimeHdClient.fetchEpg` default `epgFrom=-1, epgLimit=1` (player path).
+
+**Gotcha:** `awaitAll` needs explicit import `kotlinx.coroutines.awaitAll` (not covered by async import).
+
+**Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED (EpgParserTest updated for 48h fallback).

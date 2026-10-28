@@ -3,6 +3,7 @@ package com.example.tvapp.data
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -14,8 +15,10 @@ import java.util.TimeZone
 class EPGRepository(context: Context? = null) {
 
     companion object {
-        const val EPG_FETCH_FROM = -1
-        const val EPG_FETCH_LIMIT = 2
+        const val EPG_PAST_FROM = -1
+        const val EPG_PAST_LIMIT = 0
+        const val EPG_FUTURE_FROM = 0
+        const val EPG_FUTURE_LIMIT = 1
         private const val PARALLEL_FETCH_LIMIT = 6
     }
 
@@ -48,33 +51,55 @@ class EPGRepository(context: Context? = null) {
         programs
     }
 
-    suspend fun getProgramsWithSurroundings(channels: List<Channel>, date: Date): Map<String, List<Program>> = coroutineScope {
-        channels.chunked(PARALLEL_FETCH_LIMIT)
-            .flatMap { chunk ->
-                chunk.map { channel ->
-                    async(Dispatchers.IO) {
-                        val programs = try {
-                            fetchWideSchedule(channel, date)
-                        } catch (e: Exception) {
-                            emptyList()
-                        }
-                        Pair(channel.id, if (programs.isEmpty()) generateFallbackEPG(channel.id, date) else programs)
-                    }
+    suspend fun getProgramsWithSurroundings(
+        channels: List<Channel>,
+        date: Date,
+        onStage: (Map<String, List<Program>>) -> Unit = {}
+    ): Map<String, List<Program>> = coroutineScope {
+        val result = mutableMapOf<String, List<Program>>()
+        for (chunk in channels.chunked(PARALLEL_FETCH_LIMIT)) {
+            val part = chunk.map { channel ->
+                async(Dispatchers.IO) {
+                    Pair(channel.id, fetchWideSchedule(channel, date, EPG_PAST_FROM, EPG_PAST_LIMIT))
                 }
+            }.awaitAll()
+            for ((id, programs) in part) result[id] = programs
+            withContext(Dispatchers.Main) { onStage(result.toMap()) }
+        }
+        for (chunk in channels.chunked(PARALLEL_FETCH_LIMIT)) {
+            val part = chunk.map { channel ->
+                async(Dispatchers.IO) {
+                    val future = fetchWideSchedule(channel, date, EPG_FUTURE_FROM, EPG_FUTURE_LIMIT)
+                    val merged = (result[channel.id].orEmpty() + future)
+                        .distinctBy { Triple(it.startTime, it.endTime, it.title) }
+                        .sortedBy { it.startTime }
+                    Pair(channel.id, merged)
+                }
+            }.awaitAll()
+            for ((id, programs) in part) result[id] = programs
+            withContext(Dispatchers.Main) { onStage(result.toMap()) }
+        }
+        for (channel in channels) {
+            if (result[channel.id].isNullOrEmpty()) {
+                result[channel.id] = generateFallbackEPG(channel.id, date)
             }
-            .map { it.await() }
-            .toMap()
+        }
+        result
     }
 
-    private fun fetchWideSchedule(channel: Channel, date: Date): List<Program> {
+    private fun fetchWideSchedule(channel: Channel, date: Date, epgFrom: Int, epgLimit: Int): List<Program> {
         if (!channel.id.startsWith("limehd_")) return emptyList()
         val limehdId = channel.epgId ?: return emptyList()
         val dayKey = SimpleDateFormat("yyyyMMdd", Locale.US).format(date)
-        val cacheKey = "${channel.id}_${prefs?.limehdRegion ?: 0}_${prefs?.programTimezoneOffset() ?: 0}_${EPG_FETCH_FROM}_${EPG_FETCH_LIMIT}_$dayKey"
+        val cacheKey = "${channel.id}_${prefs?.limehdRegion ?: 0}_${prefs?.programTimezoneOffset() ?: 0}_${epgFrom}_${epgLimit}_$dayKey"
         ensureEpgCacheFresh()
         limehdEpgCache[cacheKey]?.let { return it }
         val client = limeHdClient ?: return emptyList()
-        val programs = client.fetchEpg(limehdId, channel.id, EPG_FETCH_FROM, EPG_FETCH_LIMIT)
+        val programs = try {
+            client.fetchEpg(limehdId, channel.id, epgFrom, epgLimit)
+        } catch (e: Exception) {
+            emptyList()
+        }
         if (programs.isEmpty()) return emptyList()
         limehdEpgCache[cacheKey] = programs
         return programs
@@ -127,15 +152,17 @@ internal object EpgParser {
         val templates = getChannelTemplates(channelId)
         val programs = mutableListOf<Program>()
         var currentTime = calendar.timeInMillis
+        val endLimit = currentTime + 48L * 60L * 60L * 1000L
 
-        for (i in 0 until templates.size) {
-            val durationMs = templates[i].second * 60L * 1000L
+        var index = 0
+        while (currentTime < endLimit) {
+            val durationMs = templates[index % templates.size].second * 60L * 1000L
             val startTime = currentTime
             val endTime = startTime + durationMs
             programs.add(
                 Program(
                     channelId = channelId,
-                    title = templates[i].first,
+                    title = templates[index % templates.size].first,
                     description = null,
                     startTime = startTime,
                     endTime = endTime,
@@ -143,6 +170,7 @@ internal object EpgParser {
                 )
             )
             currentTime = endTime
+            index++
         }
         return programs
     }
