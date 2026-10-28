@@ -14,7 +14,8 @@ data class Channel(
     val currentProgramEnd: Long? = null,
     val programs: List<Program> = emptyList(),
     val isDrm: Boolean = false,
-    val regionCode: Int = 0
+    val regionCode: Int = 0,
+    val number: Int = 0
 )
 
 data class Program(

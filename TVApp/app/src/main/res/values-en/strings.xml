@@ -50,6 +50,9 @@
     <string name="region_default_moscow">Moscow</string>
     <string name="region_select_title">Select region</string>
     <string name="region_prefix">Region: %1$s</string>
+    <string name="channel_number_typing">Channel: %1$s</string>
+    <string name="channel_number_no_match">Channel not found</string>
+    <string name="channel_number_item">%1$d — %2$s</string>
     <string name="region_changed">Region changed: %1$s</string>
     <string name="regions_load_failed">Failed to load region list</string>
     <string name="settings_help">Use remote to navigate. Press OK to select an option.</string>

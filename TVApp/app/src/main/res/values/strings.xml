@@ -48,6 +48,9 @@
     <string name="region_default_moscow">Москва</string>
     <string name="region_select_title">Выбор региона</string>
     <string name="region_prefix">Регион: %1$s</string>
+    <string name="channel_number_typing">Канал: %1$s</string>
+    <string name="channel_number_no_match">Канал не найден</string>
+    <string name="channel_number_item">%1$d — %2$s</string>
     <string name="region_changed">Регион изменён: %1$s</string>
     <string name="regions_load_failed">Не удалось загрузить список регионов</string>
     <string name="quality_label">Качество видео:</string>

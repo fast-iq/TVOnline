@@ -69,6 +69,21 @@
         app:layout_constraintTop_toBottomOf="@id/currentProgramText"
         app:layout_constraintStart_toStartOf="parent" />
 
+    <TextView
+        android:id="@+id/numberOverlay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/number_overlay_bg"
+        android:padding="20dp"
+        android:minWidth="280dp"
+        android:textSize="24sp"
+        android:textColor="@color/white"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="48dp" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/channelsRecyclerView"
         android:layout_width="0dp"

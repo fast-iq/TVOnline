@@ -331,7 +331,8 @@ internal object LimeHdParser {
                 currentProgramEnd = current?.endMs,
                 programs = programs,
                 isDrm = item.optBoolean("drm", false),
-                regionCode = item.optInt("region_code", 0)
+                regionCode = item.optInt("region_code", 0),
+                number = item.optInt("number", 0)
             )
 
             entries.add(Pair(item.optInt("number", Int.MAX_VALUE), channel))

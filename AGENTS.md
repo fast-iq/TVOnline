@@ -760,3 +760,22 @@ Verified from live playlist dump: LimeHD `number` field matches official TV numb
 **Tests:** `RegionsCodecTest` (roundtrip, garbage lines, empty inputs). Total 26/26.
 
 **Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest` PASSED.
+
+
+### 2026-10-28 Session 32 — remote number-pad channel selection
+
+**Goal:** digit keys (0-9) jump to channels by TV number (1 Первый, 2 Россия 1…), overlay shows typed digits (max 3) + matching channels.
+
+**Changes:**
+- `Models.kt` — `Channel.number: Int = 0` (LimeHD `number` field = official TV numbering).
+- `LimeHdParser.parseChannels` — sets `number` on Channel.
+- New `ui/ChannelNumberInput.kt`: `matches(channels, digits)` (prefix match on number string, number>0, sorted by number), `select` (exact number first, else first match), `MAX_DIGITS = 3`.
+- `MainActivity.kt` — KEYCODE_0..9 in onKeyDown (key repeat ignored): appends digit, shows `numberOverlay` (bottom-center panel) with `Канал: <digits>` + up to 6 `NN — Название` rows; auto-commit after 1200ms timeout or immediately at 3 digits; commit selects exact match else first prefix match, focuses grid cell and opens player. BACK while typing just clears the overlay.
+- `activity_main.xml` — `numberOverlay` TextView (gone by default); `drawable/number_overlay_bg.xml` (dark rounded, accent stroke).
+- Strings ru/en: `channel_number_typing`, `channel_number_no_match`, `channel_number_item`.
+
+**Ktlint gotcha:** expression-body function in test must have whole body on the signature line (max_line_length not enforced → "first line fits" rule); `?:` precedence gotcha in `event?.repeatCount ?: 0 > 0`.
+
+**Tests:** `ChannelNumberInputTest` (5): prefix set [1,11,12,111,113], exact wins, no-exact→first, number=0 ignored, empty/no-match. Total 31/31.
+
+**Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.
