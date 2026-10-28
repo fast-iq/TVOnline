@@ -744,3 +744,19 @@ Verified from live playlist dump: LimeHD `number` field matches official TV numb
 - Test total: 23/23.
 
 **Verification:** `:app:testDebugUnitTest` 23/23, `:app:compileDebugKotlin`, `:app:ktlintCheck` PASSED.
+
+
+### 2026-10-28 Session 31 — region selection regression: persist region list to prefs
+
+**User report:** after f69772b region could not be selected at all (dialog did nothing / short list).
+
+**Cause:** LimeHD region list existed only in memory (`LimeHdClient.cachedRegions`, per-instance). Every Settings start required `/api/v4/config` again; with slow/failed config request from TV the waiting dialog never opened the full list.
+
+**Fix:**
+- `RegionsCodec` (internal, in LimeHdClient.kt): encode/decode `LimeHdRegion` list to `"code|name|tz1,tz2"` lines; decode skips garbage/non-positive codes/blank names.
+- `AppPreferences.limehdRegionsCache` (prefs key `limehd_regions_cache`) stores the serialized list on every successful network load.
+- `SettingsActivity.setupRegionSelector()` hydrates `limeHdRegions` from prefs cache → full dialog opens instantly even offline; background `ensureRegionsLoaded {}` still refreshes + re-persists. Waiting-for-network path now only matters on first-ever launch (no cache).
+
+**Tests:** `RegionsCodecTest` (roundtrip, garbage lines, empty inputs). Total 26/26.
+
+**Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest` PASSED.

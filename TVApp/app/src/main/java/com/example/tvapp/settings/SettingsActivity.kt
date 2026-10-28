@@ -13,6 +13,7 @@ import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.ChannelRepository
 import com.example.tvapp.data.LimeHdClient
 import com.example.tvapp.data.LimeHdRegion
+import com.example.tvapp.data.RegionsCodec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -61,8 +62,13 @@ class SettingsActivity : BaseActivity() {
     }
 
     private fun setupRegionSelector() {
-        regions = fallbackRegions()
-        currentRegionIndex = indexOfRegion(preferences.limehdRegion)
+        limeHdRegions = RegionsCodec.decode(preferences.limehdRegionsCache)
+        if (limeHdRegions.isNotEmpty()) {
+            rebuildRegionList()
+        } else {
+            regions = fallbackRegions()
+            currentRegionIndex = indexOfRegion(preferences.limehdRegion)
+        }
         updateRegionDisplay()
 
         regionButton.setOnClickListener { showRegionDialog() }
@@ -107,6 +113,7 @@ class SettingsActivity : BaseActivity() {
             regionsLoading = false
             if (loaded.isNotEmpty()) {
                 limeHdRegions = loaded
+                preferences.limehdRegionsCache = RegionsCodec.encode(loaded)
                 rebuildRegionList()
                 updateRegionDisplay()
             } else {

@@ -19,6 +19,7 @@ class AppPreferences(private val prefs: SharedPreferences) {
         private const val KEY_LIMEHD_REGION = "limehd_region"
         private const val KEY_LIMEHD_REGION_NAME = "limehd_region_name"
         private const val KEY_LIMEHD_REGION_TZ = "limehd_region_tz"
+        private const val KEY_LIMEHD_REGIONS_CACHE = "limehd_regions_cache"
         private const val DEFAULT_LIMEHD_REGION = 0
         const val DEFAULT_MOSCOW_OFFSET = 3
     }
@@ -82,6 +83,12 @@ class AppPreferences(private val prefs: SharedPreferences) {
         }
         set(value) {
             prefs.edit { putString(KEY_LIMEHD_REGION_TZ, value.joinToString(",")) }
+        }
+
+    var limehdRegionsCache: String?
+        get() = prefs.getString(KEY_LIMEHD_REGIONS_CACHE, null)
+        set(value) {
+            prefs.edit { putString(KEY_LIMEHD_REGIONS_CACHE, value) }
         }
 
     fun programTimezoneOffset(): Int {
