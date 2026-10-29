@@ -45,6 +45,7 @@ class EPGActivity : BaseActivity() {
     private var channels: List<Channel> = emptyList()
     private lateinit var rowAdapter: EpgRowAdapter
     private lateinit var labelAdapter: EpgLabelAdapter
+    private var accumulatedPrograms: Map<String, List<Program>> = emptyMap()
 
     private val scope = CoroutineScope(Dispatchers.Main + Job())
 
@@ -104,6 +105,8 @@ class EPGActivity : BaseActivity() {
 
         rowsList.layoutParams = rowsList.layoutParams.apply { width = totalWidthPx }
         rowsList.layoutManager = LinearLayoutManager(this)
+        rowsList.setHasFixedSize(true)
+        rowsList.itemAnimator = null
         rowAdapter = EpgRowAdapter(this)
         rowsList.adapter = rowAdapter
 
@@ -112,6 +115,7 @@ class EPGActivity : BaseActivity() {
         labelsList.adapter = labelAdapter
         labelAdapter.setChannels(channels)
 
+        accumulatedPrograms = emptyMap()
         updatePrograms(emptyMap())
     }
 
@@ -137,8 +141,9 @@ class EPGActivity : BaseActivity() {
         }
     }
 
-    private fun updatePrograms(programs: Map<String, List<Program>>) {
-        rowAdapter.setData(channels, programs, getStartTimeMillis(), pixelsPerMinute, totalMinutes, rowHeight, totalWidthPx, displayTz)
+    private fun updatePrograms(partial: Map<String, List<Program>>) {
+        accumulatedPrograms = accumulatedPrograms + partial
+        rowAdapter.setData(channels, accumulatedPrograms, getStartTimeMillis(), pixelsPerMinute, totalMinutes, rowHeight, totalWidthPx, displayTz)
     }
 
     private fun getStartTimeMillis(): Long {
@@ -159,11 +164,12 @@ class EPGActivity : BaseActivity() {
                     updatePrograms(instant)
                     epgHorizontalScroll.post { scrollToCurrentTime() }
                 }
-                withContext(Dispatchers.IO) {
+                val finalResult = withContext(Dispatchers.IO) {
                     epgRepository.getProgramsWithSurroundings(channels, Date()) { partial ->
                         updatePrograms(partial)
                     }
                 }
+                updatePrograms(finalResult)
                 epgHorizontalScroll.post { scrollToCurrentTime() }
             } catch (e: Exception) {
                 Toast.makeText(this@EPGActivity, R.string.epg_load_error, Toast.LENGTH_SHORT).show()

@@ -865,3 +865,17 @@ Verified from live playlist dump: LimeHD `number` field matches official TV numb
 **Ktlint gotcha:** multi-line `.apply { }` inside a call arg list triggers `standard:wrapping` ("Missing newline after ("); assign `LayoutParams` to a val first, set margins on separate lines.
 
 **Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.
+
+
+### 2026-10-28 Session 39 — EPG flash-and-disappear fix
+
+**User report:** entering EPG, schedule flashed for a second then vanished; scrolling right made it appear and stay.
+
+**Root cause:** `loadEPGForDate` rendered instant playlist programs for all 80 channels, but the first staged network callback REPLACED the whole program map with only the first fetched chunk (6 channels) — the other 74 rows went blank until their chunks arrived (tens of seconds on TV). The old renderer had the same data flow but each redraw was so slow the wipe was less obvious. Scrolling "fixed" it only by timing coincidence (data finished loading).
+
+**Fix (`EPGActivity.kt`):**
+- `accumulatedPrograms` merge: `accumulated + partial` — staged callbacks now only ADD/override data; the grid can never lose what is already shown.
+- Final `updatePrograms(finalResult)` after `getProgramsWithSurroundings` returns (renders fallback-filled channels too).
+- `rowsList.setHasFixedSize(true)` + `itemAnimator = null` for stable rapid adapter updates.
+
+**Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.
