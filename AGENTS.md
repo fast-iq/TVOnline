@@ -934,3 +934,19 @@ The ~10s "permanent reappearance" = stage 2 `(0,1)` chunk 1 arriving and coverin
 - Color: new `program_cursor_background.xml` (3dp green `selected_indicator` stroke + dark green `cursor_background #FF1E4630` fill) replaces `focus_highlight` for the cursor; marked-to-view stays 2dp green stroke on `card_background` - visually distinct by fill.
 
 **Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.
+
+### 2026-10-29 Session 43 — EPG cursor: frame-only highlight, window-bound navigation, no rebind flicker
+
+**User feedback on session 42:** (1) selected item should be ONLY a green frame (no fill); (2) cursor visible at start, but after moving it disappeared; (3) OK on a program said "already ended" while the screen was scrolled far right.
+
+**Root cause of (2)+(3):** cursor navigation walked `accumulatedPrograms` which contains OFF-WINDOW programs (stage 1 = yesterday+today has hundreds of past entries whose blocks are never rendered since they don't intersect the 12h display window). Moving the cursor onto such a program = invisible cursor + action on a long-finished program. The screen scroll (ensureCursorVisible) then jumped to a weird position.
+
+**Fixes:**
+- `EPGActivity`: new `visiblePrograms(channelId)` filters programs intersecting `[baseTime, baseTime+window]`; `moveCursorVertical`, `moveCursorHorizontal`, `selectInitialCursor` all use it now -> cursor can only land on rendered blocks. `moveCursorHorizontal` when current program is not in the visible list snaps to nearest by start time.
+- `EpgRowAdapter.kt` rework:
+  - Cursor = `program_cursor_background` with TRANSPARENT fill + 3dp green stroke (frame only), plus `elevation = 6dp` so it always draws above neighbors (no more hiding behind adjacent blocks).
+  - Row holders now cache their rendered blocks (`keys`, `programs`, `blocks`); `onBindViewHolder` reuses existing views when the program list is unchanged and only swaps backgrounds/elevation via `updateBlockStates` -> cursor moves no longer recreate any views (kills flicker completely).
+  - Full `rebuildRow` only when the row's program set actually changed (staged data arrival).
+- Removed unused `cursor_background` color; cursor drawable uses `@android:color/transparent`.
+
+**Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.

@@ -33,6 +33,7 @@ class EpgRowAdapter(
     private var rowHeight = 70
     private var rowWidth = 0
     private var displayTz: TimeZone = TimeZone.getTimeZone("Europe/Moscow")
+    private val cursorElevationPx = 6f * context.resources.displayMetrics.density
 
     fun setData(
         channels: List<Channel>,
@@ -84,13 +85,26 @@ class EpgRowAdapter(
 
     override fun onBindViewHolder(holder: RowHolder, position: Int) {
         val row = holder.itemView as FrameLayout
-        row.removeAllViews()
         val channel = channels[position]
-        (programs[channel.id] ?: emptyList()).forEach { program ->
+        val list = programs[channel.id].orEmpty()
+        val keys = list.filter { inWindow(it) }.map { keyOf(channel.id, it) }
+        if (holder.keys == keys) {
+            updateBlockStates(holder)
+        } else {
+            rebuildRow(holder, row, channel, list)
+        }
+    }
+
+    private fun rebuildRow(holder: RowHolder, row: FrameLayout, channel: Channel, list: List<Program>) {
+        row.removeAllViews()
+        holder.blocks.clear()
+        val renderedKeys = mutableListOf<String>()
+        val renderedPrograms = mutableListOf<Program>()
+        list.forEach { program ->
+            if (!inWindow(program)) return@forEach
+
             val startTimeOffset = (program.startTime - baseTime) / 1000f / 60f
             val endTimeOffset = (program.endTime - baseTime) / 1000f / 60f
-            if (endTimeOffset < 0f || startTimeOffset > totalMinutes) return@forEach
-
             val leftMinutes = startTimeOffset.coerceAtLeast(0f)
             val rightMinutes = endTimeOffset.coerceAtMost(totalMinutes.toFloat())
             val leftMargin = (leftMinutes * pixelsPerMinute).toInt()
@@ -98,8 +112,15 @@ class EpgRowAdapter(
             val blockParams = FrameLayout.LayoutParams(width, rowHeight - 8)
             blockParams.marginStart = leftMargin
             blockParams.topMargin = 4
-            row.addView(createProgramBlock(channel, program, width), blockParams)
+
+            val block = createProgramBlock(channel, program)
+            holder.blocks.add(block)
+            renderedKeys.add(keyOf(channel.id, program))
+            renderedPrograms.add(program)
+            row.addView(block, blockParams)
         }
+        holder.keys = renderedKeys
+        holder.programs = renderedPrograms
 
         val nowOffset = ((System.currentTimeMillis() - baseTime) / 1000f / 60f).coerceIn(0f, totalMinutes.toFloat())
         val nowLine = View(context)
@@ -107,15 +128,30 @@ class EpgRowAdapter(
         val nowParams = FrameLayout.LayoutParams(3, rowHeight)
         nowParams.marginStart = (nowOffset * pixelsPerMinute).toInt()
         row.addView(nowLine, nowParams)
+
+        updateBlockStates(holder)
     }
 
-    private fun createProgramBlock(channel: Channel, program: Program, width: Int): View {
-        val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault()).apply { timeZone = displayTz }
-        val key = keyOf(channel.id, program)
+    private fun updateBlockStates(holder: RowHolder) {
+        val now = System.currentTimeMillis()
+        holder.keys.forEachIndexed { index, key ->
+            val block = holder.blocks.getOrNull(index) ?: return@forEachIndexed
+            val program = holder.programs.getOrNull(index) ?: return@forEachIndexed
+            block.setBackgroundResource(blockBackground(key, program, now))
+            block.elevation = if (key == cursorKey) cursorElevationPx else 0f
+        }
+    }
 
+    private fun inWindow(program: Program): Boolean {
+        val startOffset = (program.startTime - baseTime) / 60000f
+        val endOffset = (program.endTime - baseTime) / 60000f
+        return endOffset >= 0f && startOffset <= totalMinutes.toFloat()
+    }
+
+    private fun createProgramBlock(channel: Channel, program: Program): View {
+        val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault()).apply { timeZone = displayTz }
         val container = FrameLayout(context).apply {
             setPadding(8, 8, 8, 8)
-            setBackgroundResource(blockBackground(key, program))
             isClickable = true
             isFocusable = false
             setOnClickListener { onProgramAction(channel, program) }
@@ -137,16 +173,20 @@ class EpgRowAdapter(
         return container
     }
 
-    private fun blockBackground(key: String, program: Program): Int = when {
+    private fun blockBackground(key: String, program: Program, now: Long): Int = when {
         key == cursorKey -> R.drawable.program_cursor_background
         key in selectedKeys -> R.drawable.program_selected_background
-        program.isLive(System.currentTimeMillis()) -> R.drawable.live_indicator
+        program.isLive(now) -> R.drawable.live_indicator
         else -> R.drawable.program_item_background
     }
 
     override fun getItemCount(): Int = channels.size
 
-    class RowHolder(view: View) : RecyclerView.ViewHolder(view)
+    class RowHolder(view: View) : RecyclerView.ViewHolder(view) {
+        var keys: List<String> = emptyList()
+        var programs: List<Program> = emptyList()
+        val blocks = mutableListOf<View>()
+    }
 }
 
 class EpgLabelAdapter(private val rowHeight: Int) : RecyclerView.Adapter<EpgLabelAdapter.LabelHolder>() {

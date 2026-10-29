@@ -213,7 +213,7 @@ class EPGActivity : BaseActivity() {
     private fun selectInitialCursor() {
         val now = System.currentTimeMillis()
         channels.forEach { channel ->
-            accumulatedPrograms[channel.id].orEmpty()
+            visiblePrograms(channel.id)
                 .firstOrNull { it.startTime <= now && it.endTime > now }
                 ?.let {
                     moveCursor(channel, it)
@@ -221,16 +221,22 @@ class EPGActivity : BaseActivity() {
                 }
         }
         channels.forEach { channel ->
-            accumulatedPrograms[channel.id].orEmpty()
+            visiblePrograms(channel.id)
                 .firstOrNull { it.startTime > now }
                 ?.let {
                     moveCursor(channel, it)
                     return
                 }
         }
-        val first = channels.firstOrNull { accumulatedPrograms[it.id]?.isNotEmpty() == true } ?: return
-        val firstProgram = accumulatedPrograms[first.id]?.firstOrNull() ?: return
+        val first = channels.firstOrNull { visiblePrograms(it.id).isNotEmpty() } ?: return
+        val firstProgram = visiblePrograms(first.id).firstOrNull() ?: return
         moveCursor(first, firstProgram)
+    }
+
+    private fun visiblePrograms(channelId: String): List<Program> {
+        val baseTime = getStartTimeMillis()
+        val windowEnd = baseTime + totalMinutes * 60_000L
+        return accumulatedPrograms[channelId].orEmpty().filter { it.endTime > baseTime && it.startTime < windowEnd }
     }
 
     private fun moveCursorVertical(delta: Int) {
@@ -240,7 +246,7 @@ class EPGActivity : BaseActivity() {
         val targetIndex = currentIndex + delta
         if (currentIndex < 0 || targetIndex !in channels.indices) return
         val targetChannel = channels[targetIndex]
-        val list = accumulatedPrograms[targetChannel.id].orEmpty()
+        val list = visiblePrograms(targetChannel.id)
         val targetProgram = list.firstOrNull { it.endTime > time } ?: list.lastOrNull() ?: return
         moveCursor(targetChannel, targetProgram)
     }
@@ -248,9 +254,13 @@ class EPGActivity : BaseActivity() {
     private fun moveCursorHorizontal(back: Boolean) {
         val channel = cursorChannel ?: return
         val program = cursorProgram ?: return
-        val list = accumulatedPrograms[channel.id].orEmpty()
+        val list = visiblePrograms(channel.id)
         val currentIndex = list.indexOfFirst { it.startTime == program.startTime && it.endTime == program.endTime }
-        if (currentIndex < 0) return
+        if (currentIndex < 0) {
+            val nearest = list.minByOrNull { kotlin.math.abs(it.startTime - program.startTime) } ?: return
+            moveCursor(channel, nearest)
+            return
+        }
         val targetIndex = currentIndex + if (back) -1 else 1
         if (targetIndex !in list.indices) return
         moveCursor(channel, list[targetIndex])

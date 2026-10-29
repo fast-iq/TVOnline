@@ -9,5 +9,4 @@
     <color name="text_hint">#FF808080</color>
     <color name="live_indicator">#FFFF0000</color>
     <color name="selected_indicator">#FF4CAF50</color>
-    <color name="cursor_background">#FF1E4630</color>
 </resources>
