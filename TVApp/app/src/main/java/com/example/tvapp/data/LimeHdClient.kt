@@ -69,7 +69,7 @@ class LimeHdClient(context: Context) {
         }
     }
 
-    fun fetchEpg(epgId: String, channelId: String, epgFrom: Int = -1, epgLimit: Int = 1): List<Program> {
+    fun fetchEpg(epgId: String, channelId: String, epgFrom: Int = 0, epgLimit: Int = 1): List<Program> {
         return try {
             val tz = effectiveTz()
             val region = prefs.limehdRegion

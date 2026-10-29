@@ -142,8 +142,13 @@ class EPGActivity : BaseActivity() {
     }
 
     private fun updatePrograms(partial: Map<String, List<Program>>) {
-        accumulatedPrograms = accumulatedPrograms + partial
-        rowAdapter.setData(channels, accumulatedPrograms, getStartTimeMillis(), pixelsPerMinute, totalMinutes, rowHeight, totalWidthPx, displayTz)
+        val baseTime = getStartTimeMillis()
+        val windowEnd = baseTime + totalMinutes * 60_000L
+        val useful = partial.filterValues { programs ->
+            programs.any { it.endTime > baseTime && it.startTime < windowEnd }
+        }
+        accumulatedPrograms = accumulatedPrograms + useful
+        rowAdapter.setData(channels, accumulatedPrograms, baseTime, pixelsPerMinute, totalMinutes, rowHeight, totalWidthPx, displayTz)
     }
 
     private fun getStartTimeMillis(): Long {

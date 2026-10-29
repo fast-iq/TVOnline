@@ -879,3 +879,25 @@ Verified from live playlist dump: LimeHD `number` field matches official TV numb
 - `rowsList.setHasFixedSize(true)` + `itemAnimator = null` for stable rapid adapter updates.
 
 **Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.
+
+
+### 2026-10-29 Session 40 — LimeHD EPG day-range off-by-one: root cause of flash-and-disappear
+
+**User report (persisted through session 39 fix):** schedule flashes for a second, disappears, reappears permanently after ~10s.
+
+**Root cause (found via live API probes, machine+server clocks confirmed synced at 29 Oct 17:34 GMT):** LimeHD `/api/v4/epg` effectively returns days `[epg_from-1 .. epg_from-1+epg_limit]` — i.e. the whole range is shifted ONE DAY EARLIER vs naive interpretation. Measured on 2026-10-29 (today=29.10), for tz=0/3/5/7:
+- `(-1,1)` -> 27.10+28.10 = day-2+day-1, **`inWindow=0`** (data ended ~20h before now) — this was STAGE 1 "past/current": its first chunk (channels 1-6 = the visible top rows!) overwrote good instant data with window-empty data -> grid blanked at ~1s.
+- `(0,1)` -> 28.10+29.10 = yesterday+today, inWindow>0 (covers now through midnight).
+- `(1,1)` -> 29.10+30.10 = today+tomorrow, inWindow>0.
+- `(0,0)`/`(1,0)` (limit=0) return only 1 boundary program - limit=0 is useless.
+
+The ~10s "permanent reappearance" = stage 2 `(0,1)` chunk 1 arriving and covering "now" — i.e. the old FUTURE stage was the only one that ever rendered. Session 37's probe (run on 28.10) misread `(-1,1)`=26+27 as "yesterday+today"; it was always day-2+day-1.
+
+**Fix:**
+- `EPGRepository`: `EPG_PAST_FROM=0` (was -1), `EPG_FUTURE_FROM=1` (was 0); limits stay 1/1 -> stages = yesterday+today and today+tomorrow, merged dedup covers the whole 12h window continuously.
+- `LimeHdClient.fetchEpg` defaults `epgFrom=0` (was -1) - fixes `fetchLimeHdSchedule` which used defaults.
+- `EPGActivity.updatePrograms` defensive filter: a partial update is merged ONLY if some program intersects `[baseTime, baseTime+window]` - a staged update can now NEVER blank rows that already show content, regardless of server data shifts (directly enforces "what appeared must not disappear").
+
+**Method note:** probes via curl with the Bruno-collection headers (`User-Agent`/`X-LHD-Agent` = `limehd.ru.lite` agent JSON); `Invoke-WebRequest` rejects JSON header values - use curl.exe.
+
+**Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.

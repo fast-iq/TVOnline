@@ -15,9 +15,9 @@ import java.util.TimeZone
 class EPGRepository(context: Context? = null) {
 
     companion object {
-        const val EPG_PAST_FROM = -1
+        const val EPG_PAST_FROM = 0
         const val EPG_PAST_LIMIT = 1
-        const val EPG_FUTURE_FROM = 0
+        const val EPG_FUTURE_FROM = 1
         const val EPG_FUTURE_LIMIT = 1
         private const val PARALLEL_FETCH_LIMIT = 6
     }
