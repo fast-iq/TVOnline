@@ -56,13 +56,24 @@ class EpgRowAdapter(
     }
 
     fun setSelections(keys: Set<String>) {
+        val affected = (selectedKeys - keys) + (keys - selectedKeys)
         selectedKeys = keys
-        notifyDataSetChanged()
+        notifyRowsChanged(affected)
     }
 
     fun setCursor(key: String?) {
+        val old = cursorKey
+        if (old == key) return
         cursorKey = key
-        notifyDataSetChanged()
+        notifyRowsChanged(setOfNotNull(old, key))
+    }
+
+    private fun notifyRowsChanged(keys: Set<String>) {
+        val positions = keys.mapNotNull { key ->
+            val channelId = key.substringBefore("|")
+            channels.indexOfFirst { it.id == channelId }.takeIf { it >= 0 }
+        }.toSet()
+        positions.forEach { notifyItemChanged(it) }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RowHolder {
@@ -101,17 +112,12 @@ class EpgRowAdapter(
     private fun createProgramBlock(channel: Channel, program: Program, width: Int): View {
         val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault()).apply { timeZone = displayTz }
         val key = keyOf(channel.id, program)
-        val isCursor = key == cursorKey
 
         val container = FrameLayout(context).apply {
             setPadding(8, 8, 8, 8)
             setBackgroundResource(blockBackground(key, program))
             isClickable = true
             isFocusable = false
-            if (isCursor) {
-                scaleX = 1.05f
-                scaleY = 1.05f
-            }
             setOnClickListener { onProgramAction(channel, program) }
         }
 
@@ -132,7 +138,7 @@ class EpgRowAdapter(
     }
 
     private fun blockBackground(key: String, program: Program): Int = when {
-        key == cursorKey -> R.drawable.focus_highlight
+        key == cursorKey -> R.drawable.program_cursor_background
         key in selectedKeys -> R.drawable.program_selected_background
         program.isLive(System.currentTimeMillis()) -> R.drawable.live_indicator
         else -> R.drawable.program_item_background

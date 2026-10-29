@@ -923,3 +923,14 @@ The ~10s "permanent reappearance" = stage 2 `(0,1)` chunk 1 arriving and coverin
 **Ktlint gotcha:** one-liner `.let { moveCursor(channel, it); return }` violates `standard:statement-wrapping` (needs newline after `{`/`;` and before `}`). Use multi-line block body.
 
 **Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.
+
+### 2026-10-29 Session 42 — EPG cursor polish: green frame, no scale, no flicker
+
+**User feedback on session 41 selection UI:** (1) cursor frame should be green since live block is already red; (2) cursor frame seemed to draw BEHIND neighbors (partially hidden); (3) list flickered on every cursor move.
+
+**Root causes + fixes (`EpgRowAdapter.kt`):**
+- Flicker: `setCursor`/`setSelections` called `notifyDataSetChanged()` -> every move rebound ALL ~80 rows (each bind does removeAllViews + re-add blocks). Now `notifyRowsChanged(keys)` maps changed keys to row positions via `key.substringBefore("|")` channel id and calls `notifyItemChanged` only for affected rows (1-2). `setCursor` also early-returns when key unchanged; `setSelections` diffs old/new sets.
+- Frame hidden behind neighbors: cursor used `scaleX/scaleY = 1.05` on the block - scaled bounds overflowed into adjacent block views which are drawn later in the same FrameLayout -> covered the border. Scale removed entirely.
+- Color: new `program_cursor_background.xml` (3dp green `selected_indicator` stroke + dark green `cursor_background #FF1E4630` fill) replaces `focus_highlight` for the cursor; marked-to-view stays 2dp green stroke on `card_background` - visually distinct by fill.
+
+**Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.
