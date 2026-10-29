@@ -6,7 +6,9 @@ import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.view.doOnLayout
+import androidx.lifecycle.Lifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.tvapp.BaseActivity
@@ -20,6 +22,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -32,7 +35,11 @@ class EPGActivity : BaseActivity() {
 
     companion object {
         private const val EPG_MAX_CHANNELS = 80
+        private const val MARK_CHECK_INTERVAL_MS = 5_000L
+        private const val MARK_NOTIFY_AHEAD_MS = 60_000L
     }
+
+    private data class MarkedProgram(val channel: Channel, val program: Program)
 
     private lateinit var currentTimeText: TextView
     private lateinit var timeScaleContainer: FrameLayout
@@ -46,6 +53,12 @@ class EPGActivity : BaseActivity() {
     private lateinit var rowAdapter: EpgRowAdapter
     private lateinit var labelAdapter: EpgLabelAdapter
     private var accumulatedPrograms: Map<String, List<Program>> = emptyMap()
+
+    private var cursorChannel: Channel? = null
+    private var cursorProgram: Program? = null
+    private val markedPrograms = LinkedHashMap<String, MarkedProgram>()
+    private val promptedKeys = mutableSetOf<String>()
+    private var promptShowing = false
 
     private val scope = CoroutineScope(Dispatchers.Main + Job())
 
@@ -75,6 +88,7 @@ class EPGActivity : BaseActivity() {
 
         setupScrollSync()
         updateCurrentTimeDisplay()
+        startMarkedCheckLoop()
         epgHorizontalScroll.doOnLayout {
             setupEPGGrid()
             loadEPGForDate()
@@ -107,7 +121,7 @@ class EPGActivity : BaseActivity() {
         rowsList.layoutManager = LinearLayoutManager(this)
         rowsList.setHasFixedSize(true)
         rowsList.itemAnimator = null
-        rowAdapter = EpgRowAdapter(this)
+        rowAdapter = EpgRowAdapter(this) { channel, program -> onProgramAction(channel, program) }
         rowsList.adapter = rowAdapter
 
         labelsList.layoutManager = LinearLayoutManager(this)
@@ -149,6 +163,7 @@ class EPGActivity : BaseActivity() {
         }
         accumulatedPrograms = accumulatedPrograms + useful
         rowAdapter.setData(channels, accumulatedPrograms, baseTime, pixelsPerMinute, totalMinutes, rowHeight, totalWidthPx, displayTz)
+        if (cursorProgram == null) selectInitialCursor()
     }
 
     private fun getStartTimeMillis(): Long {
@@ -195,34 +210,186 @@ class EPGActivity : BaseActivity() {
         currentTimeText.text = getString(R.string.time_msk, dateFormat.format(cal.time))
     }
 
+    private fun selectInitialCursor() {
+        val now = System.currentTimeMillis()
+        channels.forEach { channel ->
+            accumulatedPrograms[channel.id].orEmpty()
+                .firstOrNull { it.startTime <= now && it.endTime > now }
+                ?.let {
+                    moveCursor(channel, it)
+                    return
+                }
+        }
+        channels.forEach { channel ->
+            accumulatedPrograms[channel.id].orEmpty()
+                .firstOrNull { it.startTime > now }
+                ?.let {
+                    moveCursor(channel, it)
+                    return
+                }
+        }
+        val first = channels.firstOrNull { accumulatedPrograms[it.id]?.isNotEmpty() == true } ?: return
+        val firstProgram = accumulatedPrograms[first.id]?.firstOrNull() ?: return
+        moveCursor(first, firstProgram)
+    }
+
+    private fun moveCursorVertical(delta: Int) {
+        val channel = cursorChannel ?: return
+        val time = cursorProgram?.startTime ?: System.currentTimeMillis()
+        val currentIndex = channels.indexOfFirst { it.id == channel.id }
+        val targetIndex = currentIndex + delta
+        if (currentIndex < 0 || targetIndex !in channels.indices) return
+        val targetChannel = channels[targetIndex]
+        val list = accumulatedPrograms[targetChannel.id].orEmpty()
+        val targetProgram = list.firstOrNull { it.endTime > time } ?: list.lastOrNull() ?: return
+        moveCursor(targetChannel, targetProgram)
+    }
+
+    private fun moveCursorHorizontal(back: Boolean) {
+        val channel = cursorChannel ?: return
+        val program = cursorProgram ?: return
+        val list = accumulatedPrograms[channel.id].orEmpty()
+        val currentIndex = list.indexOfFirst { it.startTime == program.startTime && it.endTime == program.endTime }
+        if (currentIndex < 0) return
+        val targetIndex = currentIndex + if (back) -1 else 1
+        if (targetIndex !in list.indices) return
+        moveCursor(channel, list[targetIndex])
+    }
+
+    private fun moveCursor(channel: Channel, program: Program) {
+        cursorChannel = channel
+        cursorProgram = program
+        rowAdapter.setCursor(EpgRowAdapter.keyOf(channel.id, program))
+        ensureCursorVisible()
+        scrollRowIntoView(channel)
+    }
+
+    private fun ensureCursorVisible() {
+        val program = cursorProgram ?: return
+        val baseTime = getStartTimeMillis()
+        val leftPx = (((program.startTime - baseTime) / 60000f).coerceAtLeast(0f) * pixelsPerMinute).toInt()
+        val rightPx = (((program.endTime - baseTime) / 60000f).coerceAtMost(totalMinutes.toFloat()) * pixelsPerMinute).toInt()
+        val viewport = epgHorizontalScroll.width
+        val scrollX = epgHorizontalScroll.scrollX
+        val target = when {
+            leftPx < scrollX -> (leftPx - 40).coerceAtLeast(0)
+            rightPx > scrollX + viewport -> (rightPx - viewport + 40).coerceAtMost(totalWidthPx - viewport)
+            else -> scrollX
+        }
+        if (target != scrollX) epgHorizontalScroll.smoothScrollTo(target, 0)
+    }
+
+    private fun scrollRowIntoView(channel: Channel) {
+        val index = channels.indexOfFirst { it.id == channel.id }
+        if (index < 0) return
+        val manager = rowsList.layoutManager as? LinearLayoutManager ?: return
+        val first = manager.findFirstVisibleItemPosition()
+        val last = manager.findLastVisibleItemPosition()
+        if (first >= 0 && (index < first || index > last)) {
+            rowsList.smoothScrollToPosition(index)
+        }
+    }
+
+    private fun activateCursor() {
+        val channel = cursorChannel ?: return
+        val program = cursorProgram ?: return
+        onProgramAction(channel, program)
+    }
+
+    private fun onProgramAction(channel: Channel, program: Program) {
+        val now = System.currentTimeMillis()
+        when {
+            program.endTime <= now -> Toast.makeText(this, R.string.epg_program_finished, Toast.LENGTH_SHORT).show()
+            program.startTime <= now -> openPlayer(channel)
+            else -> toggleMark(channel, program)
+        }
+    }
+
+    private fun toggleMark(channel: Channel, program: Program) {
+        val key = EpgRowAdapter.keyOf(channel.id, program)
+        if (markedPrograms.remove(key) != null) {
+            promptedKeys.remove(key)
+        } else {
+            markedPrograms[key] = MarkedProgram(channel, program)
+        }
+        rowAdapter.setSelections(markedPrograms.keys)
+    }
+
+    private fun startMarkedCheckLoop() {
+        scope.launch {
+            while (true) {
+                delay(MARK_CHECK_INTERVAL_MS)
+                checkMarkedPrograms()
+            }
+        }
+    }
+
+    private fun checkMarkedPrograms() {
+        if (promptShowing || !lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) || markedPrograms.isEmpty()) return
+        val now = System.currentTimeMillis()
+        val due = markedPrograms.filter { (key, marked) ->
+            key !in promptedKeys &&
+                marked.program.startTime > now &&
+                marked.program.startTime - now <= MARK_NOTIFY_AHEAD_MS
+        }
+        if (due.isEmpty()) return
+        due.keys.forEach { promptedKeys.add(it) }
+        showMarkedPrompt(due.values.sortedBy { it.program.startTime })
+    }
+
+    private fun showMarkedPrompt(due: List<MarkedProgram>) {
+        promptShowing = true
+        val names = due.joinToString("\n") { "• ${it.program.title} — ${it.channel.name}" }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.epg_marked_title)
+            .setMessage(getString(R.string.epg_marked_message, names))
+            .setPositiveButton(R.string.yes) { _, _ ->
+                val channel = due.first().channel
+                due.forEach { markedPrograms.remove(EpgRowAdapter.keyOf(it.channel.id, it.program)) }
+                rowAdapter.setSelections(markedPrograms.keys)
+                openPlayer(channel)
+            }
+            .setNegativeButton(R.string.no, null)
+            .setOnDismissListener { promptShowing = false }
+            .show()
+    }
+
+    private fun openPlayer(channel: Channel) {
+        val intent = android.content.Intent(this, PlayerActivity::class.java).apply {
+            putExtra("channel_id", channel.id)
+            putExtra("channel_name", channel.name)
+            putExtra("stream_url", channel.streamUrl)
+            putExtra("logo_url", channel.logoUrl)
+        }
+        startActivity(intent)
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean = when (keyCode) {
         KeyEvent.KEYCODE_BACK -> {
             finish()
             true
         }
+        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
+            activateCursor()
+            true
+        }
         KeyEvent.KEYCODE_DPAD_UP -> {
-            rowsList.smoothScrollBy(0, -rowHeight)
+            moveCursorVertical(-1)
             true
         }
         KeyEvent.KEYCODE_DPAD_DOWN -> {
-            rowsList.smoothScrollBy(0, rowHeight)
+            moveCursorVertical(1)
             true
         }
         KeyEvent.KEYCODE_DPAD_LEFT -> {
-            scrollByMinutes(-15)
+            moveCursorHorizontal(true)
             true
         }
         KeyEvent.KEYCODE_DPAD_RIGHT -> {
-            scrollByMinutes(15)
+            moveCursorHorizontal(false)
             true
         }
         else -> super.onKeyDown(keyCode, event)
-    }
-
-    private fun scrollByMinutes(minutes: Int) {
-        val maxScroll = totalWidthPx - epgHorizontalScroll.width
-        val newScrollX = (epgHorizontalScroll.scrollX + minutes * pixelsPerMinute).toInt().coerceIn(0, maxScroll.coerceAtLeast(0))
-        epgHorizontalScroll.smoothScrollTo(newScrollX, 0)
     }
 
     override fun onDestroy() {

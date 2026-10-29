@@ -901,3 +901,25 @@ The ~10s "permanent reappearance" = stage 2 `(0,1)` chunk 1 arriving and coverin
 **Method note:** probes via curl with the Bruno-collection headers (`User-Agent`/`X-LHD-Agent` = `limehd.ru.lite` agent JSON); `Invoke-WebRequest` rejects JSON header values - use curl.exe.
 
 **Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.
+
+### 2026-10-29 Session 41 — EPG program selection (3 actions) + mark-to-view reminder
+
+**Goal:** "выбор передачи в телепрограмме 3 варианта действия: прошла -> сообщить что закончилась; идет (красная) -> переключиться; будущая -> отметить другим цветом к просмотру, за 1 мин до начала запрос 'Переключиться?' с Да/Нет".
+
+**Changes:**
+- `EpgRowAdapter.kt`:
+  - Cursor rendering: block under cursor uses `focus_highlight` + 1.05 scale; marked programs use new `program_selected_background` (green stroke `selected_indicator #FF4CAF50`); live keeps `live_indicator` (red).
+  - `keyOf(channelId, program)` = `"$channelId|$startTime|$endTime"` — program identity across staged rebinds.
+  - `setSelections(keys)` / `setCursor(key)` re-render states.
+  - Blocks `isFocusable=false`, clickable -> `onProgramAction(channel, program)` callback (data-driven cursor instead of view focus: staged rebinds recreate block views and would lose focus).
+- `EPGActivity.kt`:
+  - DPAD nav = data cursor: UP/DOWN -> adjacent channel row (nearest program by time), LEFT/RIGHT -> prev/next program in row (auto-scrolls timeline to follow), CENTER/ENTER -> action. Old free 15-min timeline scrolling removed in favor of program stepping.
+  - `onProgramAction`: `endTime<=now` -> Toast `epg_program_finished`; `startTime<=now` -> `openPlayer(channel)` immediately; future -> `toggleMark` (green mark).
+  - Marked-program reminder: 5s loop (`startMarkedCheckLoop`, coroutine scope cancelled in onDestroy) checks marks due within 60s; guarded by `promptShowing` + `lifecycle.currentState.isAtLeast(STARTED)`; only prompts once per key (`promptedKeys`).
+  - `showMarkedPrompt`: AlertDialog `epg_marked_title` + list of due programs + "Переключиться?" -> Да (clear due marks, openPlayer earliest) / Нет (nothing).
+  - `openPlayer` mirrors MainActivity extras: channel_id, channel_name, stream_url, logo_url.
+- Resources (ru+en): `epg_program_finished`, `epg_marked_title`, `epg_marked_message` (with &#10;), `yes`, `no`; color `selected_indicator`; drawable `program_selected_background.xml` (card bg + 2dp green stroke).
+
+**Ktlint gotcha:** one-liner `.let { moveCursor(channel, it); return }` violates `standard:statement-wrapping` (needs newline after `{`/`;` and before `}`). Use multi-line block body.
+
+**Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.

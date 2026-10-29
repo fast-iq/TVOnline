@@ -69,4 +69,9 @@
 
     <string name="program_time_placeholder">12:00 – 14:00</string>
     <string name="program_name_placeholder">Program name</string>
+    <string name="epg_program_finished">The program has already ended</string>
+    <string name="epg_marked_title">Marked programs</string>
+    <string name="epg_marked_message">%1$s&#10;&#10;Switch?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
 </resources>

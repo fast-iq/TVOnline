@@ -14,10 +14,19 @@ import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
 
-class EpgRowAdapter(private val context: Context) : RecyclerView.Adapter<EpgRowAdapter.RowHolder>() {
+class EpgRowAdapter(
+    private val context: Context,
+    private val onProgramAction: (Channel, Program) -> Unit
+) : RecyclerView.Adapter<EpgRowAdapter.RowHolder>() {
+
+    companion object {
+        fun keyOf(channelId: String, program: Program): String = "$channelId|${program.startTime}|${program.endTime}"
+    }
 
     private var channels: List<Channel> = emptyList()
     private var programs: Map<String, List<Program>> = emptyMap()
+    private var selectedKeys: Set<String> = emptySet()
+    private var cursorKey: String? = null
     private var baseTime = 0L
     private var pixelsPerMinute = 2.5f
     private var totalMinutes = 720
@@ -46,6 +55,16 @@ class EpgRowAdapter(private val context: Context) : RecyclerView.Adapter<EpgRowA
         notifyDataSetChanged()
     }
 
+    fun setSelections(keys: Set<String>) {
+        selectedKeys = keys
+        notifyDataSetChanged()
+    }
+
+    fun setCursor(key: String?) {
+        cursorKey = key
+        notifyDataSetChanged()
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RowHolder {
         val root = FrameLayout(parent.context)
         root.layoutParams = RecyclerView.LayoutParams(rowWidth, rowHeight)
@@ -68,7 +87,7 @@ class EpgRowAdapter(private val context: Context) : RecyclerView.Adapter<EpgRowA
             val blockParams = FrameLayout.LayoutParams(width, rowHeight - 8)
             blockParams.marginStart = leftMargin
             blockParams.topMargin = 4
-            row.addView(createProgramBlock(program, width), blockParams)
+            row.addView(createProgramBlock(channel, program, width), blockParams)
         }
 
         val nowOffset = ((System.currentTimeMillis() - baseTime) / 1000f / 60f).coerceIn(0f, totalMinutes.toFloat())
@@ -79,25 +98,21 @@ class EpgRowAdapter(private val context: Context) : RecyclerView.Adapter<EpgRowA
         row.addView(nowLine, nowParams)
     }
 
-    private fun createProgramBlock(program: Program, width: Int): View {
+    private fun createProgramBlock(channel: Channel, program: Program, width: Int): View {
         val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault()).apply { timeZone = displayTz }
+        val key = keyOf(channel.id, program)
+        val isCursor = key == cursorKey
 
         val container = FrameLayout(context).apply {
             setPadding(8, 8, 8, 8)
-            setBackgroundResource(R.drawable.program_item_background)
+            setBackgroundResource(blockBackground(key, program))
             isClickable = true
-            isFocusable = true
-            setOnFocusChangeListener { view, hasFocus ->
-                if (hasFocus) {
-                    view.scaleX = 1.05f
-                    view.scaleY = 1.05f
-                    view.setBackgroundResource(R.drawable.focus_highlight)
-                } else {
-                    view.scaleX = 1.0f
-                    view.scaleY = 1.0f
-                    view.setBackgroundResource(R.drawable.program_item_background)
-                }
+            isFocusable = false
+            if (isCursor) {
+                scaleX = 1.05f
+                scaleY = 1.05f
             }
+            setOnClickListener { onProgramAction(channel, program) }
         }
 
         val startCal = Calendar.getInstance(displayTz).apply { timeInMillis = program.startTime }
@@ -113,11 +128,14 @@ class EpgRowAdapter(private val context: Context) : RecyclerView.Adapter<EpgRowA
         }
         container.addView(programText)
 
-        if (program.isLive(System.currentTimeMillis())) {
-            container.setBackgroundResource(R.drawable.live_indicator)
-        }
-
         return container
+    }
+
+    private fun blockBackground(key: String, program: Program): Int = when {
+        key == cursorKey -> R.drawable.focus_highlight
+        key in selectedKeys -> R.drawable.program_selected_background
+        program.isLive(System.currentTimeMillis()) -> R.drawable.live_indicator
+        else -> R.drawable.program_item_background
     }
 
     override fun getItemCount(): Int = channels.size
