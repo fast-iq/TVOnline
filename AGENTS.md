@@ -950,3 +950,15 @@ The ~10s "permanent reappearance" = stage 2 `(0,1)` chunk 1 arriving and coverin
 - Removed unused `cursor_background` color; cursor drawable uses `@android:color/transparent`.
 
 **Verification:** `ktlintCheck compileDebugKotlin testDebugUnitTest lintDebug` PASSED.
+
+### 2026-11-07 — Инцидент: каналы не отображались на главном экране
+
+**Симптом:** пользователь сообщил, что сетка каналов не показывается.
+
+**Проверка:** все последние коммиты (сессии 41–43, 7ca4368 … 945c8de) касались только EPG-телепрограммы (курсор, выделение, даты). Код загрузки каналов (`ChannelRepository`, `LimeHdClient`, `ChannelAdapter`, `MainActivity`, `Models.kt`) не менялся. Сборка `compileDebugKotlin` + `assembleDebug` проходит без ошибок.
+
+**Разрешение:** после переустановки APK / очистки данных приложения все каналы прогрузились успешно. Проблема была на стороне устройства/кеша, а не в коде.
+
+**Изменения в коде:** добавлено диагностическое логирование в `ChannelRepository.kt` и `LimeHdClient.kt` (количество каналов, статус авторизации, tz/region, длина payload, превью ответа API) для быстрой диагностики похожих случаев в будущем.
+
+**Commit:** 7266a9b
