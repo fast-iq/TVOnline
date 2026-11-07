@@ -38,6 +38,7 @@ class ChannelRepository(private val context: Context) {
         return withContext(Dispatchers.IO) {
             val result: List<Channel> = try {
                 val channels = limeHdClient.getChannels()
+                Log.d("ChannelRepo", "LimeHD raw channels count: ${channels.size}")
                 if (channels.isNotEmpty()) {
                     Log.d("ChannelRepo", "LimeHD: ${channels.size} channels")
                     cachedChannels = channels

@@ -53,15 +53,22 @@ class LimeHdClient(context: Context) {
     fun getChannels(): List<Channel> {
         return try {
             ensureAuth()
+            Log.d(TAG, "auth done, publicKey=${cachedPublicKey != null}")
             val tz = effectiveTz()
             val region = prefs.limehdRegion
+            Log.d(TAG, "playlist request: tz=$tz region=$region")
             val url = BASE_URL +
                 "api/v4/playlist?tz=$tz&region=$region&limit=0&epg=1&epgcnt=4&epg_limit=4" +
                 "&installts=$INSTALL_TS&needCategories=0&drm=0"
             val payload = createPayload()
-            val body = JSONObject(httpPostForm(url, "payload=" + URLEncoder.encode(payload, "UTF-8")) ?: return emptyList())
+            Log.d(TAG, "payload len=${payload.length}")
+            val rawResponse = httpPostForm(url, "payload=" + URLEncoder.encode(payload, "UTF-8"))
+            Log.d(TAG, "playlist raw response: ${rawResponse?.take(200)} ?: null")
+            val body = JSONObject(rawResponse ?: return emptyList())
             val channelsArray = body.optJSONArray("channels") ?: return emptyList()
+            Log.d(TAG, "playlist channels array length: ${channelsArray.length()}")
             val parsed = parseChannels(channelsArray)
+            Log.d(TAG, "playlist parsed channels: ${parsed.size}")
             parsed
         } catch (e: Exception) {
             Log.e(TAG, "getChannels failed: ${e.message}")
