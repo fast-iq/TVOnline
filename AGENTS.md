@@ -962,3 +962,26 @@ The ~10s "permanent reappearance" = stage 2 `(0,1)` chunk 1 arriving and coverin
 **Изменения в коде:** добавлено диагностическое логирование в `ChannelRepository.kt` и `LimeHdClient.kt` (количество каналов, статус авторизации, tz/region, длина payload, превью ответа API) для быстрой диагностики похожих случаев в будущем.
 
 **Commit:** 7266a9b
+
+### 2026-11-12 Session 44 — Modern UI redesign (design system, cards, player, EPG, settings)
+
+**Goal:** "Переделай интерфейс в что то современное" — full visual overhaul, no logic changes (all `findViewById` ids preserved).
+
+**Design system (`colors.xml`, `themes.xml`, new drawables):**
+- Palette: gradient window background `bg_app.xml` (`#161E33 → #070A12`), surfaces `surface #121826` / `surface_high #1E2739`, accent violet `#7C6CFF` + secondary cyan `#35D6F5`, live red `#FF3B4E`, marked-green `#34D399`, softened text tokens `text_primary/secondary/hint`.
+- New drawables: `bg_pill` (chips), `bg_icon_button` (circular, filled accent on focus), `bg_accent_bar`, `bg_logo_area`, `bg_surface_rounded`, `bg_player_panel` (top-rounded), `bg_bottom_scrim`, `live_badge_bg`, `progress_program` (violet→cyan gradient bar), `channel_focus_ring`, `channel_number_badge` via plain TextView.
+- Removed `card_background` color (unused after redesign). Restyled: option buttons (pill, selected = accent→cyan gradient), EPG blocks (live = tinted red fill + red stroke; cursor/marked = 12dp green strokes), `number_overlay_bg` (24dp + accent stroke), `focus_highlight`, `button_focusable`.
+
+**Screens:**
+- Main: header `titleText` (app_name) + accent bar; EPG/settings buttons = circular icon pills; now-playing + region as pill chips; channel cards 168×134, 18dp corners, logo in tinted `bg_logo_area`, TV number badge (`Channel.number`), focus = scale 1.08 + `channel_focus_ring` foreground + elevation 8dp.
+- Player: full-width bottom info panel (LIVE badge + program + next) over gradient scrim; `infoText` as centered pill.
+- EPG: rounded panels for time scale/channel labels, 32dp margins. Settings: pill option rows (drawables updated).
+
+**Lessons / gotchas:**
+- `androidx.cardview.widget.CardView` has NO `strokeWidth/setStrokeColor` (verified via javap on cardview-1.0.0.aar) — that API is MaterialCardView's. Focus ring done via `foreground` drawable swap in `ChannelAdapter`.
+- `androidx.cardview:cardview:1.0.0` added explicitly to `app/build.gradle` (previously only transitive).
+- `android:nextUpFocus` is not a real attribute (correct: `nextFocusUp`) — resource linking error.
+- `InvalidSetHasFixedSize` lint: `epgRowsList` width is set in code (`totalWidthPx`), fix is `@SuppressLint` at the `setHasFixedSize` call site (XML `tools:ignore` on the view does NOT suppress it).
+- New strings ru+en: `live_badge` (translatable=false), `channel_number_format`.
+
+**Verification:** local SDK pipeline `compileDebugKotlin ktlintCheck testDebugUnitTest lintDebug assembleDebug` PASSED; lint = 1 machine-specific `local.properties` PropertyEscape (not in CI), 0 code errors.

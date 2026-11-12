@@ -1,5 +1,6 @@
 package com.example.tvapp.ui
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.KeyEvent
 import android.widget.FrameLayout
@@ -109,6 +110,7 @@ class EPGActivity : BaseActivity() {
         })
     }
 
+    @SuppressLint("InvalidSetHasFixedSize")
     private fun setupEPGGrid() {
         channels = ChannelList.channels.take(EPG_MAX_CHANNELS)
         val viewportWidth = epgHorizontalScroll.width

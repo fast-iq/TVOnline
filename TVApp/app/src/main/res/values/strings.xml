@@ -6,6 +6,8 @@
     <string name="settings">Настройки</string>
     <string name="epg">Программа передач</string>
     <string name="channels">Каналы</string>
+    <string name="channel_number_format" translatable="false">%1$d</string>
+    <string name="live_badge" translatable="false">LIVE</string>
     <string name="unknown_channel">Неизвестный канал</string>
 
     <!-- Main screen -->

@@ -1,40 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="160dp"
-    android:layout_height="120dp"
-    android:layout_margin="4dp"
+    android:layout_width="168dp"
+    android:layout_height="134dp"
+    android:layout_margin="8dp"
     android:focusable="true"
     android:clickable="true"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="3dp"
+    app:cardBackgroundColor="@color/surface"
     android:foreground="?attr/selectableItemBackground">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:gravity="center"
-        android:padding="8dp"
-        android:background="@color/card_background">
+        android:gravity="center_horizontal"
+        android:padding="10dp">
 
-        <ImageView
-            android:id="@+id/channelLogo"
-            android:layout_width="60dp"
-            android:layout_height="45dp"
-            android:scaleType="fitCenter"
-            android:contentDescription="@string/channel_logo_desc" />
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="@drawable/bg_logo_area">
+
+            <ImageView
+                android:id="@+id/channelLogo"
+                android:layout_width="72dp"
+                android:layout_height="42dp"
+                android:layout_gravity="center"
+                android:scaleType="fitCenter"
+                android:contentDescription="@string/channel_logo_desc" />
+
+            <TextView
+                android:id="@+id/channelNumber"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|start"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/accent_secondary"
+                android:visibility="gone" />
+        </FrameLayout>
 
         <TextView
             android:id="@+id/channelName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/channel_name_placeholder"
-            android:textSize="12sp"
+            android:textSize="13sp"
             android:textStyle="bold"
-            android:textColor="@color/white"
+            android:textColor="@color/text_primary"
             android:gravity="center"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="8dp"
             android:maxLines="1"
             android:ellipsize="end" />
 
@@ -55,9 +76,10 @@
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
             android:layout_height="4dp"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="7dp"
             android:max="100"
             android:progress="0"
+            android:progressDrawable="@drawable/progress_program"
             android:visibility="gone" />
 
     </LinearLayout>

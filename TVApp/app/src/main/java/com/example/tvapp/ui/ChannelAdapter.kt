@@ -6,6 +6,8 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.tvapp.R
@@ -22,9 +24,17 @@ class ChannelAdapter(
         private val channelName: TextView = itemView.findViewById(R.id.channelName)
         private val programTitle: TextView = itemView.findViewById(R.id.programTitle)
         private val programProgress: ProgressBar = itemView.findViewById(R.id.programProgress)
+        private val channelNumber: TextView = itemView.findViewById(R.id.channelNumber)
 
         fun bind(channel: Channel) {
             channelName.text = channel.name
+
+            if (channel.number > 0) {
+                channelNumber.text = itemView.context.getString(R.string.channel_number_format, channel.number)
+                channelNumber.visibility = View.VISIBLE
+            } else {
+                channelNumber.visibility = View.GONE
+            }
 
             Glide.with(itemView.context)
                 .load(channel.logoUrl)
@@ -48,16 +58,25 @@ class ChannelAdapter(
             }
 
             itemView.setOnFocusChangeListener { view, hasFocus ->
+                val card = view as CardView
                 if (hasFocus) {
-                    view.scaleX = 1.1f
-                    view.scaleY = 1.1f
+                    view.scaleX = 1.08f
+                    view.scaleY = 1.08f
+                    card.foreground = ContextCompat.getDrawable(view.context, R.drawable.channel_focus_ring)
+                    card.cardElevation = dp(view, 8).toFloat()
                     onFocusPositionChanged(bindingAdapterPosition)
                 } else {
                     view.scaleX = 1.0f
                     view.scaleY = 1.0f
+                    card.foreground = defaultForeground
+                    card.cardElevation = dp(view, 3).toFloat()
                 }
             }
         }
+
+        private val defaultForeground: android.graphics.drawable.Drawable? = itemView.foreground
+
+        private fun dp(view: View, value: Int): Int = (value * view.context.resources.displayMetrics.density).toInt()
 
         private fun updateProgress(channel: Channel) {
             val start = channel.currentProgramStart

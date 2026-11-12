@@ -6,6 +6,8 @@
     <string name="settings">Settings</string>
     <string name="epg">TV Guide</string>
     <string name="channels">Channels</string>
+    <string name="channel_number_format" translatable="false">%1$d</string>
+    <string name="live_badge" translatable="false">LIVE</string>
     <string name="unknown_channel">Unknown channel</string>
 
     <!-- Main screen -->
