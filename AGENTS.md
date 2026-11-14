@@ -985,3 +985,17 @@ The ~10s "permanent reappearance" = stage 2 `(0,1)` chunk 1 arriving and coverin
 - New strings ru+en: `live_badge` (translatable=false), `channel_number_format`.
 
 **Verification:** local SDK pipeline `compileDebugKotlin ktlintCheck testDebugUnitTest lintDebug assembleDebug` PASSED; lint = 1 machine-specific `local.properties` PropertyEscape (not in CI), 0 code errors.
+
+### 2026-11-14 Session 45 — Stuck buffering fix: auto stream-URL refresh watchdog
+
+**Symptom:** after long uninterrupted viewing a channel starts buffering and never resumes; switching to another channel and back immediately fixes it.
+
+**Root cause:** LimeHD m3u8 stream URLs carry time-limited tokens. `LimeHdClient.getChannels()` fetches the URL once, stores it in `Channel.streamUrl`, and `ChannelRepository` caches the whole list for 10 min. When the token expires mid-view, new segment requests fail → ExoPlayer stuck in BUFFERING. Returning to the grid re-fetches the playlist (fresh tokens) — that's why switching fixes it.
+
+**Fix (self-healing watchdog in `TVPlayerManager`):**
+- Track `bufferingSince`; if the player stays in `STATE_BUFFERING` > 8 s (and not in a 60 s cooldown), re-fetch a fresh stream URL for the current channel and re-prepare.
+- `ChannelRepository.refreshStreamUrl(channelId)` calls `LimeHdClient.getChannels()` directly (bypasses the 10-min cache) and returns the channel's fresh `streamUrl`.
+- On success the fresh token + new HTTP connection resume playback; if the fetch fails, re-prepare the same URL (heals dead/half-open connections too).
+- `bufferingSince` resets on `STATE_READY`, `STATE_IDLE/ENDED`, and every `playChannel`, so no false triggers on normal startup. `scope` cancelled in `releasePlayer()`.
+
+**Verification:** local SDK `compileDebugKotlin ktlintCheck lintDebug` PASSED (only machine-specific `local.properties` PropertyEscape, absent in CI).

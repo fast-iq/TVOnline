@@ -61,5 +61,19 @@ class ChannelRepository(private val context: Context) {
 
     suspend fun refreshChannels(): List<Channel> = getChannels(forceRefresh = true)
 
+    /**
+     * Возвращает свежий URL потока для канала, минуя 10-минутный кэш.
+     * Нужен, чтобы получить свежий (ещё не истёкший) токен LimeHD при зависании буферизации.
+     */
+    suspend fun refreshStreamUrl(channelId: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val fresh = limeHdClient.getChannels()
+            fresh.find { it.id == channelId }?.streamUrl
+        } catch (e: Exception) {
+            Log.e("ChannelRepo", "refreshStreamUrl failed: ${e.message}")
+            null
+        }
+    }
+
     private fun currentCacheKey(): String = cacheKeyFor(prefs.limehdRegion, prefs.programTimezoneOffset())
 }

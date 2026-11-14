@@ -16,7 +16,13 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Channel
+import com.example.tvapp.data.ChannelRepository
 import com.example.tvapp.data.LimeHdClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import java.io.BufferedInputStream
 import java.io.IOException
 import java.io.InputStream
@@ -28,11 +34,22 @@ class TVPlayerManager(private val context: Context) {
     private var trackSelector: androidx.media3.exoplayer.trackselection.DefaultTrackSelector? = null
     private val preferences = AppPreferences(context)
     private val limeHdClient = LimeHdClient(context)
+    private val channelRepository = ChannelRepository(context)
+    private val scope = CoroutineScope(Dispatchers.Main + Job())
     private var currentChannel: Channel? = null
     private var fallbackIndex = 0
     private var pendingUrl: String? = null
     private var lastWorkingUrl: String? = null
     private var manualSwitch = false
+    private var bufferingSince = 0L
+    private var recoveryCooldownUntil = 0L
+
+    private val stuckBufferingMs = 8_000L
+    private val recoveryCooldownMs = 60_000L
+
+    companion object {
+        private const val TAG = "TVPlayerManager"
+    }
 
     interface PlayerCallback {
         fun onPlaybackReady()
@@ -58,10 +75,17 @@ class TVPlayerManager(private val context: Context) {
                         when (state) {
                             Player.STATE_READY -> {
                                 lastWorkingUrl = pendingUrl
+                                bufferingSince = 0L
                                 callback?.onPlaybackReady()
                             }
-                            Player.STATE_BUFFERING -> callback?.onBuffering(true)
-                            Player.STATE_IDLE, Player.STATE_ENDED -> callback?.onBuffering(false)
+                            Player.STATE_BUFFERING -> {
+                                callback?.onBuffering(true)
+                                maybeRecoverStuckStream()
+                            }
+                            Player.STATE_IDLE, Player.STATE_ENDED -> {
+                                callback?.onBuffering(false)
+                                bufferingSince = 0L
+                            }
                         }
                     }
 
@@ -141,6 +165,7 @@ class TVPlayerManager(private val context: Context) {
         currentChannel = channel
         pendingUrl = url
         fallbackIndex = if (streamUrl == null) 0 else getCurrentStreamUrls().indexOf(streamUrl).coerceAtLeast(0)
+        bufferingSince = 0L
 
         exoPlayer?.apply {
             clearMediaItems()
@@ -169,6 +194,32 @@ class TVPlayerManager(private val context: Context) {
 
     fun getCurrentUrlIndex(): Int = fallbackIndex
 
+    private fun maybeRecoverStuckStream() {
+        val now = System.currentTimeMillis()
+        if (bufferingSince == 0L) {
+            bufferingSince = now
+            return
+        }
+        if (now < recoveryCooldownUntil) return
+        if (now - bufferingSince < stuckBufferingMs) return
+        val channel = currentChannel ?: return
+        recoveryCooldownUntil = now + recoveryCooldownMs
+        android.util.Log.d(TAG, "stuck buffering ${now - bufferingSince}ms, refreshing stream URL")
+        scope.launch {
+            val fresh = try {
+                channelRepository.refreshStreamUrl(channel.id)
+            } catch (e: Exception) {
+                null
+            }
+            if (fresh != null) {
+                playChannel(channel, fresh)
+            } else {
+                playChannel(channel, channel.streamUrl)
+            }
+            bufferingSince = 0L
+        }
+    }
+
     fun setQualityMode(qualityMode: AppPreferences.QualityMode) {
         preferences.qualityMode = qualityMode
         applyQualityMode()
@@ -191,6 +242,7 @@ class TVPlayerManager(private val context: Context) {
     }
 
     fun releasePlayer() {
+        scope.cancel()
         exoPlayer?.apply {
             stop()
             release()
