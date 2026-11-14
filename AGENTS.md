@@ -999,3 +999,24 @@ The ~10s "permanent reappearance" = stage 2 `(0,1)` chunk 1 arriving and coverin
 - `bufferingSince` resets on `STATE_READY`, `STATE_IDLE/ENDED`, and every `playChannel`, so no false triggers on normal startup. `scope` cancelled in `releasePlayer()`.
 
 **Verification:** local SDK `compileDebugKotlin ktlintCheck lintDebug` PASSED (only machine-specific `local.properties` PropertyEscape, absent in CI).
+
+### 2026-11-14 Session 46 — Disk cache for channel list + progressive main-screen load
+
+**User reports (after app update):** (1) channels didn't load for a long time; they appeared only after changing region. (2) Wanted progressive load: show channel list first, then logos, then EPG, so the screen stays alive instead of frozen/empty.
+
+**Root cause:** the channel list had ONLY an in-memory cache (`cachedChannels`). After a process restart / app update the cache is empty; a slow or failing first network fetch left the grid empty, and `loadChannels()` swallowed exceptions silently → blank screen. Changing region forced `invalidateContent()` + a fresh fetch, which is why it "came alive".
+
+**Fix:**
+- `ChannelRepository`: persist the parsed channel list to disk (`files/channels_cache.json`) via `serialize`/`deserialize` (org.json). `saveToDisk()` runs after every successful fetch; `loadFromDisk()` reads it back without touching the network.
+- `MainActivity.loadChannels()` rewritten for progressive load:
+  1. Show the last on-disk list INSTANTLY (`loadFromDisk` on IO) → grid renders immediately, logos stream in via Glide, header program fills.
+  2. Background `getChannels()` network refresh replaces it with fresh logos/programs.
+  3. Exceptions are now LOGGED (was silent) and the grid keeps whatever it has.
+- New `emptyText` TextView in `activity_main.xml` + `updateEmptyState()` helper — shows "Загрузка каналов…" when nothing is loaded yet (covers first-ever launch with no disk cache). Initial `updateEmptyState()` called from `setupChannelsGrid()`.
+- New strings ru+en: `loading_channels`.
+
+**Ktlint gotchas (this session):**
+- `standard:wrapping` — expression-body function (`= try { … }`) cannot use `return`; converted `loadFromDisk` to a block body.
+- `standard:import-ordering` with `ktlint_code_style = intellij_idea`: the "end group" is ONLY `java`/`javax`/`kotlin` (NOT `kotlinx`); `org.json` belongs to the first group. Correct order = `android.*`, `kotlinx.*`, `org.json.*`, then `java.*` (matches working EPGRepository/LimeHdClient).
+
+**Verification:** local SDK `compileDebugKotlin ktlintCheck lintDebug` PASSED (only machine-specific `local.properties` PropertyEscape, absent in CI).

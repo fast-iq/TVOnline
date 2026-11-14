@@ -27,6 +27,7 @@
 
     <!-- Player -->
     <string name="loading_channel">Loading channel: %1$s…</string>
+    <string name="loading_channels">Loading channels…</string>
     <string name="playback_error">Playback error:\n%1$s</string>
     <string name="buffering">Buffering…</string>
     <string name="switching_source">Switching to backup source…</string>

@@ -1,6 +1,7 @@
 package com.example.tvapp.ui
 
 import android.os.Bundle
+import android.util.Log
 import android.view.KeyEvent
 import android.widget.TextView
 import androidx.recyclerview.widget.GridLayoutManager
@@ -23,6 +24,7 @@ class MainActivity : BaseActivity() {
     private lateinit var channelsRecyclerView: RecyclerView
     private lateinit var currentProgramText: TextView
     private lateinit var regionText: TextView
+    private lateinit var emptyText: TextView
     private lateinit var channelAdapter: ChannelAdapter
 
     private val channelRepository by lazy { ChannelRepository(applicationContext) }
@@ -43,6 +45,7 @@ class MainActivity : BaseActivity() {
         channelsRecyclerView = findViewById(R.id.channelsRecyclerView)
         currentProgramText = findViewById(R.id.currentProgramText)
         regionText = findViewById(R.id.regionText)
+        emptyText = findViewById(R.id.emptyText)
         numberInput = NumberInputController(this, findViewById(R.id.numberOverlay)) { channel ->
             selectChannelByNumber(channel)
         }
@@ -66,10 +69,22 @@ class MainActivity : BaseActivity() {
 
     private fun loadChannels() {
         scope.launch {
-            try {
-                val channels = withContext(Dispatchers.IO) {
-                    channelRepository.getChannels()
+            // 1. Мгновенно показываем последний известный список с диска (логотипы подгрузятся через Glide).
+            val disk = withContext(Dispatchers.IO) { channelRepository.loadFromDisk() }
+            if (!disk.isNullOrEmpty()) {
+                channelAdapter.updateChannels(disk)
+                ChannelList.updateChannels(disk)
+                updateHeaderProgram(disk)
+                if (pendingFocusRestore && lastFocusedPosition >= 0) {
+                    pendingFocusRestore = false
+                    focusOnPosition(lastFocusedPosition)
                 }
+            } else {
+                updateEmptyState()
+            }
+            // 2. Фоновое обновление с сети — заменит список свежими логотипами/программами.
+            try {
+                val channels = withContext(Dispatchers.IO) { channelRepository.getChannels() }
                 if (channels.isNotEmpty()) {
                     channelAdapter.updateChannels(channels)
                     restoreLastChannel()
@@ -79,9 +94,16 @@ class MainActivity : BaseActivity() {
                         focusOnPosition(lastFocusedPosition)
                     }
                 }
+                updateEmptyState()
             } catch (e: Exception) {
+                Log.e("MainActivity", "channel refresh failed: ${e.message}")
+                updateEmptyState()
             }
         }
+    }
+
+    private fun updateEmptyState() {
+        emptyText.visibility = if (channelAdapter.itemCount == 0) android.view.View.VISIBLE else android.view.View.GONE
     }
 
     private fun focusOnPosition(position: Int) {
@@ -114,6 +136,7 @@ class MainActivity : BaseActivity() {
             layoutManager = GridLayoutManager(this@MainActivity, spanCount)
             adapter = channelAdapter
         }
+        updateEmptyState()
     }
 
     private fun updateHeaderProgram(channels: List<Channel>) {
