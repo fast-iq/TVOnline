@@ -1,6 +1,9 @@
 pluginManagement {
     repositories {
         google()
+        // Зеркало Maven Central на Google Cloud Storage: обходит 429-троттлинг
+        // repo.maven.apache.org с общих IP CI-раннеров (полный mirror Central).
+        maven { url = 'https://maven-central.storage-download.googleapis.com/maven2' }
         mavenCentral()
         gradlePluginPortal()
     }
@@ -9,6 +12,7 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
+        maven { url = 'https://maven-central.storage-download.googleapis.com/maven2' }
         mavenCentral()
     }
 }

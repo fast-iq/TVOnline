@@ -129,6 +129,11 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      - name: Setup Gradle (dependency cache)
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: false
+
       - name: Grant execute permission for gradlew
         run: chmod +x TVApp/gradlew
 
@@ -202,22 +207,25 @@ jobs:
           ROBO_JAR="$ROBO_DIR/android-all-instrumented-$ROBO_VER.jar"
           if [ ! -f "$ROBO_JAR" ]; then
             mkdir -p "$ROBO_DIR"
-            BASE="https://repo1.maven.org/maven2/org/robolectric/android-all-instrumented/$ROBO_VER"
+            MIRROR="https://maven-central.storage-download.googleapis.com/maven2/org/robolectric/android-all-instrumented/$ROBO_VER"
+            MAIN="https://repo1.maven.org/maven2/org/robolectric/android-all-instrumented/$ROBO_VER"
             OK=0
-            for i in 1 2 3 4 5; do
+            for BASE in "$MIRROR" "$MAIN" "$MIRROR" "$MAIN" "$MIRROR"; do
               if curl -fsSL --connect-timeout 15 --max-time 900 -o "$ROBO_JAR.part" "$BASE/android-all-instrumented-$ROBO_VER.jar"; then
                 mv "$ROBO_JAR.part" "$ROBO_JAR"
                 OK=1
                 break
               fi
               rm -f "$ROBO_JAR.part"
-              echo "Attempt $i failed, retrying in 5s..."
+              echo "Attempt to $BASE failed, retrying in 5s..."
               sleep 5
             done
             [ "$OK" = "1" ] || { echo "::error::Failed to prefetch Robolectric android-all jar after 5 attempts"; exit 1; }
             # pom/чек-суммы Robolectric тоже читает из локального репозитория (мелкие файлы, без ретраев)
-            curl -fsSL --connect-timeout 15 -o "$ROBO_DIR/android-all-instrumented-$ROBO_VER.pom" "$BASE/android-all-instrumented-$ROBO_VER.pom" || true
-            curl -fsSL --connect-timeout 15 -o "$ROBO_DIR/android-all-instrumented-$ROBO_VER.jar.sha512" "$BASE/android-all-instrumented-$ROBO_VER.jar.sha512" || true
+            curl -fsSL --connect-timeout 15 -o "$ROBO_DIR/android-all-instrumented-$ROBO_VER.pom" "$MIRROR/android-all-instrumented-$ROBO_VER.pom" \
+              || curl -fsSL --connect-timeout 15 -o "$ROBO_DIR/android-all-instrumented-$ROBO_VER.pom" "$MAIN/android-all-instrumented-$ROBO_VER.pom" || true
+            curl -fsSL --connect-timeout 15 -o "$ROBO_DIR/android-all-instrumented-$ROBO_VER.jar.sha512" "$MIRROR/android-all-instrumented-$ROBO_VER.jar.sha512" \
+              || curl -fsSL --connect-timeout 15 -o "$ROBO_DIR/android-all-instrumented-$ROBO_VER.jar.sha512" "$MAIN/android-all-instrumented-$ROBO_VER.jar.sha512" || true
           fi
           ls -la "$ROBO_JAR"
 
