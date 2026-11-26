@@ -19,8 +19,8 @@ if (!appVersion) {
     }
 }
 
-def versionName = "1.0.15"
-def versionCode = 10015
+def versionName = "1.0.16"
+def versionCode = 10016
 if (appVersion != null && appVersion) {
     def m = (appVersion =~ /v?(\d+)\.(\d+)(?:\.(\d+))?/)
     if (m.find()) {
