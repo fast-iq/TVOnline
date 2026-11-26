@@ -185,6 +185,42 @@ jobs:
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: cd TVApp && ./gradlew bundleRelease -PAPP_VERSION=${{ github.ref_name }} --no-daemon --no-build-cache --no-configuration-cache --stacktrace
 
+      - name: Cache Robolectric jars
+        uses: actions/cache@v5
+        with:
+          path: ~/.m2/repository
+          key: robolectric-${{ runner.os }}-android-all-instrumented-14-robolectric-10818077-i7
+          restore-keys: robolectric-${{ runner.os }}-
+
+      - name: Prefetch Robolectric android-all jar
+        run: |
+          # Robolectric скачивает SDK-образ (~100MB) из Maven Central в ~/.m2 в момент запуска
+          # тестов; на чистом раннере эта загрузка периодически отваливается и валит
+          # testDebugUnitTest. Скачиваем jar заранее с повторными попытками.
+          ROBO_VER="14-robolectric-10818077-i7"
+          ROBO_DIR="$HOME/.m2/repository/org/robolectric/android-all-instrumented/$ROBO_VER"
+          ROBO_JAR="$ROBO_DIR/android-all-instrumented-$ROBO_VER.jar"
+          if [ ! -f "$ROBO_JAR" ]; then
+            mkdir -p "$ROBO_DIR"
+            BASE="https://repo1.maven.org/maven2/org/robolectric/android-all-instrumented/$ROBO_VER"
+            OK=0
+            for i in 1 2 3 4 5; do
+              if curl -fsSL --connect-timeout 15 --max-time 900 -o "$ROBO_JAR.part" "$BASE/android-all-instrumented-$ROBO_VER.jar"; then
+                mv "$ROBO_JAR.part" "$ROBO_JAR"
+                OK=1
+                break
+              fi
+              rm -f "$ROBO_JAR.part"
+              echo "Attempt $i failed, retrying in 5s..."
+              sleep 5
+            done
+            [ "$OK" = "1" ] || { echo "::error::Failed to prefetch Robolectric android-all jar after 5 attempts"; exit 1; }
+            # pom/чек-суммы Robolectric тоже читает из локального репозитория (мелкие файлы, без ретраев)
+            curl -fsSL --connect-timeout 15 -o "$ROBO_DIR/android-all-instrumented-$ROBO_VER.pom" "$BASE/android-all-instrumented-$ROBO_VER.pom" || true
+            curl -fsSL --connect-timeout 15 -o "$ROBO_DIR/android-all-instrumented-$ROBO_VER.jar.sha512" "$BASE/android-all-instrumented-$ROBO_VER.jar.sha512" || true
+          fi
+          ls -la "$ROBO_JAR"
+
       - name: Run Unit Tests
         run: cd TVApp && ./gradlew testDebugUnitTest --no-daemon
 
