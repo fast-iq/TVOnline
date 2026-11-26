@@ -10,6 +10,7 @@ import androidx.media3.ui.PlayerView
 import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
 import com.example.tvapp.data.AppPreferences
+import com.example.tvapp.data.ArchivePlayback
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
 import com.example.tvapp.player.TVPlayerManager
@@ -58,6 +59,15 @@ class PlayerActivity : BaseActivity() {
             channelName = intent.getStringExtra("channel_name")
 
             currentChannel = ChannelList.channels.find { it.id == channelId }
+
+            val archiveBase = intent.getStringExtra("archive_url").orEmpty()
+            val archiveStart = intent.getLongExtra("archive_start", 0L)
+            val archiveEnd = intent.getLongExtra("archive_end", 0L)
+            val archivePlayUrl = if (archiveBase.isNotEmpty() && archiveStart > 0L && archiveEnd > archiveStart) {
+                ArchivePlayback.buildUrl(archiveBase, archiveStart, archiveEnd)
+            } else {
+                null
+            }
 
             playerView = findViewById(R.id.playerView)
             infoText = findViewById(R.id.infoText)
@@ -117,13 +127,16 @@ class PlayerActivity : BaseActivity() {
                 preferences.addToWatchHistory(currentChannel!!.id)
                 infoText.text = getString(R.string.loading_channel, channelName)
                 infoText.visibility = View.VISIBLE
-                playerManager.playChannel(
-                    currentChannel!!,
-                    currentChannel!!.streamUrl.ifBlank { streamUrl ?: "" }
-                )
+                val playUrl = archivePlayUrl ?: currentChannel!!.streamUrl.ifBlank { streamUrl ?: "" }
+                val playChannel = if (archivePlayUrl != null) {
+                    currentChannel!!.copy(streamUrl = archivePlayUrl, fallbackStreamUrls = emptyList())
+                } else {
+                    currentChannel!!
+                }
+                playerManager.playChannel(playChannel, playUrl)
                 showProgramOverlay(currentChannel!!)
             } else if (!streamUrl.isNullOrEmpty()) {
-                val url = streamUrl!!
+                val url = archivePlayUrl ?: streamUrl!!
                 infoText.text = getString(R.string.loading_channel, channelName)
                 infoText.visibility = View.VISIBLE
                 val tempChannel = Channel(

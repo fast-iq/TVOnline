@@ -66,6 +66,8 @@
     <string name="epg_program_text">%1$s %2$s</string>
     <string name="time_range">%1$s – %2$s</string>
     <string name="epg_program_finished">The program has already ended</string>
+    <string name="epg_watch_live">Live</string>
+    <string name="epg_watch_from_start">Watch from the start</string>
     <string name="epg_marked_title">Marked programs</string>
     <string name="epg_marked_message">%1$s&#10;&#10;Switch?</string>
     <string name="yes">Yes</string>

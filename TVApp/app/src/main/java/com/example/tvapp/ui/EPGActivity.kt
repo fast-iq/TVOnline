@@ -16,6 +16,7 @@ import com.example.tvapp.BaseActivity
 import com.example.tvapp.NotificationHelper
 import com.example.tvapp.R
 import com.example.tvapp.data.AppPreferences
+import com.example.tvapp.data.ArchivePlayback
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
 import com.example.tvapp.data.EPGRepository
@@ -428,10 +429,44 @@ class EPGActivity : BaseActivity() {
     private fun onProgramAction(channel: Channel, program: Program) {
         val now = System.currentTimeMillis()
         when {
-            program.endTime <= now -> Toast.makeText(this, R.string.epg_program_finished, Toast.LENGTH_SHORT).show()
-            program.startTime <= now -> openPlayer(channel)
+            program.endTime <= now -> {
+                if (!openArchivedPlayer(channel, program)) {
+                    Toast.makeText(this, R.string.epg_program_finished, Toast.LENGTH_SHORT).show()
+                }
+            }
+            program.startTime <= now -> {
+                if (ArchivePlayback.hasArchive(channel)) {
+                    showLiveOrArchiveDialog(channel, program)
+                } else {
+                    openPlayer(channel)
+                }
+            }
             else -> toggleMark(channel, program)
         }
+    }
+
+    private fun showLiveOrArchiveDialog(channel: Channel, program: Program) {
+        AlertDialog.Builder(this)
+            .setTitle(program.title)
+            .setPositiveButton(R.string.epg_watch_from_start) { _, _ -> openArchivedPlayer(channel, program) }
+            .setNegativeButton(R.string.epg_watch_live) { _, _ -> openPlayer(channel) }
+            .show()
+    }
+
+    private fun openArchivedPlayer(channel: Channel, program: Program): Boolean {
+        val window = ArchivePlayback.windowFor(channel, program.startTime, program.endTime, System.currentTimeMillis())
+            ?: return false
+        val intent = android.content.Intent(this, PlayerActivity::class.java).apply {
+            putExtra("channel_id", channel.id)
+            putExtra("channel_name", channel.name)
+            putExtra("stream_url", channel.streamUrl)
+            putExtra("logo_url", channel.logoUrl)
+            putExtra("archive_url", channel.archiveUrl)
+            putExtra("archive_start", window.first)
+            putExtra("archive_end", window.second)
+        }
+        startActivity(intent)
+        return true
     }
 
     private fun restoreMarks() {

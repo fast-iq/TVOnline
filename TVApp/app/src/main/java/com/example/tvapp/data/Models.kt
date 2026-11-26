@@ -15,7 +15,9 @@ data class Channel(
     val programs: List<Program> = emptyList(),
     val isDrm: Boolean = false,
     val regionCode: Int = 0,
-    val number: Int = 0
+    val number: Int = 0,
+    val archiveUrl: String = "",
+    val dayArchive: Int = 0
 )
 
 data class Program(

@@ -324,6 +324,16 @@ internal object LimeHdParser {
             val current = parseCurrentProgram(item.optJSONArray("current") ?: item.optJSONObject("current"))
             val programs = parseProgramList(item.optJSONArray("current") ?: item.optJSONObject("current"), "limehd_$ourId")
 
+            val archiveUrl = firstNonBlank(
+                stream?.optString("archive"),
+                item.optString("url_archive")
+            ) ?: ""
+            val dayArchive = if (item.optBoolean("with_archive", archiveUrl.isNotEmpty())) {
+                item.optInt("day_archive", if (archiveUrl.isNotEmpty()) 1 else 0)
+            } else {
+                0
+            }
+
             val channel = Channel(
                 id = "limehd_$ourId",
                 name = title,
@@ -339,7 +349,9 @@ internal object LimeHdParser {
                 programs = programs,
                 isDrm = item.optBoolean("drm", false),
                 regionCode = item.optInt("region_code", 0),
-                number = item.optInt("number", 0)
+                number = item.optInt("number", 0),
+                archiveUrl = archiveUrl,
+                dayArchive = dayArchive
             )
 
             entries.add(Pair(item.optInt("number", Int.MAX_VALUE), channel))

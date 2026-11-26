@@ -69,6 +69,8 @@
     <string name="epg_program_text">%1$s %2$s</string>
     <string name="time_range">%1$s – %2$s</string>
     <string name="epg_program_finished">Передача уже закончилась</string>
+    <string name="epg_watch_live">Прямой эфир</string>
+    <string name="epg_watch_from_start">Смотреть сначала</string>
     <string name="epg_marked_title">Отмеченные передачи</string>
     <string name="epg_marked_message">%1$s&#10;&#10;Переключиться?</string>
     <string name="yes">Да</string>

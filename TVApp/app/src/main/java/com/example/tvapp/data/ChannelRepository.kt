@@ -342,6 +342,8 @@ internal object ChannelCacheCodec {
             o.put("isDrm", c.isDrm)
             o.put("regionCode", c.regionCode)
             o.put("number", c.number)
+            o.put("archiveUrl", c.archiveUrl)
+            o.put("dayArchive", c.dayArchive)
             arr.put(o)
         }
         return arr.toString()
@@ -390,7 +392,9 @@ internal object ChannelCacheCodec {
                     programs = progs,
                     isDrm = o.optBoolean("isDrm", false),
                     regionCode = o.optInt("regionCode", 0),
-                    number = o.optInt("number", 0)
+                    number = o.optInt("number", 0),
+                    archiveUrl = o.optString("archiveUrl"),
+                    dayArchive = o.optInt("dayArchive", 0)
                 )
             )
         }
