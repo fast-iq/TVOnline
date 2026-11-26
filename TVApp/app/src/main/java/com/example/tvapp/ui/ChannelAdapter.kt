@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.tvapp.R
 import com.example.tvapp.data.Channel
+import com.example.tvapp.data.LivePrograms
 
 class ChannelAdapter(
     private var channels: List<Channel>,
@@ -25,6 +26,7 @@ class ChannelAdapter(
         private val programTitle: TextView = itemView.findViewById(R.id.programTitle)
         private val programProgress: ProgressBar = itemView.findViewById(R.id.programProgress)
         private val channelNumber: TextView = itemView.findViewById(R.id.channelNumber)
+        private val drmBadge: TextView = itemView.findViewById(R.id.drmBadge)
 
         fun bind(channel: Channel) {
             channelName.text = channel.name
@@ -36,22 +38,15 @@ class ChannelAdapter(
                 channelNumber.visibility = View.GONE
             }
 
+            drmBadge.visibility = if (channel.isDrm) View.VISIBLE else View.GONE
+
             Glide.with(itemView.context)
                 .load(channel.logoUrl)
                 .placeholder(R.drawable.ic_channel_placeholder)
                 .error(R.drawable.ic_channel_placeholder)
                 .into(channelLogo)
 
-            val title = channel.currentProgramTitle
-            if (title != null && title.isNotBlank()) {
-                programTitle.text = title
-                programTitle.visibility = View.VISIBLE
-                updateProgress(channel)
-            } else {
-                programTitle.text = itemView.context.getString(R.string.program_title_placeholder)
-                programTitle.visibility = View.VISIBLE
-                programProgress.visibility = View.GONE
-            }
+            bindLive(channel)
 
             itemView.setOnClickListener {
                 onChannelSelected(channel)
@@ -74,14 +69,26 @@ class ChannelAdapter(
             }
         }
 
+        /** Только текущая передача и полоса прогресса — вызывается по таймеру без перевыпуска карточки. */
+        fun bindLive(channel: Channel) {
+            val program = LivePrograms.current(channel)
+            if (program != null) {
+                programTitle.text = program.title
+                programTitle.visibility = View.VISIBLE
+                updateProgress(program.startTime, program.endTime)
+            } else {
+                programTitle.text = itemView.context.getString(R.string.program_title_placeholder)
+                programTitle.visibility = View.VISIBLE
+                programProgress.visibility = View.GONE
+            }
+        }
+
         private val defaultForeground: android.graphics.drawable.Drawable? = itemView.foreground
 
         private fun dp(view: View, value: Int): Int = (value * view.context.resources.displayMetrics.density).toInt()
 
-        private fun updateProgress(channel: Channel) {
-            val start = channel.currentProgramStart
-            val end = channel.currentProgramEnd
-            if (start != null && end != null && end > start) {
+        private fun updateProgress(start: Long, end: Long) {
+            if (end > start) {
                 val now = System.currentTimeMillis()
                 val progress = ((now - start).coerceIn(0, end - start) * 100 / (end - start)).toInt()
                 programProgress.progress = progress
@@ -104,10 +111,27 @@ class ChannelAdapter(
         }
     }
 
+    override fun onBindViewHolder(holder: ChannelViewHolder, position: Int, payloads: List<Any>) {
+        if (payloads.contains(PAYLOAD_LIVE) && position < channels.size) {
+            holder.bindLive(channels[position])
+        } else {
+            super.onBindViewHolder(holder, position, payloads)
+        }
+    }
+
     override fun getItemCount(): Int = channels.size
 
     fun updateChannels(newChannels: List<Channel>) {
         channels = newChannels
         notifyDataSetChanged()
+    }
+
+    /** Обновляет название передачи и прогресс у видимых карточек, не перевыпуская их (логотипы не мигают). */
+    fun refreshLive() {
+        notifyItemRangeChanged(0, itemCount, PAYLOAD_LIVE)
+    }
+
+    companion object {
+        private const val PAYLOAD_LIVE = "live"
     }
 }

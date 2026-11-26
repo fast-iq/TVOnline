@@ -29,6 +29,8 @@
     <string name="loading_channel">Загрузка канала: %1$s…</string>
     <string name="loading_channels">Загрузка каналов…</string>
     <string name="playback_error">Ошибка воспроизведения:\n%1$s</string>
+    <string name="drm_badge" translatable="false">DRM</string>
+    <string name="drm_playback_error">Канал защищён DRM — воспроизведение в этом приложении недоступно:\n%1$s</string>
     <string name="buffering">Буферизация…</string>
     <string name="switching_source">Переключение на резервный источник…</string>
     <string name="no_stream_url">Ошибка: URL потока не указан</string>

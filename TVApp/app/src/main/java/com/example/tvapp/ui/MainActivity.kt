@@ -12,10 +12,12 @@ import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
 import com.example.tvapp.data.ChannelRepository
+import com.example.tvapp.data.LivePrograms
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -33,6 +35,7 @@ class MainActivity : BaseActivity() {
     private var lastSelectedChannelId: String? = null
     private var lastFocusedPosition: Int = -1
     private var pendingFocusRestore: Boolean = false
+    private var liveTickerJob: Job? = null
 
     private var numberInput: NumberInputController? = null
 
@@ -106,6 +109,22 @@ class MainActivity : BaseActivity() {
         emptyText.visibility = if (channelAdapter.itemCount == 0) android.view.View.VISIBLE else android.view.View.GONE
     }
 
+    private fun startLiveTicker() {
+        if (liveTickerJob?.isActive == true) return
+        liveTickerJob = scope.launch {
+            while (true) {
+                delay(LIVE_TICK_MS)
+                channelAdapter.refreshLive()
+                updateHeaderProgram(ChannelList.channels)
+            }
+        }
+    }
+
+    private fun stopLiveTicker() {
+        liveTickerJob?.cancel()
+        liveTickerJob = null
+    }
+
     private fun focusOnPosition(position: Int) {
         channelsRecyclerView.post {
             val child = channelsRecyclerView.findViewHolderForAdapterPosition(position)?.itemView
@@ -135,6 +154,7 @@ class MainActivity : BaseActivity() {
         channelsRecyclerView.apply {
             layoutManager = GridLayoutManager(this@MainActivity, spanCount)
             adapter = channelAdapter
+            itemAnimator = null
         }
         updateEmptyState()
     }
@@ -144,7 +164,7 @@ class MainActivity : BaseActivity() {
         val channel = channels.find { it.id == channelIdToShow }
             ?: channels.firstOrNull()
         if (channel != null) {
-            val title = channel.currentProgramTitle
+            val title = LivePrograms.current(channel)?.title
             if (title != null && title.isNotBlank()) {
                 currentProgramText.text = getString(R.string.now_playing, title)
             } else {
@@ -187,6 +207,12 @@ class MainActivity : BaseActivity() {
             pendingFocusRestore = true
         }
         loadChannels()
+        startLiveTicker()
+    }
+
+    override fun onPause() {
+        stopLiveTicker()
+        super.onPause()
     }
 
     private fun openPlayer(channel: Channel) {
@@ -245,6 +271,10 @@ class MainActivity : BaseActivity() {
             true
         }
         else -> super.onKeyDown(keyCode, event)
+    }
+
+    companion object {
+        private const val LIVE_TICK_MS = 60_000L
     }
 
     override fun onDestroy() {

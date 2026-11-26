@@ -1,13 +1,18 @@
 package com.example.tvapp.data
 
 import android.content.Context
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Collections
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
@@ -20,18 +25,30 @@ class EPGRepository(context: Context? = null) {
         const val EPG_FUTURE_FROM = 1
         const val EPG_FUTURE_LIMIT = 1
         private const val PARALLEL_FETCH_LIMIT = 6
+        private const val TAG = "EPGRepository"
+        private const val EPG_DISK_FILE = "epg_cache.json"
+        private const val EPG_DISK_MAX_AGE_MS = 6 * 60 * 60 * 1000L
+        private const val EPG_DISK_KEEP_PAST_MS = 6 * 60 * 60 * 1000L
     }
 
     private val prefs = context?.let { AppPreferences(it) }
     private val limeHdClient by lazy { context?.let { LimeHdClient(it) } }
+    private val appContext = context?.applicationContext
 
-    private val limehdEpgCache = mutableMapOf<String, List<Program>>()
+    private val limehdEpgCache: MutableMap<String, List<Program>> = Collections.synchronizedMap(LinkedHashMap())
     private var cachedEpgVersion: Int = -1
+
+    private val diskFile by lazy { appContext?.let { File(it.filesDir, EPG_DISK_FILE) } }
+    private var diskEntries: MutableMap<String, List<Program>>? = null
+    private var diskDirty = false
 
     suspend fun getProgramForChannel(channelId: String, date: Date): List<Program> = withContext(Dispatchers.IO) {
         try {
             val limehd = fetchLimeHdSchedule(channelId, date)
-            if (limehd != null && limehd.isNotEmpty()) return@withContext limehd
+            if (limehd != null && limehd.isNotEmpty()) {
+                flushDiskCache()
+                return@withContext limehd
+            }
             generateFallbackEPG(channelId, date)
         } catch (e: Exception) {
             generateFallbackEPG(channelId, date)
@@ -66,6 +83,7 @@ class EPGRepository(context: Context? = null) {
             for ((id, programs) in part) result[id] = programs
             withContext(Dispatchers.Main) { onStage(result.toMap()) }
         }
+        flushDiskCache()
         for (chunk in channels.chunked(PARALLEL_FETCH_LIMIT)) {
             val part = chunk.map { channel ->
                 async(Dispatchers.IO) {
@@ -79,6 +97,7 @@ class EPGRepository(context: Context? = null) {
             for ((id, programs) in part) result[id] = programs
             withContext(Dispatchers.Main) { onStage(result.toMap()) }
         }
+        flushDiskCache()
         for (channel in channels) {
             if (result[channel.id].isNullOrEmpty()) {
                 result[channel.id] = generateFallbackEPG(channel.id, date)
@@ -94,6 +113,10 @@ class EPGRepository(context: Context? = null) {
         val cacheKey = "${channel.id}_${prefs?.limehdRegion ?: 0}_${prefs?.programTimezoneOffset() ?: 0}_${epgFrom}_${epgLimit}_$dayKey"
         ensureEpgCacheFresh()
         limehdEpgCache[cacheKey]?.let { return it }
+        cachedOnDisk(cacheKey)?.let {
+            limehdEpgCache[cacheKey] = it
+            return it
+        }
         val client = limeHdClient ?: return emptyList()
         val programs = try {
             client.fetchEpg(limehdId, channel.id, epgFrom, epgLimit)
@@ -102,6 +125,7 @@ class EPGRepository(context: Context? = null) {
         }
         if (programs.isEmpty()) return emptyList()
         limehdEpgCache[cacheKey] = programs
+        rememberOnDisk(cacheKey, programs)
         return programs
     }
 
@@ -114,11 +138,16 @@ class EPGRepository(context: Context? = null) {
         val cacheKey = "${channel.id}_${prefs?.limehdRegion ?: 0}_${prefs?.programTimezoneOffset() ?: 0}_$dayKey"
         ensureEpgCacheFresh()
         limehdEpgCache[cacheKey]?.let { return it }
+        cachedOnDisk(cacheKey)?.let {
+            limehdEpgCache[cacheKey] = it
+            return it
+        }
 
         val client = limeHdClient ?: return null
         val programs = client.fetchEpg(limehdId, channel.id)
         if (programs.isEmpty()) return null
         limehdEpgCache[cacheKey] = programs
+        rememberOnDisk(cacheKey, programs)
         return programs
     }
 
@@ -129,11 +158,107 @@ class EPGRepository(context: Context? = null) {
         }
     }
 
+    private fun cachedOnDisk(cacheKey: String): List<Program>? = diskCache()[cacheKey]
+
+    private fun rememberOnDisk(cacheKey: String, programs: List<Program>) {
+        if (appContext == null) return
+        diskCache()[cacheKey] = programs
+        diskDirty = true
+    }
+
+    /** Записывает кеш на диск. Вызывается по окончании стадии загрузки, а не на каждый канал. */
+    fun flushDiskCache() {
+        val file = diskFile ?: return
+        if (!diskDirty) return
+        val snapshot = synchronized(diskCache()) {
+            val now = System.currentTimeMillis()
+            diskCache().filterValues { programs -> programs.any { it.endTime > now - EPG_DISK_KEEP_PAST_MS } }
+        }
+        diskDirty = false
+        try {
+            file.writeText(EpgDiskCodec.encode(System.currentTimeMillis(), snapshot))
+        } catch (e: Exception) {
+            Log.e(TAG, "EPG disk cache write failed: ${e.message}")
+        }
+    }
+
+    private fun diskCache(): MutableMap<String, List<Program>> {
+        diskEntries?.let { return it }
+        val loaded: MutableMap<String, List<Program>> = Collections.synchronizedMap(LinkedHashMap())
+        try {
+            val file = diskFile
+            if (file != null && file.exists()) {
+                loaded.putAll(EpgDiskCodec.decode(file.readText(), System.currentTimeMillis(), EPG_DISK_MAX_AGE_MS))
+                Log.d(TAG, "EPG disk cache loaded ${loaded.size} entries")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "EPG disk cache read failed: ${e.message}")
+        }
+        diskEntries = loaded
+        return loaded
+    }
+
     private fun generateFallbackEPG(channelId: String, baseDate: Date): List<Program> = EpgParser.generateFallbackEPG(channelId, baseDate)
 
     fun getCurrentProgram(programs: List<Program>, currentTime: Long = System.currentTimeMillis()): Program? = programs.find { it.isLive(currentTime) }
 
     fun getNextProgram(programs: List<Program>, currentTime: Long = System.currentTimeMillis()): Program? = programs.filter { it.startTime > currentTime }.minByOrNull { it.startTime }
+}
+
+internal object EpgDiskCodec {
+
+    fun encode(savedAt: Long, entries: Map<String, List<Program>>): String {
+        val root = JSONObject()
+        root.put("saved_at", savedAt)
+        val obj = JSONObject()
+        for ((key, programs) in entries) {
+            val arr = JSONArray()
+            for (p in programs) {
+                val po = JSONObject()
+                po.put("channelId", p.channelId)
+                po.put("title", p.title)
+                po.put("description", p.description)
+                po.put("startTime", p.startTime)
+                po.put("endTime", p.endTime)
+                po.put("iconUrl", p.iconUrl)
+                arr.put(po)
+            }
+            obj.put(key, arr)
+        }
+        root.put("entries", obj)
+        return root.toString()
+    }
+
+    fun decode(json: String, nowMs: Long, maxAgeMs: Long): Map<String, List<Program>> {
+        val root = JSONObject(json)
+        val savedAt = root.optLong("saved_at", 0L)
+        if (savedAt <= 0L || nowMs - savedAt > maxAgeMs) return emptyMap()
+        val obj = root.optJSONObject("entries") ?: return emptyMap()
+        val result = LinkedHashMap<String, List<Program>>()
+        val keys = obj.keys()
+        while (keys.hasNext()) {
+            val key = keys.next()
+            val arr = obj.optJSONArray(key) ?: continue
+            val programs = mutableListOf<Program>()
+            for (i in 0 until arr.length()) {
+                val po = arr.optJSONObject(i) ?: continue
+                val title = po.optString("title")
+                if (title.isEmpty()) continue
+                programs.add(
+                    Program(
+                        channelId = po.optString("channelId"),
+                        title = title,
+                        description = po.optString("description").takeIf { it.isNotEmpty() },
+                        startTime = po.optLong("startTime"),
+                        endTime = po.optLong("endTime"),
+                        iconUrl = po.optString("iconUrl").takeIf { it.isNotEmpty() }
+                    )
+                )
+            }
+            if (programs.isNotEmpty()) result[key] = programs.sortedBy { it.startTime }
+        }
+        return result
+    }
 }
 
 internal object EpgParser {

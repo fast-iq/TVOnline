@@ -1037,3 +1037,34 @@ The ~10s "permanent reappearance" = stage 2 `(0,1)` chunk 1 arriving and coverin
 **Test total: 41** (was 31), all passing.
 
 **Verification:** local SDK `testDebugUnitTest` 41/41, `ktlintCheck`, `lintDebug` PASSED (only machine-specific `local.properties` PropertyEscape, absent in CI).
+
+### 2026-11-26 Session 48 — EPG disk cache, crash reports, DRM surfacing, live program ticker
+
+**Goal:** user-approved list items 1–4 from the improvement review.
+
+**1. EPG disk cache (`EPGRepository.kt`)** — schedule lived only in `mutableMapOf`, so every restart of the EPG screen re-fetched ~160 chunked requests before anything showed (same class of bug as Session 46 for channels).
+- New `internal object EpgDiskCodec` (pure, tested): `{"saved_at":N,"entries":{"<cacheKey>":[programs]}}`; `decode` drops the whole file when `saved_at` is older than `EPG_DISK_MAX_AGE_MS` (6 h), skips non-array keys, empty programs and programs without a title, sorts by `startTime`.
+- Repository loads the file lazily into `diskEntries`, checks it after the memory cache in `fetchWideSchedule`/`fetchLimeHdSchedule`, and writes it via `flushDiskCache()` once per stage (not per channel). Entries whose every program ended > 6 h ago are dropped on write, so the file stays small.
+- Cache keys already contained region/tz/from/limit/day, so a region change never reads another region's schedule.
+- Thread-safety: `limehdEpgCache` and `diskEntries` are now `Collections.synchronizedMap(LinkedHashMap())` — both were plain maps mutated from 6 parallel `async(Dispatchers.IO)` fetches (a real `ConcurrentModificationException` / lost-update race, plausible ingredient of the Session 39–40 "flash and disappear" gremlins).
+
+**2. Crash reports (`CrashReporter.kt` + `TVApplication.kt`)** — app had zero crash reporting, everything was `android.util.Log` (useless on a TV stick).
+- `TVApplication : Application` registered via `android:name=".TVApplication"` in the manifest; installs a `Thread.setDefaultUncaughtExceptionHandler` that writes a report, then delegates to the previous handler (system dialog/restart unchanged).
+- Reports go to `filesDir/crash_logs/crash-<yyyyMMdd-HHmmss>-<thread>.txt`, `MAX_REPORTS = 5` oldest pruned; `prune()` and `formatReport()` are pure/testable. Header: time_ms, app_version (from `packageManager`), thread, model, android/api; body = full stack trace with cause chain (via `StringWriter`, not `android.util.Log`).
+- `CrashReporter.logPending()` runs at startup and logs the count + first 15 lines of the newest report, so "приложение само перезапустилось" becomes diagnosable via `adb shell run-as … cat files/crash_logs/…`.
+
+**3. DRM surfaced instead of blocking (`Channel.isDrm` was a dead flag)** — parsed from the playlist and persisted but never read.
+- Decision: do NOT refuse playback. The playlist is requested with `drm=0`, so the flag's meaning on this backend is unverified; blocking could cut off channels that actually play. Instead:
+  - card badge: `drmBadge` TextView (top-end, `live_indicator` red) in `item_channel.xml`, shown by `ChannelAdapter` when `channel.isDrm`;
+  - `PlayerActivity.onPlaybackError` now shows `drm_playback_error` ("Канал защищён DRM — воспроизведение в этом приложении недоступно") instead of the generic message when the failing channel is DRM-flagged.
+- Strings ru+en (`drm_playback_error`), `drm_badge` is `translatable="false"` so it is intentionally absent from `values-en`.
+
+**4. Live program/progress ticker** — grid computed program + progress once at bind time and never again (no ticker in `MainActivity`, repository caches 10 min) → bar froze at 100% and the old title stayed after a program ended.
+- New `internal object LivePrograms` (pure, tested): `current(channel, nowMs)` prefers `Channel.programs` (playlist ships current + 3 upcoming → advances for hours without network), falls back to the `currentProgram*` snapshot, returns null outside the window; `next()`; `scheduled()`.
+- `ChannelAdapter`: program title/progress split into `bindLive()`; `refreshLive()` = `notifyItemRangeChanged(0, itemCount, PAYLOAD_LIVE)` and a payload-aware `onBindViewHolder` → visible cards update without re-binding (no Glide reload, no flicker).
+- `MainActivity`: `startLiveTicker()` in `onResume` / `stopLiveTicker()` in `onPause`, 60 s tick → `channelAdapter.refreshLive()` + `updateHeaderProgram(ChannelList.channels)`; header now also goes through `LivePrograms.current`. `itemAnimator = null` on the grid so change notifications don't crossfade.
+- Deliberately NOT auto-refetching the channel list from the ticker: `updateChannels()` → `notifyDataSetChanged()` drops RecyclerView focus on the TV grid (the `pendingFocusRestore` machinery exists for exactly that reason). Full refresh still happens on `onResume`.
+
+**Tests: 63 total (was 41)** — `LiveProgramsTest` 9 (schedule wins over stale snapshot, fallback, expired window, blank title, next(), scheduled()), `EpgDiskCodecTest` 8 (round trip, sorting, TTL expiry + boundary, missing/garbage `saved_at`, empty strings → null, garbage entries skipped, malformed JSON throws), `CrashReporterTest` 5 (header order, class+message, cause chain, prune within/over limit).
+
+**Verification:** local SDK `testDebugUnitTest` 63/63, `ktlintCheck`, `lintDebug`, `assembleDebug` PASSED (only machine-specific `local.properties` PropertyEscape, absent in CI). Ktlint gotcha repeated: `fun next(...): Program? =` + newline body → `standard:function-signature`.

@@ -80,7 +80,13 @@ class PlayerActivity : BaseActivity() {
 
                     override fun onPlaybackError(error: String) {
                         runOnUiThread {
-                            infoText.text = getString(R.string.playback_error, error)
+                            val protectedByDrm = currentChannel?.isDrm == true
+                            val message = if (protectedByDrm) {
+                                getString(R.string.drm_playback_error, error)
+                            } else {
+                                getString(R.string.playback_error, error)
+                            }
+                            infoText.text = message
                             infoText.visibility = View.VISIBLE
                         }
                     }

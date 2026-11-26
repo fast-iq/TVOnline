@@ -44,6 +44,21 @@
                 android:textStyle="bold"
                 android:textColor="@color/accent_secondary"
                 android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/drmBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|end"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/live_indicator"
+                android:text="@string/drm_badge"
+                android:visibility="gone" />
         </FrameLayout>
 
         <TextView
