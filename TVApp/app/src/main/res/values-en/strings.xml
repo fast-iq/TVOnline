@@ -78,4 +78,17 @@
     <string name="epg_marked_message">%1$s&#10;&#10;Switch?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
+
+    <!-- Refresh -->
+    <string name="refresh_channels">Refresh channels</string>
+    <string name="refreshing">Refreshing…</string>
+    <string name="refresh_done">Channels refreshed</string>
+    <string name="refresh_failed">Refresh failed: %1$s</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_name">Program reminders</string>
+    <string name="notification_channel_description">Notifies about the start of marked programs</string>
+    <string name="notification_upcoming_title">Program starting soon</string>
+    <string name="notification_upcoming_text">%1$s on channel %2$s</string>
+    <string name="notification_switch">Switch</string>
 </resources>

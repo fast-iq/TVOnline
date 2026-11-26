@@ -13,6 +13,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.tvapp.BaseActivity
+import com.example.tvapp.NotificationHelper
 import com.example.tvapp.R
 import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Channel
@@ -346,6 +347,9 @@ class EPGActivity : BaseActivity() {
         }
         if (due.isEmpty()) return
         due.keys.forEach { promptedKeys.add(it) }
+        due.values.forEach { marked ->
+            NotificationHelper.showUpcomingProgramNotification(this, marked.channel, marked.program)
+        }
         showMarkedPrompt(due.values.sortedBy { it.program.startTime })
     }
 

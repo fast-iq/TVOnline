@@ -79,4 +79,17 @@
     <string name="epg_marked_message">%1$s&#10;&#10;Переключиться?</string>
     <string name="yes">Да</string>
     <string name="no">Нет</string>
+
+    <!-- Refresh -->
+    <string name="refresh_channels">Обновить каналы</string>
+    <string name="refreshing">Обновление…</string>
+    <string name="refresh_done">Каналы обновлены</string>
+    <string name="refresh_failed">Ошибка обновления: %1$s</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_name">Напоминания о передачах</string>
+    <string name="notification_channel_description">Уведомляют о начале отмеченных в программе передач</string>
+    <string name="notification_upcoming_title">Начинается передача</string>
+    <string name="notification_upcoming_text">%1$s на канале %2$s</string>
+    <string name="notification_switch">Переключиться</string>
 </resources>

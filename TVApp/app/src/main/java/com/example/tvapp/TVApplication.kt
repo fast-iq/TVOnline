@@ -9,6 +9,7 @@ class TVApplication : Application() {
         super.onCreate()
         CrashReporter.install(this, appVersionName())
         CrashReporter.logPending(this)
+        NotificationHelper.ensureChannel(this)
     }
 
     private fun appVersionName(): String = try {

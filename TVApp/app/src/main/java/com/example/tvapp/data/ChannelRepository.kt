@@ -60,10 +60,209 @@ class ChannelRepository(private val context: Context) {
                 }
             } catch (e: Exception) {
                 Log.e("ChannelRepo", "LimeHD fetch failed: ${e.message}")
+                val disk = loadFromDisk()
+                if (disk.isNullOrEmpty()) {
+                    Log.w("ChannelRepo", "no disk cache, using hardcoded fallback channels")
+                    return@withContext hardcodedFallbackChannels(key)
+                }
                 ChannelList.channels
             }
             result
         }
+    }
+
+    /**
+     * Жёстко заданные федеральные каналы с проверенными потоками.
+     * Используются только как последний шанс, когда LimeHD недоступен и диск-кеша нет.
+     */
+    private fun hardcodedFallbackChannels(cacheKey: String): List<Channel> = listOf(
+        Channel(
+            id = "fallback_c1r",
+            name = "Первый канал",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/vitrina18/index.m3u8",
+            category = "federal",
+            epgId = "1",
+            number = 1
+        ),
+        Channel(
+            id = "fallback_rossiya1",
+            name = "Россия 1",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/vitrina10/index.m3u8",
+            category = "federal",
+            epgId = "2",
+            number = 2
+        ),
+        Channel(
+            id = "fallback_match",
+            name = "Матч ТВ",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/vitrina4/index.m3u8",
+            category = "sport",
+            epgId = "3",
+            number = 3
+        ),
+        Channel(
+            id = "fallback_ntv",
+            name = "НТВ",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/ntv0_hd/index.m3u8",
+            category = "general",
+            epgId = "4",
+            number = 4
+        ),
+        Channel(
+            id = "fallback_5tv",
+            name = "Пятый канал",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/vitrina8/index.m3u8",
+            category = "general",
+            epgId = "5",
+            number = 5
+        ),
+        Channel(
+            id = "fallback_kultura",
+            name = "Культура",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/vitrina12/index.m3u8",
+            category = "culture",
+            epgId = "6",
+            number = 6
+        ),
+        Channel(
+            id = "fallback_zvezda",
+            name = "Звезда",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/vitrina2/index.m3u8",
+            category = "general",
+            epgId = "7",
+            number = 7
+        ),
+        Channel(
+            id = "fallback_pz",
+            name = "Пятница!",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/vitrina7/index.m3u8",
+            category = "entertainment",
+            epgId = "8",
+            number = 8
+        ),
+        Channel(
+            id = "fallback_sts",
+            name = "СТС",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/vitrina14/index.m3u8",
+            category = "entertainment",
+            epgId = "9",
+            number = 9
+        ),
+        Channel(
+            id = "fallback_domashniy",
+            name = "Домашний",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/vitrina1/index.m3u8",
+            category = "entertainment",
+            epgId = "10",
+            number = 10
+        ),
+        Channel(
+            id = "fallback_tnt",
+            name = "ТНТ",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/vitrina17/index.m3u8",
+            category = "entertainment",
+            epgId = "11",
+            number = 11
+        ),
+        Channel(
+            id = "fallback_ren",
+            name = "РЕН ТВ",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/vitrina9/index.m3u8",
+            category = "general",
+            epgId = "12",
+            number = 12
+        ),
+        Channel(
+            id = "fallback_karusel",
+            name = "Карусель",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/vitrina20/index.m3u8",
+            category = "kids",
+            epgId = "13",
+            number = 13
+        ),
+        Channel(
+            id = "fallback_rossiya24",
+            name = "Россия 24",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/vitrina11/index.m3u8",
+            category = "news",
+            epgId = "14",
+            number = 14
+        ),
+        Channel(
+            id = "fallback_tvc",
+            name = "ТВ Центр",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/vitrina15/index.m3u8",
+            category = "general",
+            epgId = "15",
+            number = 15
+        ),
+        Channel(
+            id = "fallback_spas",
+            name = "СПАС",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/vitrina13/index.m3u8",
+            category = "religious",
+            epgId = "16",
+            number = 16
+        ),
+        Channel(
+            id = "fallback_tv3",
+            name = "ТВ-3",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/vitrina16/index.m3u8",
+            category = "series",
+            epgId = "17",
+            number = 17
+        ),
+        Channel(
+            id = "fallback_mir",
+            name = "МИР",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/vitrina3/index.m3u8",
+            category = "documentary",
+            epgId = "18",
+            number = 18
+        ),
+        Channel(
+            id = "fallback_muztv",
+            name = "Муз-ТВ",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/vitrina5/index.m3u8",
+            category = "music",
+            epgId = "19",
+            number = 19
+        ),
+        Channel(
+            id = "fallback_otv",
+            name = "ОТР",
+            logoUrl = "",
+            streamUrl = "https://cdn.ntv.ru/vitrina6/index.m3u8",
+            category = "news",
+            epgId = "20",
+            number = 20
+        )
+    ).also { channels ->
+        cachedChannels = channels
+        this.cacheKey = cacheKey
+        cachedContentVersion = contentVersion
+        lastFetchTime = System.currentTimeMillis()
+        saveToDisk(channels)
+        ChannelList.updateChannels(channels)
     }
 
     suspend fun refreshChannels(): List<Channel> = getChannels(forceRefresh = true)

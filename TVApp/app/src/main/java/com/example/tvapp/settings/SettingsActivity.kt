@@ -11,6 +11,7 @@ import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
 import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.ChannelRepository
+import com.example.tvapp.data.EPGRepository
 import com.example.tvapp.data.LimeHdClient
 import com.example.tvapp.data.LimeHdRegion
 import com.example.tvapp.data.RegionsCodec
@@ -26,9 +27,12 @@ class SettingsActivity : BaseActivity() {
     private lateinit var regionButton: TextView
     private lateinit var qualityOptions: LinearLayout
     private lateinit var languageOptions: LinearLayout
+    private lateinit var refreshButton: TextView
 
     private val preferences by lazy { AppPreferences(applicationContext) }
     private val limeHdClient by lazy { LimeHdClient(applicationContext) }
+    private val channelRepository by lazy { ChannelRepository(applicationContext) }
+    private val epgRepository by lazy { EPGRepository(applicationContext) }
     private val uiScope = CoroutineScope(Dispatchers.Main + Job())
 
     private var regions: List<Pair<Int, String>> = emptyList()
@@ -59,6 +63,7 @@ class SettingsActivity : BaseActivity() {
         ensureRegionsLoaded {}
         setupQualitySelector()
         setupLanguageSelector()
+        setupRefreshButton()
     }
 
     private fun setupRegionSelector() {
@@ -235,6 +240,34 @@ class SettingsActivity : BaseActivity() {
         buildOptionRow(languageOptions, languages.map { it.second }, selected) { index ->
             preferences.language = languages[index].first
             recreate()
+        }
+    }
+
+    private fun setupRefreshButton() {
+        refreshButton = findViewById(R.id.refreshButton)
+        refreshButton.setOnClickListener {
+            refreshButton.isEnabled = false
+            refreshButton.text = getString(R.string.refreshing)
+            uiScope.launch {
+                try {
+                    channelRepository.refreshChannels()
+                    EPGRepository.invalidateAllCaches()
+                    android.widget.Toast.makeText(
+                        this@SettingsActivity,
+                        getString(R.string.refresh_done),
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                } catch (e: Exception) {
+                    android.widget.Toast.makeText(
+                        this@SettingsActivity,
+                        getString(R.string.refresh_failed, e.message ?: "unknown"),
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                } finally {
+                    refreshButton.isEnabled = true
+                    refreshButton.text = getString(R.string.refresh_channels)
+                }
+            }
         }
     }
 

@@ -29,6 +29,10 @@ class EPGRepository(context: Context? = null) {
         private const val EPG_DISK_FILE = "epg_cache.json"
         private const val EPG_DISK_MAX_AGE_MS = 6 * 60 * 60 * 1000L
         private const val EPG_DISK_KEEP_PAST_MS = 6 * 60 * 60 * 1000L
+
+        fun invalidateAllCaches() {
+            ChannelRepository.invalidateContent()
+        }
     }
 
     private val prefs = context?.let { AppPreferences(it) }
