@@ -1,4 +1,18 @@
 
+### 2026-11-26 Session 49 — D-pad header focus fix + v1.0.16 + CI hardening (Robolectric prefetch, Central mirror, dep cache)
+
+**D-pad fix (`469bb72`, user: «Вверх не работает» from channel grid):** geometric focus search never left RecyclerView upward (LayoutManager eats UP as scroll; left cards → right buttons too far). `MainActivity.dispatchKeyEvent`: DPAD_UP (ACTION_DOWN, repeatCount 0, `!canScrollVertically(-1)`, focus is topmost focusable RV child) → `historyButton` (card left of screen center) or `settingsButton` (right half); all 5 header buttons get `nextFocusDownId = channelsRecyclerView`. Grid row-to-row nav untouched.
+
+**v1.0.16 (`0db9c44`):** version bump 1.0.15→1.0.16 (versionCode 10016); tag `v1.0.16` published after 2 CI fixes below. Release assets verified: app-release.apk 22,245,311 B + aab.
+
+**CI fix 1 (`ce95740`) — Robolectric jar prefetch:** tag run died at `Run Unit Tests` in 27s: Robolectric downloads 151MB `android-all-instrumented-14-robolectric-10818077-i7.jar` from repo1.maven.org into `~/.m2/repository/org/robolectric/...` AT TEST START, no retries; clean runner = flaky. Proven experimentally (moved jar away + `--rerun` → re-downloaded exactly that path; with jar present download skipped; note: plain re-run without `--rerun` is UP-TO-DATE — jar is not a task input). Build job now: `actions/cache` on `~/.m2/repository` + curl prefetch (5 attempts, mirror+repo1 alternating, pom+sha512 best-effort) before tests.
+
+**CI fix 2 (`352feca`) — 429 from Maven Central:** next tag run failed resolving buildscript classpath (kotlin-gradle-plugin etc): Build & Test job had NO dependency cache (unlike lint/OWASP jobs) → hundreds of jar fetches per run from shared runner IPs → HTTP 429. Fixes: GCS mirror `https://maven-central.storage-download.googleapis.com/maven2` added BEFORE mavenCentral in `TVApp/settings.gradle` pluginManagement+dependencyResolutionManagement (verified serves the robolectric jar 200 OK); `gradle/actions/setup-gradle@v6` added to build job.
+
+**Ops notes:** tag re-point via `git tag -f -a` + `git push -f origin v1.0.16` (3 total attempts: flaky test download → 429 → success). GitHub REST API from user IP rate-limits fast (60/h) — poll `releases/latest` HTML instead; job-step failure details: jobs API + PowerShell ConvertFrom-Json (bash eats `$` in inline PS, use -File; no python3 in git-bash). JAVA_HOME for local gradle: `C:/Users/Sidelnikov/.jdks/corretto-17.0.15`.
+
+**Verification:** local ktlintCheck + testDebugUnitTest (106) + lintDebug (only local.properties PropertyEscape) + assembleDebug + `help` with new repos — all green.
+
 ### 2026-11-26 Session 48 — Feature roadmap batches 1-4 (favorites, search, updates, cleanup)
 
 Four batches per user-approved roadmap; one commit each.
