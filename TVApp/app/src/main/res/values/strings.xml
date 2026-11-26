@@ -21,9 +21,6 @@
     <string name="program_title_placeholder">Название передачи</string>
 
     <!-- Channel info -->
-    <string name="start_watching">▶ НАЧАТЬ ПРОСМОТР ◀</string>
-    <string name="channel_image_desc">Изображение канала</string>
-    <string name="press_ok_to_start">Нажмите ОК для начала просмотра</string>
 
     <!-- Player -->
     <string name="loading_channel">Загрузка канала: %1$s…</string>
@@ -71,9 +68,6 @@
     <!-- EPG program item -->
     <string name="epg_program_text">%1$s %2$s</string>
     <string name="time_range">%1$s – %2$s</string>
-
-    <string name="program_time_placeholder">12:00 – 14:00</string>
-    <string name="program_name_placeholder">Название программы</string>
     <string name="epg_program_finished">Передача уже закончилась</string>
     <string name="epg_marked_title">Отмеченные передачи</string>
     <string name="epg_marked_message">%1$s&#10;&#10;Переключиться?</string>
@@ -127,7 +121,12 @@
     <string name="epg_day_yesterday">Вчера</string>
     <string name="epg_day_today">Сегодня</string>
     <string name="epg_day_tomorrow">Завтра</string>
-    <string name="epg_day_format">Ещё %1$d дн.</string>
+    <plurals name="epg_day_format">
+        <item quantity="one">Ещё %1$d день</item>
+        <item quantity="few">Ещё %1$d дня</item>
+        <item quantity="many">Ещё %1$d дней</item>
+        <item quantity="other">Ещё %1$d дн.</item>
+    </plurals>
     <string name="epg_day_select_title">Выберите день</string>
     <string name="epg_search_title">Поиск передач</string>
     <string name="epg_search_hint">Введите название передачи</string>

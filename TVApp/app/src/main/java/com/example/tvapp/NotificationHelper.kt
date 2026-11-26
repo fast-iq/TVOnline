@@ -21,20 +21,18 @@ object NotificationHelper {
     private const val CHANNEL_DESC_RES = R.string.notification_channel_description
 
     fun ensureChannel(context: Context) {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                context.getString(CHANNEL_NAME_RES),
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = context.getString(CHANNEL_DESC_RES)
-                enableLights(true)
-                lightColor = 0xFF7C6CFF.toInt()
-                enableVibration(true)
-            }
-            manager.createNotificationChannel(channel)
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            context.getString(CHANNEL_NAME_RES),
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = context.getString(CHANNEL_DESC_RES)
+            enableLights(true)
+            lightColor = 0xFF7C6CFF.toInt()
+            enableVibration(true)
         }
+        manager.createNotificationChannel(channel)
     }
 
     fun showUpcomingProgramNotification(

@@ -6,8 +6,6 @@
     <string name="settings">Settings</string>
     <string name="epg">TV Guide</string>
     <string name="channels">Channels</string>
-    <string name="channel_number_format" translatable="false">%1$d</string>
-    <string name="live_badge" translatable="false">LIVE</string>
     <string name="unknown_channel">Unknown channel</string>
 
     <!-- Main screen -->
@@ -21,9 +19,6 @@
     <string name="program_title_placeholder">Program title</string>
 
     <!-- Channel info -->
-    <string name="start_watching">▶ START WATCHING ◀</string>
-    <string name="channel_image_desc">Channel image</string>
-    <string name="press_ok_to_start">Press OK to start watching</string>
 
     <!-- Player -->
     <string name="loading_channel">Loading channel: %1$s…</string>
@@ -70,9 +65,6 @@
     <!-- EPG program item -->
     <string name="epg_program_text">%1$s %2$s</string>
     <string name="time_range">%1$s – %2$s</string>
-
-    <string name="program_time_placeholder">12:00 – 14:00</string>
-    <string name="program_name_placeholder">Program name</string>
     <string name="epg_program_finished">The program has already ended</string>
     <string name="epg_marked_title">Marked programs</string>
     <string name="epg_marked_message">%1$s&#10;&#10;Switch?</string>
@@ -126,7 +118,10 @@
     <string name="epg_day_yesterday">Yesterday</string>
     <string name="epg_day_today">Today</string>
     <string name="epg_day_tomorrow">Tomorrow</string>
-    <string name="epg_day_format">+%1$d days</string>
+    <plurals name="epg_day_format">
+        <item quantity="one">+%1$d day</item>
+        <item quantity="other">+%1$d days</item>
+    </plurals>
     <string name="epg_day_select_title">Select day</string>
     <string name="epg_search_title">Program search</string>
     <string name="epg_search_hint">Enter program name</string>

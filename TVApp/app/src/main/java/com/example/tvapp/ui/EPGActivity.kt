@@ -212,7 +212,7 @@ class EPGActivity : BaseActivity() {
                 -1 -> getString(R.string.epg_day_yesterday)
                 0 -> getString(R.string.epg_day_today)
                 1 -> getString(R.string.epg_day_tomorrow)
-                else -> getString(R.string.epg_day_format, delta)
+                else -> resources.getQuantityString(R.plurals.epg_day_format, delta, delta)
             }
             if (delta == dayDelta) "$base ${getString(R.string.source_current)}" else base
         }

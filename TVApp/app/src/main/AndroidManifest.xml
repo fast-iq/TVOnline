@@ -23,45 +23,44 @@
         android:theme="@style/Theme.TVApp"
         android:banner="@drawable/tv_banner"
         android:usesCleartextTraffic="true">
-        
+
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"
             android:screenOrientation="landscape"
-            android:launchMode="singleTask">
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|locale|layoutDirection|uiMode">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        
+
         <activity
             android:name=".ui.PlayerActivity"
             android:exported="false"
             android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|locale|layoutDirection|uiMode"
             android:theme="@style/Theme.TVApp.Black" />
 
         <activity
-            android:name=".ui.ChannelInfoActivity"
-            android:exported="false"
-            android:screenOrientation="landscape"
-            android:theme="@style/Theme.TVApp.Black" />
-            
-        <activity
             android:name=".settings.SettingsActivity"
             android:exported="false"
-            android:screenOrientation="landscape" />
-            
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|locale|layoutDirection|uiMode" />
+
         <activity
             android:name=".ui.EPGActivity"
             android:exported="false"
-            android:screenOrientation="landscape" />
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|locale|layoutDirection|uiMode" />
 
         <activity
             android:name=".ui.SearchActivity"
             android:exported="false"
-            android:screenOrientation="landscape" />
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|locale|layoutDirection|uiMode" />
 
     </application>
 
