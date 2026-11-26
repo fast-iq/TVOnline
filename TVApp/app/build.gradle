@@ -36,7 +36,7 @@ if (appVersion != null && appVersion) {
 
 android {
     namespace = 'com.example.tvapp'
-    compileSdk 36
+    compileSdk 37
 
     defaultConfig {
         applicationId "com.example.tvapp"
@@ -97,13 +97,13 @@ kotlin {
 }
 
 dependencies {
-    implementation 'androidx.core:core-ktx:1.18.0'
+    implementation 'androidx.core:core-ktx:1.19.1'
     implementation 'androidx.appcompat:appcompat:1.8.0'
     implementation 'com.google.android.material:material:1.14.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.2.2'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
-    implementation 'androidx.leanback:leanback:1.2.0-alpha04'
+    implementation 'androidx.leanback:leanback:1.2.0'
 
     // Media3 (новый ExoPlayer) для воспроизведения видео
     implementation 'androidx.media3:media3-exoplayer:1.11.1'
@@ -125,5 +125,5 @@ dependencies {
     implementation 'com.github.bumptech.glide:glide:4.16.0'
 
     testImplementation 'junit:junit:4.13.2'
-    testImplementation 'org.json:json:20240303'
+    testImplementation 'org.json:json:20250517'
 }
