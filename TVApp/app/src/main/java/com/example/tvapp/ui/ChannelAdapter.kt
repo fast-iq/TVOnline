@@ -14,11 +14,20 @@ import com.example.tvapp.R
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.LivePrograms
 
+sealed class GridItem {
+    data class Header(val category: String, val title: String) : GridItem()
+    data class Card(val channel: Channel) : GridItem()
+}
+
 class ChannelAdapter(
-    private var channels: List<Channel>,
+    private var items: List<GridItem> = emptyList(),
     private val onChannelSelected: (Channel) -> Unit,
-    private val onFocusPositionChanged: (Int) -> Unit = {}
-) : RecyclerView.Adapter<ChannelAdapter.ChannelViewHolder>() {
+    private val onChannelLongPressed: (Channel) -> Unit = {},
+    private val onFocusPositionChanged: (Int) -> Unit = {},
+    private val isFavorite: (String) -> Boolean = { false }
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+
+    private var channels: List<Channel> = items.filterIsInstance<GridItem.Card>().map { it.channel }
 
     inner class ChannelViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val channelLogo: ImageView = itemView.findViewById(R.id.channelLogo)
@@ -27,9 +36,11 @@ class ChannelAdapter(
         private val programProgress: ProgressBar = itemView.findViewById(R.id.programProgress)
         private val channelNumber: TextView = itemView.findViewById(R.id.channelNumber)
         private val drmBadge: TextView = itemView.findViewById(R.id.drmBadge)
+        private val favoriteBadge: ImageView = itemView.findViewById(R.id.favoriteBadge)
 
         fun bind(channel: Channel) {
             channelName.text = channel.name
+            favoriteBadge.visibility = if (isFavorite(channel.id)) View.VISIBLE else View.GONE
 
             if (channel.number > 0) {
                 channelNumber.text = itemView.context.getString(R.string.channel_number_format, channel.number)
@@ -50,6 +61,11 @@ class ChannelAdapter(
 
             itemView.setOnClickListener {
                 onChannelSelected(channel)
+            }
+
+            itemView.setOnLongClickListener {
+                onChannelLongPressed(channel)
+                true
             }
 
             itemView.setOnFocusChangeListener { view, hasFocus ->
@@ -83,6 +99,10 @@ class ChannelAdapter(
             }
         }
 
+        fun bindFavorite(channel: Channel) {
+            favoriteBadge.visibility = if (isFavorite(channel.id)) View.VISIBLE else View.GONE
+        }
+
         private val defaultForeground: android.graphics.drawable.Drawable? = itemView.foreground
 
         private fun dp(view: View, value: Int): Int = (value * view.context.resources.displayMetrics.density).toInt()
@@ -99,31 +119,61 @@ class ChannelAdapter(
         }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ChannelViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_channel, parent, false)
-        return ChannelViewHolder(view)
-    }
+    class HeaderViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        private val title: TextView = itemView.findViewById(R.id.sectionHeaderText)
 
-    override fun onBindViewHolder(holder: ChannelViewHolder, position: Int) {
-        if (position < channels.size) {
-            holder.bind(channels[position])
+        fun bind(header: GridItem.Header) {
+            title.text = header.title
         }
     }
 
-    override fun onBindViewHolder(holder: ChannelViewHolder, position: Int, payloads: List<Any>) {
-        if (payloads.contains(PAYLOAD_LIVE) && position < channels.size) {
-            holder.bindLive(channels[position])
+    override fun getItemViewType(position: Int): Int = when (items[position]) {
+        is GridItem.Header -> TYPE_HEADER
+        is GridItem.Card -> TYPE_CARD
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        val inflater = LayoutInflater.from(parent.context)
+        return if (viewType == TYPE_HEADER) {
+            HeaderViewHolder(inflater.inflate(R.layout.item_channel_section_header, parent, false))
         } else {
-            super.onBindViewHolder(holder, position, payloads)
+            ChannelViewHolder(inflater.inflate(R.layout.item_channel, parent, false))
         }
     }
 
-    override fun getItemCount(): Int = channels.size
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when (val item = items[position]) {
+            is GridItem.Header -> (holder as HeaderViewHolder).bind(item)
+            is GridItem.Card -> (holder as ChannelViewHolder).bind(item.channel)
+        }
+    }
 
-    fun updateChannels(newChannels: List<Channel>) {
-        channels = newChannels
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: List<Any>) {
+        val item = items[position]
+        if (item is GridItem.Card && holder is ChannelViewHolder) {
+            if (payloads.contains(PAYLOAD_LIVE)) {
+                holder.bindLive(item.channel)
+                return
+            }
+            if (payloads.contains(PAYLOAD_FAVORITE)) {
+                holder.bindFavorite(item.channel)
+                return
+            }
+        }
+        super.onBindViewHolder(holder, position, payloads)
+    }
+
+    override fun getItemCount(): Int = items.size
+
+    fun updateItems(newItems: List<GridItem>) {
+        items = newItems
+        channels = newItems.filterIsInstance<GridItem.Card>().map { it.channel }
         notifyDataSetChanged()
+    }
+
+    /** Обновляет звёздочку у карточек без перевыпуска (после смены избранного). */
+    fun refreshFavorites() {
+        notifyItemRangeChanged(0, itemCount, PAYLOAD_FAVORITE)
     }
 
     /** Обновляет название передачи и прогресс у видимых карточек, не перевыпуская их (логотипы не мигают). */
@@ -132,6 +182,9 @@ class ChannelAdapter(
     }
 
     companion object {
+        const val TYPE_HEADER = 0
+        const val TYPE_CARD = 1
         private const val PAYLOAD_LIVE = "live"
+        private const val PAYLOAD_FAVORITE = "favorite"
     }
 }

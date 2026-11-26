@@ -1,9 +1,17 @@
 package com.example.tvapp.ui
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
+import android.view.View
+import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.tvapp.BaseActivity
@@ -23,17 +31,23 @@ import kotlinx.coroutines.withContext
 
 class MainActivity : BaseActivity() {
 
+    private enum class ViewMode { ALL, FAVORITES, HISTORY }
+
     private lateinit var channelsRecyclerView: RecyclerView
     private lateinit var currentProgramText: TextView
     private lateinit var regionText: TextView
     private lateinit var emptyText: TextView
+    private lateinit var favoritesButton: ImageView
+    private lateinit var historyButton: ImageView
     private lateinit var channelAdapter: ChannelAdapter
 
     private val channelRepository by lazy { ChannelRepository(applicationContext) }
     private val preferences by lazy { AppPreferences(applicationContext) }
 
+    private var viewMode = ViewMode.ALL
+    private var displayedChannels: List<Channel> = emptyList()
     private var lastSelectedChannelId: String? = null
-    private var lastFocusedPosition: Int = -1
+    private var lastFocusedChannelId: String? = null
     private var pendingFocusRestore: Boolean = false
     private var liveTickerJob: Job? = null
 
@@ -53,21 +67,44 @@ class MainActivity : BaseActivity() {
             selectChannelByNumber(channel)
         }
         updateRegionDisplay()
-        val settingsButton: android.widget.ImageView = findViewById(R.id.settingsButton)
-        settingsButton.setOnClickListener { openSettings() }
-        settingsButton.setOnFocusChangeListener { v, hasFocus ->
+        setupHeaderButton(R.id.settingsButton) { openSettings() }
+        setupHeaderButton(R.id.epgButton) { openEPG() }
+        setupHeaderButton(R.id.searchButton) { openSearch() }
+
+        favoritesButton = findViewById(R.id.favoritesButton)
+        favoritesButton.setOnClickListener { toggleMode(ViewMode.FAVORITES) }
+        favoritesButton.setOnFocusChangeListener { v, hasFocus ->
             v.scaleX = if (hasFocus) 1.2f else 1.0f
             v.scaleY = if (hasFocus) 1.2f else 1.0f
+            updateModeButtonTints()
         }
-        val epgButton: android.widget.ImageView = findViewById(R.id.epgButton)
-        epgButton.setOnClickListener { openEPG() }
-        epgButton.setOnFocusChangeListener { v, hasFocus ->
+
+        historyButton = findViewById(R.id.historyButton)
+        historyButton.setOnClickListener { toggleMode(ViewMode.HISTORY) }
+        historyButton.setOnFocusChangeListener { v, hasFocus ->
             v.scaleX = if (hasFocus) 1.2f else 1.0f
             v.scaleY = if (hasFocus) 1.2f else 1.0f
+            updateModeButtonTints()
         }
 
         setupChannelsGrid()
         loadChannels()
+        requestNotificationPermissionIfNeeded()
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
+        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
+    }
+
+    private fun setupHeaderButton(id: Int, action: () -> Unit) {
+        val button: ImageView = findViewById(id)
+        button.setOnClickListener { action() }
+        button.setOnFocusChangeListener { v, hasFocus ->
+            v.scaleX = if (hasFocus) 1.2f else 1.0f
+            v.scaleY = if (hasFocus) 1.2f else 1.0f
+        }
     }
 
     private fun loadChannels() {
@@ -75,13 +112,10 @@ class MainActivity : BaseActivity() {
             // 1. Мгновенно показываем последний известный список с диска (логотипы подгрузятся через Glide).
             val disk = withContext(Dispatchers.IO) { channelRepository.loadFromDisk() }
             if (!disk.isNullOrEmpty()) {
-                channelAdapter.updateChannels(disk)
                 ChannelList.updateChannels(disk)
+                applyViewMode()
                 updateHeaderProgram(disk)
-                if (pendingFocusRestore && lastFocusedPosition >= 0) {
-                    pendingFocusRestore = false
-                    focusOnPosition(lastFocusedPosition)
-                }
+                restoreFocusIfNeeded()
             } else {
                 updateEmptyState()
             }
@@ -89,13 +123,10 @@ class MainActivity : BaseActivity() {
             try {
                 val channels = withContext(Dispatchers.IO) { channelRepository.getChannels() }
                 if (channels.isNotEmpty()) {
-                    channelAdapter.updateChannels(channels)
+                    applyViewMode()
                     restoreLastChannel()
                     updateHeaderProgram(channels)
-                    if (pendingFocusRestore && lastFocusedPosition >= 0) {
-                        pendingFocusRestore = false
-                        focusOnPosition(lastFocusedPosition)
-                    }
+                    restoreFocusIfNeeded()
                 }
                 updateEmptyState()
             } catch (e: Exception) {
@@ -105,8 +136,67 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    /** Пересобирает сетку из ChannelList.channels с учётом выбранного режима. */
+    private fun applyViewMode() {
+        val all = ChannelList.channels
+        displayedChannels = when (viewMode) {
+            ViewMode.ALL -> all
+            ViewMode.FAVORITES -> ChannelGrouping.favoriteChannels(all, preferences.favoriteChannelIds)
+            ViewMode.HISTORY -> ChannelGrouping.historyChannels(all, preferences.watchHistory)
+        }
+        val items = when (viewMode) {
+            ViewMode.ALL -> ChannelGrouping.buildItems(displayedChannels) { categoryLabel(this, it) }
+            else -> displayedChannels.map { GridItem.Card(it) }
+        }
+        channelAdapter.updateItems(items)
+        updateModeButtonTints()
+        updateEmptyState()
+    }
+
+    private fun toggleMode(mode: ViewMode) {
+        viewMode = if (viewMode == mode) ViewMode.ALL else mode
+        applyViewMode()
+    }
+
+    private fun updateModeButtonTints() {
+        val active = ContextCompat.getColor(this, R.color.accent_secondary)
+        val inactive = ContextCompat.getColor(this, R.color.text_secondary)
+        favoritesButton.setColorFilter(if (viewMode == ViewMode.FAVORITES) active else inactive)
+        historyButton.setColorFilter(if (viewMode == ViewMode.HISTORY) active else inactive)
+    }
+
+    private fun toggleFavorite(channel: Channel) {
+        val favorites = preferences.favoriteChannelIds.toMutableSet()
+        val added: Boolean
+        if (favorites.contains(channel.id)) {
+            favorites.remove(channel.id)
+            added = false
+        } else {
+            favorites.add(channel.id)
+            added = true
+        }
+        preferences.favoriteChannelIds = favorites
+        channelAdapter.refreshFavorites()
+        android.widget.Toast.makeText(
+            this,
+            if (added) R.string.added_to_favorites else R.string.removed_from_favorites,
+            android.widget.Toast.LENGTH_SHORT
+        ).show()
+        if (viewMode == ViewMode.FAVORITES) applyViewMode()
+    }
+
     private fun updateEmptyState() {
-        emptyText.visibility = if (channelAdapter.itemCount == 0) android.view.View.VISIBLE else android.view.View.GONE
+        if (channelAdapter.itemCount > 0) {
+            emptyText.visibility = View.GONE
+            return
+        }
+        emptyText.visibility = View.VISIBLE
+        emptyText.text = when {
+            displayedChannels.isEmpty() && ChannelList.channels.isEmpty() -> getString(R.string.loading_channels)
+            viewMode == ViewMode.FAVORITES -> getString(R.string.favorites_empty)
+            viewMode == ViewMode.HISTORY -> getString(R.string.history_empty)
+            else -> getString(R.string.loading_channels)
+        }
     }
 
     private fun startLiveTicker() {
@@ -125,6 +215,27 @@ class MainActivity : BaseActivity() {
         liveTickerJob = null
     }
 
+    private fun adapterPositionForChannel(channelId: String): Int {
+        val index = displayedChannels.indexOfFirst { it.id == channelId }
+        if (index < 0) return -1
+        val firstChannel = displayedChannels.firstOrNull() ?: return -1
+        val firstAdapterPos = if (viewMode == ViewMode.ALL) {
+            firstAdapterPositionOf(firstChannel)
+        } else {
+            0
+        }
+        return firstAdapterPos + index
+    }
+
+    /** В режиме ALL перед каждой категорией стоит заголовок-строка; вычисляем сдвиг. */
+    private fun firstAdapterPositionOf(channel: Channel): Int {
+        val headers = ChannelGrouping.categoriesInOrder(displayedChannels)
+            .takeWhile { it != channel.category }
+            .size
+        return headers + ChannelGrouping.channelsByCategory(displayedChannels, channel.category)
+            .indexOfFirst { it.id == channel.id }
+    }
+
     private fun focusOnPosition(position: Int) {
         channelsRecyclerView.post {
             val child = channelsRecyclerView.findViewHolderForAdapterPosition(position)?.itemView
@@ -139,24 +250,50 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    private fun restoreFocusIfNeeded() {
+        if (!pendingFocusRestore) return
+        val channelId = lastFocusedChannelId ?: return
+        val position = adapterPositionForChannel(channelId)
+        if (position >= 0) {
+            pendingFocusRestore = false
+            focusOnPosition(position)
+        }
+    }
+
     private fun setupChannelsGrid() {
-        val spanCount = 5
+        val spanCount = GRID_SPAN_COUNT
         channelAdapter = ChannelAdapter(
-            channels = ChannelList.channels,
-            onChannelSelected = { channel ->
-                lastSelectedChannelId = channel.id
-                preferences.lastChannelId = channel.id
-                openPlayer(channel)
+            onChannelSelected = { channel -> openChannel(channel) },
+            onChannelLongPressed = { channel -> toggleFavorite(channel) },
+            onFocusPositionChanged = { position ->
+                val channel = channelAtAdapterPosition(position)
+                if (channel != null) lastFocusedChannelId = channel.id
             },
-            onFocusPositionChanged = { pos -> lastFocusedPosition = pos }
+            isFavorite = { id -> preferences.favoriteChannelIds.contains(id) }
         )
 
+        val layoutManager = GridLayoutManager(this, spanCount)
+        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(position: Int): Int = if (channelAdapter.getItemViewType(position) == ChannelAdapter.TYPE_HEADER) spanCount else 1
+        }
         channelsRecyclerView.apply {
-            layoutManager = GridLayoutManager(this@MainActivity, spanCount)
+            this.layoutManager = layoutManager
             adapter = channelAdapter
             itemAnimator = null
         }
         updateEmptyState()
+    }
+
+    private fun channelAtAdapterPosition(position: Int): Channel? = displayedChannels.getOrNull(cardIndexAt(position))
+
+    /** Индекс карточки-канала по позиции адаптера (без заголовков категорий). */
+    private fun cardIndexAt(position: Int): Int {
+        if (viewMode != ViewMode.ALL) return position
+        var cards = 0
+        for (pos in 0 until position) {
+            if (channelAdapter.getItemViewType(pos) != ChannelAdapter.TYPE_HEADER) cards++
+        }
+        return cards
     }
 
     private fun updateHeaderProgram(channels: List<Channel>) {
@@ -176,18 +313,11 @@ class MainActivity : BaseActivity() {
     }
 
     private fun restoreLastChannel() {
-        val lastChannelId = preferences.lastChannelId
-        if (lastChannelId != null) {
-            val channel = ChannelList.channels.find { it.id == lastChannelId }
-            channel?.let {
-                val position = ChannelList.channels.indexOf(it)
-                if (position != -1) {
-                    channelsRecyclerView.scrollToPosition(position)
-                    lastFocusedPosition = position
-                }
-                lastSelectedChannelId = lastChannelId
-            }
+        val lastChannelId = preferences.lastChannelId ?: return
+        if (lastFocusedChannelId == null) {
+            lastFocusedChannelId = ChannelList.channels.find { it.id == lastChannelId }?.let { lastChannelId }
         }
+        lastSelectedChannelId = lastChannelId
     }
 
     private fun updateRegionDisplay() {
@@ -203,7 +333,7 @@ class MainActivity : BaseActivity() {
     override fun onResume() {
         super.onResume()
         updateRegionDisplay()
-        if (lastFocusedPosition >= 0) {
+        if (lastFocusedChannelId != null) {
             pendingFocusRestore = true
         }
         loadChannels()
@@ -215,8 +345,15 @@ class MainActivity : BaseActivity() {
         super.onPause()
     }
 
+    private fun openChannel(channel: Channel) {
+        lastSelectedChannelId = channel.id
+        preferences.lastChannelId = channel.id
+        preferences.addToWatchHistory(channel.id)
+        openPlayer(channel)
+    }
+
     private fun openPlayer(channel: Channel) {
-        val intent = android.content.Intent(this, PlayerActivity::class.java).apply {
+        val intent = Intent(this, PlayerActivity::class.java).apply {
             putExtra("channel_id", channel.id)
             putExtra("channel_name", channel.name)
             putExtra("stream_url", channel.streamUrl)
@@ -226,24 +363,31 @@ class MainActivity : BaseActivity() {
     }
 
     private fun openSettings() {
-        val intent = android.content.Intent(this, com.example.tvapp.settings.SettingsActivity::class.java)
+        val intent = Intent(this, com.example.tvapp.settings.SettingsActivity::class.java)
         startActivity(intent)
     }
 
     private fun openEPG() {
-        val intent = android.content.Intent(this, EPGActivity::class.java)
+        val intent = Intent(this, EPGActivity::class.java)
+        startActivity(intent)
+    }
+
+    private fun openSearch() {
+        val intent = Intent(this, SearchActivity::class.java)
         startActivity(intent)
     }
 
     private fun selectChannelByNumber(channel: Channel) {
-        lastSelectedChannelId = channel.id
-        preferences.lastChannelId = channel.id
-        val position = ChannelList.channels.indexOf(channel)
+        if (!displayedChannels.any { it.id == channel.id } && viewMode != ViewMode.ALL) {
+            viewMode = ViewMode.ALL
+            applyViewMode()
+        }
+        openChannel(channel)
+        val position = adapterPositionForChannel(channel.id)
         if (position >= 0) {
-            lastFocusedPosition = position
+            lastFocusedChannelId = channel.id
             focusOnPosition(position)
         }
-        openPlayer(channel)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean = when (keyCode) {
@@ -257,11 +401,17 @@ class MainActivity : BaseActivity() {
         }
         KeyEvent.KEYCODE_BACK -> {
             val input = numberInput
-            if (input != null && input.isActive()) {
-                input.cancel()
-                true
-            } else {
-                super.onKeyDown(keyCode, event)
+            when {
+                input != null && input.isActive() -> {
+                    input.cancel()
+                    true
+                }
+                viewMode != ViewMode.ALL -> {
+                    viewMode = ViewMode.ALL
+                    applyViewMode()
+                    true
+                }
+                else -> super.onKeyDown(keyCode, event)
             }
         }
         in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9 -> {
@@ -275,6 +425,7 @@ class MainActivity : BaseActivity() {
 
     companion object {
         private const val LIVE_TICK_MS = 60_000L
+        private const val GRID_SPAN_COUNT = 5
     }
 
     override fun onDestroy() {

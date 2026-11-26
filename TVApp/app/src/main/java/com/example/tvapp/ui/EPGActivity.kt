@@ -39,6 +39,7 @@ class EPGActivity : BaseActivity() {
         private const val EPG_MAX_CHANNELS = 80
         private const val MARK_CHECK_INTERVAL_MS = 5_000L
         private const val MARK_NOTIFY_AHEAD_MS = 60_000L
+        private const val FULL_DAY_MINUTES = 1440
     }
 
     private data class MarkedProgram(val channel: Channel, val program: Program)
@@ -73,6 +74,8 @@ class EPGActivity : BaseActivity() {
     private val nowViewportOffsetMinutes = 30
 
     private lateinit var displayTz: TimeZone
+
+    private var dayDelta = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -117,7 +120,7 @@ class EPGActivity : BaseActivity() {
         val viewportWidth = epgHorizontalScroll.width
         if (viewportWidth <= 0) return
         pixelsPerMinute = viewportWidth.toFloat() / visibleMinutes
-        totalWidthPx = (totalMinutes * pixelsPerMinute).toInt()
+        totalWidthPx = (windowMinutes() * pixelsPerMinute).toInt()
         createTimeScale()
 
         rowsList.layoutParams = rowsList.layoutParams.apply { width = totalWidthPx }
@@ -141,11 +144,11 @@ class EPGActivity : BaseActivity() {
         val baseTime = getStartTimeMillis()
         val pixelsPerHour = pixelsPerMinute * 60f
         val firstHourMark = (baseTime / 3600_000L * 3600_000L)
-        for (hourStart in firstHourMark..(baseTime + totalMinutes * 60_000L) step 3600_000L) {
+        for (hourStart in firstHourMark..(baseTime + windowMinutes() * 60_000L) step 3600_000L) {
             val calendar = Calendar.getInstance(displayTz).apply { timeInMillis = hourStart }
             val hourVal = calendar.get(Calendar.HOUR_OF_DAY)
             val offsetMin = (hourStart - baseTime) / 60_000L
-            if (offsetMin < 0 || offsetMin > totalMinutes) continue
+            if (offsetMin < 0 || offsetMin > windowMinutes()) continue
             val timeText = TextView(this).apply {
                 text = String.format(Locale.US, "%02d:00", hourVal)
                 textSize = 14f
@@ -160,40 +163,150 @@ class EPGActivity : BaseActivity() {
 
     private fun updatePrograms(partial: Map<String, List<Program>>) {
         val baseTime = getStartTimeMillis()
-        val windowEnd = baseTime + totalMinutes * 60_000L
+        val windowEnd = baseTime + windowMinutes() * 60_000L
         val useful = partial.filterValues { programs ->
             programs.any { it.endTime > baseTime && it.startTime < windowEnd }
         }
         accumulatedPrograms = accumulatedPrograms + useful
-        rowAdapter.setData(channels, accumulatedPrograms, baseTime, pixelsPerMinute, totalMinutes, rowHeight, totalWidthPx, displayTz)
+        rowAdapter.setData(channels, accumulatedPrograms, baseTime, pixelsPerMinute, windowMinutes(), rowHeight, totalWidthPx, displayTz)
         if (cursorProgram == null) selectInitialCursor()
     }
 
     private fun getStartTimeMillis(): Long {
-        val calendar = Calendar.getInstance(displayTz).apply {
-            timeInMillis = System.currentTimeMillis() - leadMinutes * 60_000L
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
+        val calendar = Calendar.getInstance(displayTz)
+        if (dayDelta != 0) {
+            calendar.timeInMillis = System.currentTimeMillis() + dayDelta * 24L * 60L * 60L * 1000L
+            calendar.set(Calendar.HOUR_OF_DAY, 0)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            calendar.set(Calendar.MILLISECOND, 0)
+            return calendar.timeInMillis
         }
+        calendar.timeInMillis = System.currentTimeMillis() - leadMinutes * 60_000L
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
         return calendar.timeInMillis
+    }
+
+    private fun windowMinutes(): Int = if (dayDelta == 0) totalMinutes else FULL_DAY_MINUTES
+
+    private fun selectDay(delta: Int) {
+        if (delta == dayDelta) return
+        dayDelta = delta
+        val baseTime = getStartTimeMillis()
+        val newWidth = (windowMinutes() * pixelsPerMinute).toInt()
+        totalWidthPx = newWidth
+        rowsList.layoutParams = rowsList.layoutParams.apply { width = newWidth }
+        rowsList.requestLayout()
+        createTimeScale()
+        accumulatedPrograms = emptyMap()
+        cursorChannel = null
+        cursorProgram = null
+        epgHorizontalScroll.scrollTo(0, 0)
+        loadEPGForDate()
+    }
+
+    private fun showDaySelectDialog() {
+        val labels = (-1..6).map { delta ->
+            val base = when (delta) {
+                -1 -> getString(R.string.epg_day_yesterday)
+                0 -> getString(R.string.epg_day_today)
+                1 -> getString(R.string.epg_day_tomorrow)
+                else -> getString(R.string.epg_day_format, delta)
+            }
+            if (delta == dayDelta) "$base ${getString(R.string.source_current)}" else base
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.epg_day_select_title)
+            .setItems(labels.toTypedArray()) { _, which ->
+                selectDay(which - 1)
+            }
+            .show()
+    }
+
+    private fun showProgramSearchDialog() {
+        val input = android.widget.EditText(this).apply {
+            hint = getString(R.string.epg_search_hint)
+            setSingleLine(true)
+            setPadding(48, 32, 48, 32)
+        }
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.epg_search_title)
+            .setView(input)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                runProgramSearch(input.text.toString())
+            }
+            .setNegativeButton(R.string.no, null)
+            .create()
+        dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+        dialog.show()
+        input.requestFocus()
+    }
+
+    private fun runProgramSearch(query: String) {
+        val normalized = query.trim().lowercase()
+        if (normalized.isEmpty()) return
+        val results = mutableListOf<Pair<Channel, Program>>()
+        for (channel in channels) {
+            accumulatedPrograms[channel.id].orEmpty()
+                .filter { it.title.lowercase().contains(normalized) }
+                .sortedBy { it.startTime }
+                .forEach { results.add(Pair(channel, it)) }
+        }
+        if (results.isEmpty()) {
+            Toast.makeText(this, R.string.epg_search_no_results, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault()).apply { timeZone = displayTz }
+        val truncated = results.take(50)
+        val labels = truncated.map { (channel, program) ->
+            getString(
+                R.string.epg_search_result,
+                dateFormat.format(Date(program.startTime)),
+                channel.name,
+                program.title
+            )
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.epg_search_title)
+            .setItems(labels.toTypedArray()) { _, which ->
+                val (channel, program) = truncated[which]
+                if (visiblePrograms(channel.id).any { it.startTime == program.startTime }) {
+                    moveCursor(channel, program)
+                } else {
+                    openPlayer(channel)
+                }
+            }
+            .show()
     }
 
     private fun loadEPGForDate() {
         scope.launch {
             try {
-                val instant = channels.associate { channel -> channel.id to channel.programs }
-                    .filterValues { it.isNotEmpty() }
-                if (instant.isNotEmpty()) {
-                    updatePrograms(instant)
-                    epgHorizontalScroll.post { scrollToCurrentTime() }
+                if (dayDelta == 0) {
+                    val instant = channels.associate { channel -> channel.id to channel.programs }
+                        .filterValues { it.isNotEmpty() }
+                    if (instant.isNotEmpty()) {
+                        updatePrograms(instant)
+                        epgHorizontalScroll.post { scrollToCurrentTime() }
+                    }
                 }
                 val finalResult = withContext(Dispatchers.IO) {
-                    epgRepository.getProgramsWithSurroundings(channels, Date()) { partial ->
-                        updatePrograms(partial)
+                    if (dayDelta == 0) {
+                        epgRepository.getProgramsWithSurroundings(channels, Date()) { partial ->
+                            updatePrograms(partial)
+                        }
+                    } else {
+                        val dayDate = Date(getStartTimeMillis())
+                        epgRepository.getProgramsForDay(channels, dayDate, dayDelta) { partial ->
+                            updatePrograms(partial)
+                        }
                     }
                 }
                 updatePrograms(finalResult)
-                epgHorizontalScroll.post { scrollToCurrentTime() }
+                epgHorizontalScroll.post {
+                    if (dayDelta == 0) scrollToCurrentTime() else epgHorizontalScroll.scrollTo(0, 0)
+                }
             } catch (e: Exception) {
                 Toast.makeText(this@EPGActivity, R.string.epg_load_error, Toast.LENGTH_SHORT).show()
             }
@@ -238,7 +351,7 @@ class EPGActivity : BaseActivity() {
 
     private fun visiblePrograms(channelId: String): List<Program> {
         val baseTime = getStartTimeMillis()
-        val windowEnd = baseTime + totalMinutes * 60_000L
+        val windowEnd = baseTime + windowMinutes() * 60_000L
         return accumulatedPrograms[channelId].orEmpty().filter { it.endTime > baseTime && it.startTime < windowEnd }
     }
 
@@ -281,7 +394,7 @@ class EPGActivity : BaseActivity() {
         val program = cursorProgram ?: return
         val baseTime = getStartTimeMillis()
         val leftPx = (((program.startTime - baseTime) / 60000f).coerceAtLeast(0f) * pixelsPerMinute).toInt()
-        val rightPx = (((program.endTime - baseTime) / 60000f).coerceAtMost(totalMinutes.toFloat()) * pixelsPerMinute).toInt()
+        val rightPx = (((program.endTime - baseTime) / 60000f).coerceAtMost(windowMinutes().toFloat()) * pixelsPerMinute).toInt()
         val viewport = epgHorizontalScroll.width
         val scrollX = epgHorizontalScroll.scrollX
         val target = when {
@@ -403,6 +516,14 @@ class EPGActivity : BaseActivity() {
         }
         KeyEvent.KEYCODE_DPAD_RIGHT -> {
             moveCursorHorizontal(false)
+            true
+        }
+        KeyEvent.KEYCODE_MENU -> {
+            showDaySelectDialog()
+            true
+        }
+        KeyEvent.KEYCODE_INFO -> {
+            showProgramSearchDialog()
             true
         }
         else -> super.onKeyDown(keyCode, event)

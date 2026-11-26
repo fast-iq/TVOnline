@@ -110,6 +110,35 @@ class EPGRepository(context: Context? = null) {
         result
     }
 
+    /**
+     * Расписание для выбранного дня (dayDelta дней относительно сегодня).
+     * LimeHD: from = dayDelta + 1, limit = 1 покрывает дни [dayDelta, dayDelta+1] (см. сессию 40).
+     */
+    suspend fun getProgramsForDay(
+        channels: List<Channel>,
+        date: Date,
+        dayDelta: Int,
+        onStage: (Map<String, List<Program>>) -> Unit = {}
+    ): Map<String, List<Program>> = coroutineScope {
+        val result = mutableMapOf<String, List<Program>>()
+        for (chunk in channels.chunked(PARALLEL_FETCH_LIMIT)) {
+            val part = chunk.map { channel ->
+                async(Dispatchers.IO) {
+                    Pair(channel.id, fetchWideSchedule(channel, date, dayDelta + 1, 1))
+                }
+            }.awaitAll()
+            for ((id, programs) in part) result[id] = programs
+            withContext(Dispatchers.Main) { onStage(result.toMap()) }
+        }
+        flushDiskCache()
+        for (channel in channels) {
+            if (result[channel.id].isNullOrEmpty()) {
+                result[channel.id] = generateFallbackEPG(channel.id, date)
+            }
+        }
+        result
+    }
+
     private fun fetchWideSchedule(channel: Channel, date: Date, epgFrom: Int, epgLimit: Int): List<Program> {
         if (!channel.id.startsWith("limehd_")) return emptyList()
         val limehdId = channel.epgId ?: return emptyList()

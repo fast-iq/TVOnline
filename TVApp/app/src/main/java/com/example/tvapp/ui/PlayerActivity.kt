@@ -44,6 +44,8 @@ class PlayerActivity : BaseActivity() {
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private val preferences by lazy { AppPreferences(applicationContext) }
     private var overlayHideJob: Job? = null
+    private var sleepTimerJob: Job? = null
+    private var sleepTimerMinutes = 0
     private var numberInput: NumberInputController? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -112,6 +114,7 @@ class PlayerActivity : BaseActivity() {
             )
 
             if (currentChannel != null) {
+                preferences.addToWatchHistory(currentChannel!!.id)
                 infoText.text = getString(R.string.loading_channel, channelName)
                 infoText.visibility = View.VISIBLE
                 playerManager.playChannel(
@@ -173,6 +176,10 @@ class PlayerActivity : BaseActivity() {
             showSourceSwitchDialog()
             true
         }
+        KeyEvent.KEYCODE_INFO -> {
+            showSleepTimerDialog()
+            true
+        }
         KeyEvent.KEYCODE_DPAD_RIGHT -> {
             switchChannel(1)
             true
@@ -195,6 +202,7 @@ class PlayerActivity : BaseActivity() {
         channelName = channel.name
         currentChannel = channel
         preferences.lastChannelId = channel.id
+        preferences.addToWatchHistory(channel.id)
         playerManager.playChannel(channel, channel.streamUrl)
         showProgramOverlay(channel)
         infoText.text = getString(R.string.loading_channel, channel.name)
@@ -212,6 +220,7 @@ class PlayerActivity : BaseActivity() {
         channelId = newChannel.id
         channelName = newChannel.name
         currentChannel = newChannel
+        preferences.addToWatchHistory(newChannel.id)
         playerManager.playChannel(
             newChannel,
             newChannel.streamUrl
@@ -226,6 +235,38 @@ class PlayerActivity : BaseActivity() {
         numberInput?.release()
         scope.cancel()
         playerManager.releasePlayer()
+    }
+
+    private fun showSleepTimerDialog() {
+        val options = listOf(0, 15, 30, 60, 90)
+        val labels = options.map { minutes ->
+            val base = if (minutes == 0) {
+                getString(R.string.sleep_timer_off)
+            } else {
+                getString(R.string.sleep_timer_minutes, minutes)
+            }
+            val active = sleepTimerJob?.isActive == true && sleepTimerMinutes == minutes
+            if (active) "$base ${getString(R.string.source_current)}" else base
+        }
+        android.app.AlertDialog.Builder(this)
+            .setTitle(getString(R.string.sleep_timer_title))
+            .setItems(labels.toTypedArray()) { _, which ->
+                applySleepTimer(options[which])
+            }
+            .show()
+    }
+
+    private fun applySleepTimer(minutes: Int) {
+        sleepTimerJob?.cancel()
+        sleepTimerJob = null
+        sleepTimerMinutes = minutes
+        if (minutes <= 0) return
+        sleepTimerJob = scope.launch {
+            delay(minutes * 60_000L)
+            playerManager.pause()
+            Toast.makeText(this@PlayerActivity, R.string.sleep_timer_fired, Toast.LENGTH_LONG).show()
+        }
+        Toast.makeText(this, getString(R.string.sleep_timer_set, minutes), Toast.LENGTH_SHORT).show()
     }
 
     private fun showSourceSwitchDialog() {

@@ -59,6 +59,17 @@
                 android:textColor="@color/live_indicator"
                 android:text="@string/drm_badge"
                 android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/favoriteBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:src="@drawable/ic_favorite"
+                app:tint="@color/accent_secondary"
+                android:padding="4dp"
+                android:visibility="gone"
+                android:contentDescription="@string/favorite_badge_desc" />
         </FrameLayout>
 
         <TextView

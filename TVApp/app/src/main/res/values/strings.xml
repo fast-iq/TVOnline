@@ -92,4 +92,45 @@
     <string name="notification_upcoming_title">Начинается передача</string>
     <string name="notification_upcoming_text">%1$s на канале %2$s</string>
     <string name="notification_switch">Переключиться</string>
+
+    <!-- Favorites / history / search -->
+    <string name="favorite_badge_desc">Избранный канал</string>
+    <string name="favorites_toggle_desc">Показать избранные каналы</string>
+    <string name="history_toggle_desc">Показать недавно просмотренные каналы</string>
+    <string name="search_button_desc">Поиск каналов</string>
+    <string name="added_to_favorites">Добавлено в избранное</string>
+    <string name="removed_from_favorites">Убрано из избранного</string>
+    <string name="favorites_empty">Нет избранных каналов. Удерживайте ОК на канале, чтобы добавить в избранное.</string>
+    <string name="history_empty">Вы ещё не смотрели каналы. Начните просмотр любого канала — он появится здесь.</string>
+    <string name="search_title">Поиск каналов</string>
+    <string name="search_hint">Введите название канала</string>
+    <string name="search_no_results">Ничего не найдено</string>
+
+    <!-- Categories -->
+    <string name="category_federal">Федеральные</string>
+    <string name="category_general">Каналы</string>
+    <string name="category_news">Новости</string>
+    <string name="category_sport">Спорт</string>
+    <string name="category_kids">Детские</string>
+    <string name="category_music">Музыка</string>
+    <string name="category_entertainment">Развлечения</string>
+    <string name="category_culture">Культура</string>
+
+    <!-- Sleep timer -->
+    <string name="sleep_timer_title">Таймер сна</string>
+    <string name="sleep_timer_off">Выключить</string>
+    <string name="sleep_timer_minutes">Через %1$d мин</string>
+    <string name="sleep_timer_set">Таймер сна установлен: через %1$d мин</string>
+    <string name="sleep_timer_fired">Таймер сна: воспроизведение остановлено</string>
+
+    <!-- EPG day navigation -->
+    <string name="epg_day_yesterday">Вчера</string>
+    <string name="epg_day_today">Сегодня</string>
+    <string name="epg_day_tomorrow">Завтра</string>
+    <string name="epg_day_format">Ещё %1$d дн.</string>
+    <string name="epg_day_select_title">Выберите день</string>
+    <string name="epg_search_title">Поиск передач</string>
+    <string name="epg_search_hint">Введите название передачи</string>
+    <string name="epg_search_no_results">Передачи не найдены</string>
+    <string name="epg_search_result">%1$s · %2$s · %3$s</string>
 </resources>

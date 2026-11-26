@@ -20,6 +20,8 @@ class AppPreferences(private val prefs: SharedPreferences) {
         private const val KEY_LIMEHD_REGION_NAME = "limehd_region_name"
         private const val KEY_LIMEHD_REGION_TZ = "limehd_region_tz"
         private const val KEY_LIMEHD_REGIONS_CACHE = "limehd_regions_cache"
+        private const val KEY_FAVORITES = "favorite_channel_ids"
+        private const val KEY_WATCH_HISTORY = "watch_history"
         private const val DEFAULT_LIMEHD_REGION = 0
         const val DEFAULT_MOSCOW_OFFSET = 3
     }
@@ -90,6 +92,28 @@ class AppPreferences(private val prefs: SharedPreferences) {
         set(value) {
             prefs.edit { putString(KEY_LIMEHD_REGIONS_CACHE, value) }
         }
+
+    var favoriteChannelIds: Set<String>
+        get() = prefs.getStringSet(KEY_FAVORITES, emptySet())?.toMutableSet() ?: emptySet()
+        set(value) {
+            prefs.edit { putStringSet(KEY_FAVORITES, value) }
+        }
+
+    var watchHistory: List<String>
+        get() {
+            val raw = prefs.getString(KEY_WATCH_HISTORY, "") ?: ""
+            return raw.split(",").filter { it.isNotEmpty() }.toMutableList()
+        }
+        set(value) {
+            prefs.edit { putString(KEY_WATCH_HISTORY, value.joinToString(",")) }
+        }
+
+    fun addToWatchHistory(channelId: String) {
+        val history = watchHistory.toMutableList()
+        history.remove(channelId)
+        history.add(0, channelId)
+        watchHistory = if (history.size > 20) history.take(20) else history
+    }
 
     fun programTimezoneOffset(): Int {
         val regionOffset = if (limehdRegion != 0) limehdRegionTzOffsets.firstOrNull() else null

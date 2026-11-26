@@ -91,4 +91,45 @@
     <string name="notification_upcoming_title">Program starting soon</string>
     <string name="notification_upcoming_text">%1$s on channel %2$s</string>
     <string name="notification_switch">Switch</string>
+
+    <!-- Favorites / history / search -->
+    <string name="favorite_badge_desc">Favorite channel</string>
+    <string name="favorites_toggle_desc">Show favorite channels</string>
+    <string name="history_toggle_desc">Show recently watched channels</string>
+    <string name="search_button_desc">Search channels</string>
+    <string name="added_to_favorites">Added to favorites</string>
+    <string name="removed_from_favorites">Removed from favorites</string>
+    <string name="favorites_empty">No favorite channels. Hold OK on a channel to add it to favorites.</string>
+    <string name="history_empty">You have not watched any channels yet. Start watching any channel — it will appear here.</string>
+    <string name="search_title">Channel search</string>
+    <string name="search_hint">Enter channel name</string>
+    <string name="search_no_results">Nothing found</string>
+
+    <!-- Categories -->
+    <string name="category_federal">Federal</string>
+    <string name="category_general">Channels</string>
+    <string name="category_news">News</string>
+    <string name="category_sport">Sports</string>
+    <string name="category_kids">Kids</string>
+    <string name="category_music">Music</string>
+    <string name="category_entertainment">Entertainment</string>
+    <string name="category_culture">Culture</string>
+
+    <!-- Sleep timer -->
+    <string name="sleep_timer_title">Sleep timer</string>
+    <string name="sleep_timer_off">Off</string>
+    <string name="sleep_timer_minutes">In %1$d min</string>
+    <string name="sleep_timer_set">Sleep timer set: in %1$d min</string>
+    <string name="sleep_timer_fired">Sleep timer: playback stopped</string>
+
+    <!-- EPG day navigation -->
+    <string name="epg_day_yesterday">Yesterday</string>
+    <string name="epg_day_today">Today</string>
+    <string name="epg_day_tomorrow">Tomorrow</string>
+    <string name="epg_day_format">+%1$d days</string>
+    <string name="epg_day_select_title">Select day</string>
+    <string name="epg_search_title">Program search</string>
+    <string name="epg_search_hint">Enter program name</string>
+    <string name="epg_search_no_results">No programs found</string>
+    <string name="epg_search_result">%1$s · %2$s · %3$s</string>
 </resources>
