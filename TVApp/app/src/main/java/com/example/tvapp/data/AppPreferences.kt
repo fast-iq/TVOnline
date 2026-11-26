@@ -22,6 +22,7 @@ class AppPreferences(private val prefs: SharedPreferences) {
         private const val KEY_LIMEHD_REGIONS_CACHE = "limehd_regions_cache"
         private const val KEY_FAVORITES = "favorite_channel_ids"
         private const val KEY_WATCH_HISTORY = "watch_history"
+        private const val KEY_LAST_UPDATE_CHECK = "last_update_check_ms"
         private const val DEFAULT_LIMEHD_REGION = 0
         const val DEFAULT_MOSCOW_OFFSET = 3
     }
@@ -114,6 +115,12 @@ class AppPreferences(private val prefs: SharedPreferences) {
         history.add(0, channelId)
         watchHistory = if (history.size > 20) history.take(20) else history
     }
+
+    var lastUpdateCheckMs: Long
+        get() = prefs.getLong(KEY_LAST_UPDATE_CHECK, 0L)
+        set(value) {
+            prefs.edit { putLong(KEY_LAST_UPDATE_CHECK, value) }
+        }
 
     fun programTimezoneOffset(): Int {
         val regionOffset = if (limehdRegion != 0) limehdRegionTzOffsets.firstOrNull() else null

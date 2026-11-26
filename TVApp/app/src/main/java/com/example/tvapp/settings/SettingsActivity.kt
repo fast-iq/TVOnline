@@ -1,12 +1,17 @@
 package com.example.tvapp.settings
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.preference.PreferenceManager
 import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
 import com.example.tvapp.data.AppPreferences
@@ -15,12 +20,17 @@ import com.example.tvapp.data.EPGRepository
 import com.example.tvapp.data.LimeHdClient
 import com.example.tvapp.data.LimeHdRegion
 import com.example.tvapp.data.RegionsCodec
+import com.example.tvapp.data.SettingsBackup
+import com.example.tvapp.data.UpdateChecker
+import com.example.tvapp.data.UpdateInfo
+import com.example.tvapp.data.UpdateResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 class SettingsActivity : BaseActivity() {
 
@@ -64,6 +74,8 @@ class SettingsActivity : BaseActivity() {
         setupQualitySelector()
         setupLanguageSelector()
         setupRefreshButton()
+        setupUpdateButton()
+        setupBackupButtons()
     }
 
     private fun setupRegionSelector() {
@@ -307,6 +319,103 @@ class SettingsActivity : BaseActivity() {
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    private fun setupUpdateButton() {
+        val button: TextView = findViewById(R.id.updateButton)
+        button.setOnClickListener {
+            button.isEnabled = false
+            button.text = getString(R.string.update_checking)
+            uiScope.launch {
+                val result = try {
+                    withContext(Dispatchers.IO) { UpdateChecker.checkDetailed(this@SettingsActivity) }
+                } catch (e: Exception) {
+                    UpdateResult.Failed
+                }
+                button.isEnabled = true
+                button.text = getString(R.string.update_check)
+                preferences.lastUpdateCheckMs = System.currentTimeMillis()
+                when (result) {
+                    is UpdateResult.Available -> showUpdateDialog(result.info)
+                    UpdateResult.UpToDate -> Toast.makeText(this@SettingsActivity, R.string.update_latest, Toast.LENGTH_SHORT).show()
+                    UpdateResult.Failed -> Toast.makeText(this@SettingsActivity, R.string.update_failed, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun showUpdateDialog(info: UpdateInfo) {
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.update_available, info.version))
+            .setMessage(info.notes.ifBlank { getString(R.string.update_no_notes) })
+            .setPositiveButton(R.string.update_download) { _, _ ->
+                try {
+                    val url = info.apkUrl ?: info.url
+                    if (url.isNotBlank()) {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(this, R.string.update_failed, Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton(R.string.update_later, null)
+            .show()
+    }
+
+    private fun backupFile(): File {
+        val dir = getExternalFilesDir(null) ?: filesDir
+        return File(dir, SETTINGS_BACKUP_FILE)
+    }
+
+    private fun setupBackupButtons() {
+        val exportButton: TextView = findViewById(R.id.exportButton)
+        exportButton.setOnClickListener {
+            uiScope.launch {
+                val path = try {
+                    withContext(Dispatchers.IO) {
+                        val values = PreferenceManager.getDefaultSharedPreferences(this@SettingsActivity).all
+                        val file = backupFile()
+                        file.writeText(SettingsBackup.encode(values), Charsets.UTF_8)
+                        file.absolutePath
+                    }
+                } catch (e: Exception) {
+                    null
+                }
+                if (path != null) {
+                    Toast.makeText(this@SettingsActivity, getString(R.string.export_done, path), Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(this@SettingsActivity, R.string.export_failed, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        val importButton: TextView = findViewById(R.id.importButton)
+        importButton.setOnClickListener {
+            uiScope.launch {
+                val result = try {
+                    withContext(Dispatchers.IO) {
+                        val file = backupFile()
+                        if (!file.exists()) return@withContext null
+                        val values = SettingsBackup.decode(file.readText(Charsets.UTF_8))
+                        val prefs = PreferenceManager.getDefaultSharedPreferences(this@SettingsActivity)
+                        if (SettingsBackup.apply(prefs, values)) values.size else null
+                    }
+                } catch (e: Exception) {
+                    null
+                }
+                if (result != null) {
+                    Toast.makeText(this@SettingsActivity, R.string.import_done, Toast.LENGTH_SHORT).show()
+                    ChannelRepository.invalidateContent()
+                    recreate()
+                } else {
+                    Toast.makeText(this@SettingsActivity, R.string.import_failed, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    companion object {
+        private const val SETTINGS_BACKUP_FILE = "tvapp_settings.json"
+    }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean = when (keyCode) {
         KeyEvent.KEYCODE_BACK -> {

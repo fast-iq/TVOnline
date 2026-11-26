@@ -133,4 +133,22 @@
     <string name="epg_search_hint">Введите название передачи</string>
     <string name="epg_search_no_results">Передачи не найдены</string>
     <string name="epg_search_result">%1$s · %2$s · %3$s</string>
+
+    <!-- Updates -->
+    <string name="update_check">Проверить обновление</string>
+    <string name="update_checking">Проверка…</string>
+    <string name="update_available">Доступна новая версия: %1$s</string>
+    <string name="update_no_notes">Описание отсутствует</string>
+    <string name="update_latest">У вас установлена последняя версия</string>
+    <string name="update_failed">Не удалось проверить обновление</string>
+    <string name="update_download">Скачать</string>
+    <string name="update_later">Позже</string>
+
+    <!-- Settings backup -->
+    <string name="settings_export">Экспорт настроек</string>
+    <string name="settings_import">Импорт настроек</string>
+    <string name="export_done">Настройки сохранены: %1$s</string>
+    <string name="export_failed">Не удалось экспортировать настройки</string>
+    <string name="import_done">Настройки импортированы</string>
+    <string name="import_failed">Файл настроек не найден или повреждён</string>
 </resources>

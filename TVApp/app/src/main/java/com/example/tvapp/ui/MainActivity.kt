@@ -3,6 +3,7 @@ package com.example.tvapp.ui
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -10,6 +11,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
@@ -21,6 +23,8 @@ import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
 import com.example.tvapp.data.ChannelRepository
 import com.example.tvapp.data.LivePrograms
+import com.example.tvapp.data.UpdateChecker
+import com.example.tvapp.data.UpdateInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -90,6 +94,38 @@ class MainActivity : BaseActivity() {
         setupChannelsGrid()
         loadChannels()
         requestNotificationPermissionIfNeeded()
+        checkForUpdatesIfNeeded()
+    }
+
+    private fun checkForUpdatesIfNeeded() {
+        if (System.currentTimeMillis() - preferences.lastUpdateCheckMs < UPDATE_CHECK_INTERVAL_MS) return
+        scope.launch {
+            try {
+                val info = withContext(Dispatchers.IO) { UpdateChecker.check(this@MainActivity) }
+                preferences.lastUpdateCheckMs = System.currentTimeMillis()
+                if (info != null && !isFinishing) showUpdateDialog(info)
+            } catch (e: Exception) {
+                Log.w("MainActivity", "update check failed: ${e.message}")
+            }
+        }
+    }
+
+    private fun showUpdateDialog(info: UpdateInfo) {
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.update_available, info.version))
+            .setMessage(info.notes.ifBlank { getString(R.string.update_no_notes) })
+            .setPositiveButton(R.string.update_download) { _, _ ->
+                try {
+                    val url = info.apkUrl ?: info.url
+                    if (url.isNotBlank()) {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                    }
+                } catch (e: Exception) {
+                    android.widget.Toast.makeText(this, R.string.update_failed, android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton(R.string.update_later, null)
+            .show()
     }
 
     private fun requestNotificationPermissionIfNeeded() {
@@ -426,6 +462,7 @@ class MainActivity : BaseActivity() {
     companion object {
         private const val LIVE_TICK_MS = 60_000L
         private const val GRID_SPAN_COUNT = 5
+        private const val UPDATE_CHECK_INTERVAL_MS = 24L * 60L * 60L * 1000L
     }
 
     override fun onDestroy() {

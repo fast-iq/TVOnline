@@ -132,4 +132,22 @@
     <string name="epg_search_hint">Enter program name</string>
     <string name="epg_search_no_results">No programs found</string>
     <string name="epg_search_result">%1$s · %2$s · %3$s</string>
+
+    <!-- Updates -->
+    <string name="update_check">Check for update</string>
+    <string name="update_checking">Checking…</string>
+    <string name="update_available">New version available: %1$s</string>
+    <string name="update_no_notes">No description</string>
+    <string name="update_latest">You have the latest version</string>
+    <string name="update_failed">Update check failed</string>
+    <string name="update_download">Download</string>
+    <string name="update_later">Later</string>
+
+    <!-- Settings backup -->
+    <string name="settings_export">Export settings</string>
+    <string name="settings_import">Import settings</string>
+    <string name="export_done">Settings saved to: %1$s</string>
+    <string name="export_failed">Failed to export settings</string>
+    <string name="import_done">Settings imported</string>
+    <string name="import_failed">Settings file not found or corrupted</string>
 </resources>
