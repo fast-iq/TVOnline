@@ -1020,3 +1020,20 @@ The ~10s "permanent reappearance" = stage 2 `(0,1)` chunk 1 arriving and coverin
 - `standard:import-ordering` with `ktlint_code_style = intellij_idea`: the "end group" is ONLY `java`/`javax`/`kotlin` (NOT `kotlinx`); `org.json` belongs to the first group. Correct order = `android.*`, `kotlinx.*`, `org.json.*`, then `java.*` (matches working EPGRepository/LimeHdClient).
 
 **Verification:** local SDK `compileDebugKotlin ktlintCheck lintDebug` PASSED (only machine-specific `local.properties` PropertyEscape, absent in CI).
+
+### 2026-11-26 Session 47 — Tests for the channel disk-cache codec (+ NPE fix)
+
+**Goal:** "Добавь тесты" — cover the Session-46 disk cache. Followed the project pattern (Session 23): pure logic is extracted out of the `Context`-bound class so JVM tests can call it.
+
+**Refactor (`ChannelRepository.kt`):**
+- Moved `serialize`/`deserialize` out of the class into a file-level `internal object ChannelCacheCodec` (no Context, no network). `saveToDisk`/`loadFromDisk` now delegate to it.
+
+**Real bug found while writing the tests:**
+- `deserialize` did `val fa = o.optJSONArray("fallbackStreamUrls")` then immediately `for (j in 0 until fa.length())`. `optJSONArray` returns NULL when the key is absent, and since it is a platform type Kotlin compiles the call without a null check → NPE at runtime. Same for `"programs"`. Effect: a cache entry missing either array crashed `deserialize`, `loadFromDisk` caught it and returned null → the whole disk cache was silently discarded (i.e. the "grid empty" symptom Session 46 was meant to fix).
+- FIX: both array loops guarded with `if (fa != null)` / `if (pa != null)`; covered by `channelWithoutOptionalArraysStillDecodes`.
+
+**New tests — `ChannelCacheCodecTest` (10):** full-field round trip (whole `Channel` equality incl. `programs`, fallbacks, DRM, regionCode, number); order + count preserved over 50 channels; Cyrillic/quotes/newlines/em-dashes survive; minimal channel keeps defaults; channel JSON without the optional arrays decodes (the bug above); `currentProgramStart/End == 0` → null (`takeIf { it > 0 }`); empty program `description`/`iconUrl` → null; non-object array entries (`"мусор"`, `42`, `null`) skipped; `emptyList()` ↔ `"[]"`; malformed JSON throws `JSONException` (caller's catch handles it).
+
+**Test total: 41** (was 31), all passing.
+
+**Verification:** local SDK `testDebugUnitTest` 41/41, `ktlintCheck`, `lintDebug` PASSED (only machine-specific `local.properties` PropertyEscape, absent in CI).

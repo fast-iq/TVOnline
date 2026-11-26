@@ -75,7 +75,7 @@ class ChannelRepository(private val context: Context) {
     fun loadFromDisk(): List<Channel>? {
         if (!diskFile.exists()) return null
         return try {
-            deserialize(diskFile.readText())
+            ChannelCacheCodec.deserialize(diskFile.readText())
         } catch (e: Exception) {
             Log.e("ChannelRepo", "loadFromDisk failed: ${e.message}")
             null
@@ -84,7 +84,7 @@ class ChannelRepository(private val context: Context) {
 
     private fun saveToDisk(channels: List<Channel>) {
         try {
-            diskFile.writeText(serialize(channels))
+            diskFile.writeText(ChannelCacheCodec.serialize(channels))
         } catch (e: Exception) {
             Log.e("ChannelRepo", "saveToDisk failed: ${e.message}")
         }
@@ -104,7 +104,16 @@ class ChannelRepository(private val context: Context) {
         }
     }
 
-    private fun serialize(channels: List<Channel>): String {
+    private fun currentCacheKey(): String = cacheKeyFor(prefs.limehdRegion, prefs.programTimezoneOffset())
+}
+
+/**
+ * Кодирование списка каналов в JSON для диск-кеша и обратно.
+ * Вынесено из ChannelRepository: чистая логика без Context, покрывается JVM-тестами.
+ */
+internal object ChannelCacheCodec {
+
+    fun serialize(channels: List<Channel>): String {
         val arr = JSONArray()
         for (c in channels) {
             val o = JSONObject()
@@ -139,28 +148,32 @@ class ChannelRepository(private val context: Context) {
         return arr.toString()
     }
 
-    private fun deserialize(json: String): List<Channel> {
+    fun deserialize(json: String): List<Channel> {
         val arr = JSONArray(json)
         val list = mutableListOf<Channel>()
         for (i in 0 until arr.length()) {
             val o = arr.optJSONObject(i) ?: continue
             val fallbacks = mutableListOf<String>()
             val fa = o.optJSONArray("fallbackStreamUrls")
-            for (j in 0 until fa.length()) fallbacks.add(fa.optString(j))
+            if (fa != null) {
+                for (j in 0 until fa.length()) fallbacks.add(fa.optString(j))
+            }
             val progs = mutableListOf<Program>()
             val pa = o.optJSONArray("programs")
-            for (j in 0 until pa.length()) {
-                val po = pa.optJSONObject(j) ?: continue
-                progs.add(
-                    Program(
-                        channelId = po.optString("channelId"),
-                        title = po.optString("title"),
-                        description = po.optString("description").takeIf { it.isNotEmpty() },
-                        startTime = po.optLong("startTime"),
-                        endTime = po.optLong("endTime"),
-                        iconUrl = po.optString("iconUrl").takeIf { it.isNotEmpty() }
+            if (pa != null) {
+                for (j in 0 until pa.length()) {
+                    val po = pa.optJSONObject(j) ?: continue
+                    progs.add(
+                        Program(
+                            channelId = po.optString("channelId"),
+                            title = po.optString("title"),
+                            description = po.optString("description").takeIf { it.isNotEmpty() },
+                            startTime = po.optLong("startTime"),
+                            endTime = po.optLong("endTime"),
+                            iconUrl = po.optString("iconUrl").takeIf { it.isNotEmpty() }
+                        )
                     )
-                )
+                }
             }
             list.add(
                 Channel(
@@ -184,6 +197,4 @@ class ChannelRepository(private val context: Context) {
         }
         return list
     }
-
-    private fun currentCacheKey(): String = cacheKeyFor(prefs.limehdRegion, prefs.programTimezoneOffset())
 }
