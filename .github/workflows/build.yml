@@ -195,8 +195,11 @@ jobs:
         run: |
           APK=$(find TVApp/app/build/outputs/apk/release -name "*.apk" | head -1)
           if [ -z "$APK" ]; then echo "No release APK found"; exit 1; fi
-          echo "Verifying signature of: $APK"
-          $ANDROID_HOME/build-tools/*/apksigner verify --print-certs "$APK"
+          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          APKSIGNER=$(ls "$SDK"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
+          if [ -z "$APKSIGNER" ]; then echo "apksigner not found in SDK"; exit 1; fi
+          echo "Verifying signature of: $APK (using $APKSIGNER)"
+          "$APKSIGNER" verify --print-certs "$APK"
           echo "APK signature verified OK"
 
       - name: Verify AAB Signature (release)
