@@ -41,6 +41,7 @@ class MainActivity : BaseActivity() {
     private lateinit var currentProgramText: TextView
     private lateinit var regionText: TextView
     private lateinit var emptyText: TextView
+    private lateinit var settingsButton: ImageView
     private lateinit var favoritesButton: ImageView
     private lateinit var historyButton: ImageView
     private lateinit var channelAdapter: ChannelAdapter
@@ -75,6 +76,7 @@ class MainActivity : BaseActivity() {
         setupHeaderButton(R.id.epgButton) { openEPG() }
         setupHeaderButton(R.id.searchButton) { openSearch() }
 
+        settingsButton = findViewById(R.id.settingsButton)
         favoritesButton = findViewById(R.id.favoritesButton)
         favoritesButton.setOnClickListener { toggleMode(ViewMode.FAVORITES) }
         favoritesButton.setOnFocusChangeListener { v, hasFocus ->
@@ -89,6 +91,12 @@ class MainActivity : BaseActivity() {
             v.scaleX = if (hasFocus) 1.2f else 1.0f
             v.scaleY = if (hasFocus) 1.2f else 1.0f
             updateModeButtonTints()
+        }
+
+        // Геометрический поиск фокуса на ТВ не всегда возвращает фокус с кнопок шапки вниз в сетку —
+        // задаём явный переход DOWN к списку каналов.
+        for (id in intArrayOf(R.id.settingsButton, R.id.epgButton, R.id.searchButton, R.id.favoritesButton, R.id.historyButton)) {
+            findViewById<View>(id).nextFocusDownId = R.id.channelsRecyclerView
         }
 
         setupChannelsGrid()
@@ -425,6 +433,46 @@ class MainActivity : BaseActivity() {
             lastFocusedChannelId = channel.id
             focusOnPosition(position)
         }
+    }
+
+    /**
+     * На ТВ геометрический поиск фокуса не всегда «выпускает» DPAD-UP из RecyclerView
+     * к кнопкам шапки (LayoutManager перехватывает UP как прокрутку, а от левых карточек
+     * до правых кнопок фокус не доходит). С верхнего ряда карточек при прокрутке в самом
+     * верху явно передаём фокус кнопкам шапки: левая половина экрана — «история»,
+     * правая — «настройки» (далее кнопками влево/вправо доступны остальные).
+     */
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (
+            event.keyCode == KeyEvent.KEYCODE_DPAD_UP &&
+            event.action == KeyEvent.ACTION_DOWN &&
+            event.repeatCount == 0 &&
+            ::channelsRecyclerView.isInitialized &&
+            !channelsRecyclerView.canScrollVertically(-1)
+        ) {
+            val focused = currentFocus
+            if (focused != null && focused.parent === channelsRecyclerView && isTopmostCard(focused)) {
+                val target = if (isLeftOfScreenCenter(focused)) historyButton else settingsButton
+                if (target.requestFocus()) return true
+            }
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
+    /** Нет ли фокусируемой карточки строкой выше данной (заголовки категорий не фокусируются — не мешают). */
+    private fun isTopmostCard(card: View): Boolean {
+        val tolerance = (4 * resources.displayMetrics.density).toInt()
+        for (i in 0 until channelsRecyclerView.childCount) {
+            val child = channelsRecyclerView.getChildAt(i)
+            if (child !== card && child.isFocusable && child.top < card.top - tolerance) return false
+        }
+        return true
+    }
+
+    private fun isLeftOfScreenCenter(view: View): Boolean {
+        val loc = IntArray(2)
+        view.getLocationOnScreen(loc)
+        return loc[0] + view.width / 2 < resources.displayMetrics.widthPixels / 2
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean = when (keyCode) {
