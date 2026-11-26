@@ -23,6 +23,7 @@ class AppPreferences(private val prefs: SharedPreferences) {
         private const val KEY_FAVORITES = "favorite_channel_ids"
         private const val KEY_WATCH_HISTORY = "watch_history"
         private const val KEY_LAST_UPDATE_CHECK = "last_update_check_ms"
+        private const val KEY_MARKED_PROGRAMS = "marked_programs"
         private const val DEFAULT_LIMEHD_REGION = 0
         const val DEFAULT_MOSCOW_OFFSET = 3
     }
@@ -120,6 +121,12 @@ class AppPreferences(private val prefs: SharedPreferences) {
         get() = prefs.getLong(KEY_LAST_UPDATE_CHECK, 0L)
         set(value) {
             prefs.edit { putLong(KEY_LAST_UPDATE_CHECK, value) }
+        }
+
+    var markedPrograms: List<MarkedProgram>
+        get() = MarkedProgramsCodec.decode(prefs.getString(KEY_MARKED_PROGRAMS, null))
+        set(value) {
+            prefs.edit { putString(KEY_MARKED_PROGRAMS, MarkedProgramsCodec.encode(value)) }
         }
 
     fun programTimezoneOffset(): Int {

@@ -369,6 +369,7 @@ class MainActivity : BaseActivity() {
     override fun onResume() {
         super.onResume()
         updateRegionDisplay()
+        com.example.tvapp.data.ReminderScheduler.sync(applicationContext)
         if (lastFocusedChannelId != null) {
             pendingFocusRestore = true
         }

@@ -19,7 +19,9 @@ import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
 import com.example.tvapp.data.EPGRepository
+import com.example.tvapp.data.MarkedProgram
 import com.example.tvapp.data.Program
+import com.example.tvapp.data.ReminderScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -42,8 +44,6 @@ class EPGActivity : BaseActivity() {
         private const val FULL_DAY_MINUTES = 1440
     }
 
-    private data class MarkedProgram(val channel: Channel, val program: Program)
-
     private lateinit var currentTimeText: TextView
     private lateinit var timeScaleContainer: FrameLayout
     private lateinit var labelsList: RecyclerView
@@ -52,6 +52,7 @@ class EPGActivity : BaseActivity() {
     private lateinit var epgHorizontalScroll: HorizontalScrollView
 
     private val epgRepository by lazy { EPGRepository(applicationContext) }
+    private val preferences by lazy { AppPreferences(applicationContext) }
     private var channels: List<Channel> = emptyList()
     private lateinit var rowAdapter: EpgRowAdapter
     private lateinit var labelAdapter: EpgLabelAdapter
@@ -93,9 +94,11 @@ class EPGActivity : BaseActivity() {
 
         setupScrollSync()
         updateCurrentTimeDisplay()
+        restoreMarks()
         startMarkedCheckLoop()
         epgHorizontalScroll.doOnLayout {
             setupEPGGrid()
+            rowAdapter.setSelections(markedPrograms.keys)
             loadEPGForDate()
         }
     }
@@ -431,13 +434,40 @@ class EPGActivity : BaseActivity() {
         }
     }
 
+    private fun restoreMarks() {
+        val now = System.currentTimeMillis()
+        val stored = preferences.markedPrograms
+        val future = stored.filter { it.endTime > now }
+        if (future.size != stored.size) {
+            preferences.markedPrograms = future
+        }
+        markedPrograms.clear()
+        future.forEach { markedPrograms[it.key] = it }
+        ReminderScheduler.sync(applicationContext)
+    }
+
+    private fun persistMarks() {
+        preferences.markedPrograms = markedPrograms.values.toList()
+        ReminderScheduler.sync(applicationContext)
+    }
+
     private fun toggleMark(channel: Channel, program: Program) {
         val key = EpgRowAdapter.keyOf(channel.id, program)
-        if (markedPrograms.remove(key) != null) {
+        val removed = markedPrograms.remove(key)
+        if (removed != null) {
             promptedKeys.remove(key)
+            ReminderScheduler.cancel(applicationContext, removed)
         } else {
-            markedPrograms[key] = MarkedProgram(channel, program)
+            markedPrograms[key] = MarkedProgram(
+                channelId = channel.id,
+                channelName = channel.name,
+                streamUrl = channel.streamUrl,
+                title = program.title,
+                startTime = program.startTime,
+                endTime = program.endTime
+            )
         }
+        persistMarks()
         rowAdapter.setSelections(markedPrograms.keys)
     }
 
@@ -453,34 +483,52 @@ class EPGActivity : BaseActivity() {
     private fun checkMarkedPrograms() {
         if (promptShowing || !lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) || markedPrograms.isEmpty()) return
         val now = System.currentTimeMillis()
-        val due = markedPrograms.filter { (key, marked) ->
+        val due = markedPrograms.filter { (key, mark) ->
             key !in promptedKeys &&
-                marked.program.startTime > now &&
-                marked.program.startTime - now <= MARK_NOTIFY_AHEAD_MS
+                mark.startTime > now &&
+                mark.startTime - now <= MARK_NOTIFY_AHEAD_MS
         }
         if (due.isEmpty()) return
         due.keys.forEach { promptedKeys.add(it) }
-        due.values.forEach { marked ->
-            NotificationHelper.showUpcomingProgramNotification(this, marked.channel, marked.program)
+        due.values.forEach { mark ->
+            NotificationHelper.showUpcomingProgramNotification(this, mark)
         }
-        showMarkedPrompt(due.values.sortedBy { it.program.startTime })
+        showMarkedPrompt(due.values.sortedBy { it.startTime })
     }
 
     private fun showMarkedPrompt(due: List<MarkedProgram>) {
         promptShowing = true
-        val names = due.joinToString("\n") { "• ${it.program.title} — ${it.channel.name}" }
+        val names = due.joinToString("\n") { "• ${it.title} — ${it.channelName}" }
         AlertDialog.Builder(this)
             .setTitle(R.string.epg_marked_title)
             .setMessage(getString(R.string.epg_marked_message, names))
             .setPositiveButton(R.string.yes) { _, _ ->
-                val channel = due.first().channel
-                due.forEach { markedPrograms.remove(EpgRowAdapter.keyOf(it.channel.id, it.program)) }
+                val first = due.first()
+                due.forEach { mark ->
+                    markedPrograms.remove(mark.key)
+                    ReminderScheduler.cancel(applicationContext, mark)
+                }
+                persistMarks()
                 rowAdapter.setSelections(markedPrograms.keys)
-                openPlayer(channel)
+                openMarkedPlayer(first)
             }
             .setNegativeButton(R.string.no, null)
             .setOnDismissListener { promptShowing = false }
             .show()
+    }
+
+    private fun openMarkedPlayer(mark: MarkedProgram) {
+        val channel = ChannelList.channels.find { it.id == mark.channelId }
+        if (channel != null) {
+            openPlayer(channel)
+        } else {
+            val intent = android.content.Intent(this, PlayerActivity::class.java).apply {
+                putExtra("channel_id", mark.channelId)
+                putExtra("channel_name", mark.channelName)
+                putExtra("stream_url", mark.streamUrl)
+            }
+            startActivity(intent)
+        }
     }
 
     private fun openPlayer(channel: Channel) {

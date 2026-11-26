@@ -10,8 +10,7 @@ import android.content.pm.PackageManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import com.example.tvapp.data.Channel
-import com.example.tvapp.data.Program
+import com.example.tvapp.data.MarkedProgram
 import com.example.tvapp.ui.PlayerActivity
 
 object NotificationHelper {
@@ -35,22 +34,17 @@ object NotificationHelper {
         manager.createNotificationChannel(channel)
     }
 
-    fun showUpcomingProgramNotification(
-        context: Context,
-        channel: Channel,
-        program: Program
-    ) {
+    fun showUpcomingProgramNotification(context: Context, mark: MarkedProgram, freshStreamUrl: String? = null) {
         ensureChannel(context)
         val intent = Intent(context, PlayerActivity::class.java).apply {
-            putExtra("channel_id", channel.id)
-            putExtra("channel_name", channel.name)
-            putExtra("stream_url", channel.streamUrl)
-            putExtra("logo_url", channel.logoUrl)
+            putExtra("channel_id", mark.channelId)
+            putExtra("channel_name", mark.channelName)
+            putExtra("stream_url", freshStreamUrl?.takeIf { it.isNotBlank() } ?: mark.streamUrl)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val pendingIntent = PendingIntent.getActivity(
             context,
-            program.hashCode(),
+            mark.key.hashCode(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -58,7 +52,7 @@ object NotificationHelper {
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher)
             .setContentTitle(context.getString(R.string.notification_upcoming_title))
-            .setContentText(context.getString(R.string.notification_upcoming_text, program.title, channel.name))
+            .setContentText(context.getString(R.string.notification_upcoming_text, mark.title, mark.channelName))
             .setContentIntent(pendingIntent)
             .addAction(
                 NotificationCompat.Action.Builder(
@@ -73,10 +67,10 @@ object NotificationHelper {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             return
         }
-        NotificationManagerCompat.from(context).notify(program.hashCode(), builder.build())
+        NotificationManagerCompat.from(context).notify(mark.key.hashCode(), builder.build())
     }
 
-    fun cancelNotification(context: Context, program: Program) {
-        NotificationManagerCompat.from(context).cancel(program.hashCode())
+    fun cancelNotification(context: Context, mark: MarkedProgram) {
+        NotificationManagerCompat.from(context).cancel(mark.key.hashCode())
     }
 }
