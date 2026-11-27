@@ -23,8 +23,7 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34])
 class ThemePaletteContrastTest {
 
-    private fun themed(theme: UiTheme, black: Boolean): Context =
-        ContextThemeWrapper(RuntimeEnvironment.getApplication(), ThemeCatalog.styleFor(theme, black))
+    private fun themed(theme: UiTheme, black: Boolean): Context = ContextThemeWrapper(RuntimeEnvironment.getApplication(), ThemeCatalog.styleFor(theme, black))
 
     private fun contrast(fg: Int, bg: Int): Double {
         val l1 = luminance(fg)

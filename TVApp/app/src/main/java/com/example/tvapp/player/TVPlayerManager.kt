@@ -1,9 +1,12 @@
 package com.example.tvapp.player
 
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
@@ -14,6 +17,8 @@ import androidx.media3.datasource.TransferListener
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import androidx.media3.session.MediaSession
 import androidx.media3.ui.PlayerView
 import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Channel
@@ -34,7 +39,8 @@ import java.util.zip.GZIPInputStream
 class TVPlayerManager(private val context: Context) {
 
     private var exoPlayer: ExoPlayer? = null
-    private var trackSelector: androidx.media3.exoplayer.trackselection.DefaultTrackSelector? = null
+    private var trackSelector: DefaultTrackSelector? = null
+    private var mediaSession: MediaSession? = null
     private val preferences = AppPreferences(context)
     private val limeHdClient = LimeHdClient(context)
     private val channelRepository = ChannelRepository(context)
@@ -148,7 +154,18 @@ class TVPlayerManager(private val context: Context) {
 
         applyQualityMode()
         playerView.player = exoPlayer
+        // Транспортная сессия: play/pause с пульта/Bluetooth/из PiP без фокуса активности.
+        mediaSession = MediaSession.Builder(context, exoPlayer!!)
+            .setSessionActivity(sessionActivityIntent(context))
+            .build()
         startStallWatchdog(callback)
+    }
+
+    /** Тап по системному плейеру/уведомлению ведёт на главный экран. */
+    internal fun sessionActivityIntent(context: Context): PendingIntent {
+        val intent = Intent(context, com.example.tvapp.ui.MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        return PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
 
     /**
@@ -261,6 +278,11 @@ class TVPlayerManager(private val context: Context) {
             val mediaItem = MediaItem.Builder()
                 .setUri(url)
                 .setTag(channel.id)
+                .setMediaMetadata(
+                    MediaMetadata.Builder()
+                        .setTitle(channel.name)
+                        .build()
+                )
                 .build()
             setMediaItem(mediaItem)
             prepare()
@@ -354,6 +376,8 @@ class TVPlayerManager(private val context: Context) {
         watchdogJob?.cancel()
         watchdogJob = null
         scope.cancel()
+        mediaSession?.release()
+        mediaSession = null
         exoPlayer?.apply {
             stop()
             release()
