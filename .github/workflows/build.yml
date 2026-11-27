@@ -102,17 +102,17 @@ jobs:
           python3 - <<'PY'
           import json, collections
           d = json.load(open('osv-report.json'))
+          bom = json.load(open('TVApp/app/build/sbom/bom.json'))
           rows = []
-          scanned = 0
           for r in d.get('results', []):
               for p in r.get('packages', []):
-                  scanned += 1
                   pkg = p['package']
                   for v in p.get('vulnerabilities', []):
                       sev = ((v.get('database_specific') or {}).get('severity') or 'Unknown').capitalize()
                       rows.append((sev, pkg['name'], pkg['version'], v['id']))
           counts = collections.Counter(s for s, *_ in rows)
-          print('packages scanned: %d, advisories: %d %s' % (scanned, len(rows), dict(counts) or ''))
+          print('packages scanned: %d, advisories: %d %s' %
+                (len(bom['components']), len(rows), dict(counts) or ''))
           with open('/tmp/sev.md', 'w') as f:
               if rows:
                   f.write('| Severity | Package | Advisory |\n|---|---|---|\n')
