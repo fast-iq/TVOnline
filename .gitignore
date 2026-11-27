@@ -67,6 +67,9 @@ local.properties
 # Tool reports
 lint-results*
 dependency-check-report.*
+dc-reports/
+jacocoTestReport/
+jacocoTestReport.xml
 
 # Scratch / third-party reference material
 /fix_kt.ps1
