@@ -8,6 +8,7 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.tvapp.R
@@ -19,6 +20,32 @@ sealed class GridItem {
     data class Card(val channel: Channel) : GridItem()
 }
 
+/**
+ * Сравнение элементов сетки для DiffUtil: идентичность — по категории заголовка
+ * и id канала; содержимое — по всем полям (живые статусы эфира приходят отдельными
+ * payload-обновлениями и в сравнение не входят).
+ */
+internal class ChannelDiffCallback(
+    private val oldItems: List<GridItem>,
+    private val newItems: List<GridItem>
+) : DiffUtil.Callback() {
+    override fun getOldListSize(): Int = oldItems.size
+
+    override fun getNewListSize(): Int = newItems.size
+
+    override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+        val old = oldItems[oldItemPosition]
+        val new = newItems[newItemPosition]
+        return when {
+            old is GridItem.Header && new is GridItem.Header -> old.category == new.category
+            old is GridItem.Card && new is GridItem.Card -> old.channel.id == new.channel.id
+            else -> false
+        }
+    }
+
+    override fun areContentsTheSame(oldPos: Int, newPos: Int): Boolean = oldItems[oldPos] == newItems[newPos]
+}
+
 class ChannelAdapter(
     private var items: List<GridItem> = emptyList(),
     private val onChannelSelected: (Channel) -> Unit,
@@ -26,8 +53,6 @@ class ChannelAdapter(
     private val onFocusPositionChanged: (Int) -> Unit = {},
     private val isFavorite: (String) -> Boolean = { false }
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-
-    private var channels: List<Channel> = items.filterIsInstance<GridItem.Card>().map { it.channel }
 
     inner class ChannelViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val channelLogo: ImageView = itemView.findViewById(R.id.channelLogo)
@@ -166,9 +191,10 @@ class ChannelAdapter(
     override fun getItemCount(): Int = items.size
 
     fun updateItems(newItems: List<GridItem>) {
+        val oldItems = items
+        val result = DiffUtil.calculateDiff(ChannelDiffCallback(oldItems, newItems))
         items = newItems
-        channels = newItems.filterIsInstance<GridItem.Card>().map { it.channel }
-        notifyDataSetChanged()
+        result.dispatchUpdatesTo(this)
     }
 
     /** Обновляет звёздочку у карточек без перевыпуска (после смены избранного). */
