@@ -5,13 +5,16 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.tvapp.BaseActivity
@@ -19,15 +22,15 @@ import com.example.tvapp.R
 import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
-import com.example.tvapp.data.ChannelRepository
 import com.example.tvapp.data.LivePrograms
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class MainActivity : BaseActivity() {
 
@@ -43,7 +46,11 @@ class MainActivity : BaseActivity() {
     private lateinit var historyButton: ImageView
     private lateinit var channelAdapter: ChannelAdapter
 
-    private val channelRepository by lazy { ChannelRepository(applicationContext) }
+    // Явный провайдер вместо by viewModels(): на reused-JVM фабрика activity 1.8 отдаёт
+    // Application первого теста (Robolectric), и VM читал бы чужие файлы-кэши.
+    private val viewModel: MainViewModel by lazy {
+        ViewModelProvider(this, ViewModelProvider.AndroidViewModelFactory(application))[MainViewModel::class.java]
+    }
     private val preferences by lazy { AppPreferences(applicationContext) }
 
     private var viewMode = ViewMode.ALL
@@ -106,7 +113,7 @@ class MainActivity : BaseActivity() {
         if (preferences.lastChannelId != null) {
             pendingFocusRestore = true
         }
-        loadChannels()
+        observeViewModel()
         startNetworkMonitoring()
         requestNotificationPermissionIfNeeded()
         updateController = UpdateController(this, scope, preferences).also { it.checkIfNeeded() }
@@ -148,32 +155,22 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    private fun loadChannels() {
-        scope.launch {
-            // 1. Мгновенно показываем последний известный список с диска (логотипы подгрузятся через Glide).
-            val disk = withContext(Dispatchers.IO) { channelRepository.loadFromDisk() }
-            if (!disk.isNullOrEmpty()) {
-                ChannelList.updateChannels(disk)
-                applyViewMode()
-                restoreLastChannel()
-                updateHeaderProgram(disk)
-                restoreFocusIfNeeded()
-            } else {
-                updateEmptyState()
-            }
-            // 2. Фоновое обновление с сети — заменит список свежими логотипами/программами.
-            try {
-                val channels = withContext(Dispatchers.IO) { channelRepository.getChannels() }
-                if (channels.isNotEmpty()) {
-                    applyViewMode()
-                    restoreLastChannel()
-                    updateHeaderProgram(channels)
-                    restoreFocusIfNeeded()
-                }
-                updateEmptyState()
-            } catch (e: Exception) {
-                Log.e("MainActivity", "channel refresh failed: ${e.message}")
-                updateEmptyState()
+    /** Реакция на состояние загрузчика: каждая реальная смена списка перекрашивает UI. */
+    private fun observeViewModel() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.state
+                    .map { it.channels }
+                    .distinctUntilChanged()
+                    .collect { channels ->
+                        if (channels.isNotEmpty()) {
+                            applyViewMode()
+                            restoreLastChannel()
+                            updateHeaderProgram(channels)
+                            restoreFocusIfNeeded()
+                        }
+                        updateEmptyState()
+                    }
             }
         }
     }
@@ -361,7 +358,7 @@ class MainActivity : BaseActivity() {
         if (lastFocusedChannelId != null) {
             pendingFocusRestore = true
         }
-        loadChannels()
+        viewModel.refresh()
         startLiveTicker()
     }
 
