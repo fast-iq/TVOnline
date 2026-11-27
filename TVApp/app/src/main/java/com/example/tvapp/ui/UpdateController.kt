@@ -11,6 +11,7 @@ import com.example.tvapp.R
 import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.UpdateChecker
 import com.example.tvapp.data.UpdateInfo
+import com.example.tvapp.data.UpdateInstaller
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -46,9 +47,11 @@ internal class UpdateController(
             .setMessage(info.notes.ifBlank { activity.getString(R.string.update_no_notes) })
             .setPositiveButton(R.string.update_download) { _, _ ->
                 try {
-                    val url = info.apkUrl ?: info.url
-                    if (url.isNotBlank()) {
-                        activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                    val apk = info.apkUrl
+                    if (!apk.isNullOrBlank()) {
+                        UpdateInstaller.start(activity, scope, apk, info.url)
+                    } else if (info.url.isNotBlank()) {
+                        activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(info.url)))
                     }
                 } catch (e: ActivityNotFoundException) {
                     Toast.makeText(activity, R.string.update_failed, Toast.LENGTH_SHORT).show()

@@ -23,6 +23,7 @@ import com.example.tvapp.data.RegionsCodec
 import com.example.tvapp.data.SettingsBackup
 import com.example.tvapp.data.UpdateChecker
 import com.example.tvapp.data.UpdateInfo
+import com.example.tvapp.data.UpdateInstaller
 import com.example.tvapp.data.UpdateResult
 import com.example.tvapp.ui.ThemeCatalog
 import com.example.tvapp.ui.UiTheme
@@ -368,9 +369,11 @@ class SettingsActivity : BaseActivity() {
             .setMessage(info.notes.ifBlank { getString(R.string.update_no_notes) })
             .setPositiveButton(R.string.update_download) { _, _ ->
                 try {
-                    val url = info.apkUrl ?: info.url
-                    if (url.isNotBlank()) {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                    val apk = info.apkUrl
+                    if (!apk.isNullOrBlank()) {
+                        UpdateInstaller.start(this, uiScope, apk, info.url)
+                    } else if (info.url.isNotBlank()) {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(info.url)))
                     }
                 } catch (e: Exception) {
                     Toast.makeText(this, R.string.update_failed, Toast.LENGTH_SHORT).show()

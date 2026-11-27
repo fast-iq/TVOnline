@@ -165,6 +165,8 @@
     <string name="update_latest">У вас установлена последняя версия</string>
     <string name="update_failed">Не удалось проверить обновление</string>
     <string name="update_download">Скачать</string>
+    <string name="update_downloading">Загрузка обновления…</string>
+    <string name="update_grant_install">Разрешите установку из неизвестных источников в настройках</string>
     <string name="update_later">Позже</string>
 
     <!-- Settings backup -->

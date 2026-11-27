@@ -1,4 +1,12 @@
 
+### 2026-11-27 Session 54 — In-app APK update install + v1.0.19 tag
+
+User: update flow was ACTION_VIEW to the release URL — TV browser downloads the APK to Downloads and stops; install must be triggered manually. Fixed: «Скачать» now downloads in-app and launches the system installer.
+
+**`UpdateInstaller` (`data/`):** HttpURLConnection GET to `cacheDir/updates/update.apk` (instanceFollowRedirects + one manual hop for Location when Java refuses cross-protocol redirect; GitHub assets redirect https→https which is auto-followed), then `installIntent` = ACTION_VIEW + `FileProvider.getUriForFile(context, "${packageName}.fileprovider", apk)` + type application/vnd.android.package-archive + GRANT_READ_URI|NEW_TASK (file:// URI is rejected on N+). No `canRequestPackageInstalls()` → toast + Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES with package URI; ActivityNotFoundException → browser fallback to the release page. Wired into BOTH update dialogs (UpdateController silent 24h check + Settings manual checkDetailed); APK url present → in-app installer, otherwise browser as before. Manifest: REQUEST_INSTALL_PACKAGES permission + androidx FileProvider authority com.example.tvapp.fileprovider, `res/xml/file_paths.xml` cache-path updates/. Strings update_downloading/update_grant_install ru+en. New Robolectric UpdateInstallerTest (content scheme, provider authority, mime, grant flag) → 190 tests. Version default in build.gradle 1.0.19/10019 (CI overrides via -PAPP_VERSION=tag). ktlint pitfall again: `standard:function-signature` demands `= Intent(...).apply {` on the signature line when the first body line fits — and its companion fix re-indents the block (4-space level relative to signature).
+
+Full local pipeline green (this Linux box): ktlintCheck/testDebugUnitTest (190/190)/lintDebug (0 errors)/assembleDebug 25.7MB. Tag v1.0.19 → CI release build. Note: first run after update, install-from-unknown permission must be granted once in the prompt (Android TV shows it).
+
 ### 2026-11-27 Session 53 — Theme-switch crash fix, theme redesign, PiP remote controls (built on Linux CI-loop, no local SDK)
 
 User on v1.0.18 device: crash on theme switch; midnight/emerald «подправить на 20% в сторону современного», sunset/light «переделать»; «строка с каналом не меняет цвет»; how to start/stop PiP from remote.
