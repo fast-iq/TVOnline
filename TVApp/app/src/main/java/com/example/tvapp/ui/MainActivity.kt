@@ -100,6 +100,11 @@ class MainActivity : BaseActivity() {
         }
 
         setupChannelsGrid()
+        // «Продолжить просмотр»: на холодном старте сетка сама сойдёт к последнему
+        // смотренному каналу (focusOnPosition прокрутит к нему), в шапке уже его передача.
+        if (preferences.lastChannelId != null) {
+            pendingFocusRestore = true
+        }
         loadChannels()
         requestNotificationPermissionIfNeeded()
         checkForUpdatesIfNeeded()
@@ -158,6 +163,7 @@ class MainActivity : BaseActivity() {
             if (!disk.isNullOrEmpty()) {
                 ChannelList.updateChannels(disk)
                 applyViewMode()
+                restoreLastChannel()
                 updateHeaderProgram(disk)
                 restoreFocusIfNeeded()
             } else {
@@ -260,24 +266,26 @@ class MainActivity : BaseActivity() {
     }
 
     private fun adapterPositionForChannel(channelId: String): Int {
-        val index = displayedChannels.indexOfFirst { it.id == channelId }
-        if (index < 0) return -1
-        val firstChannel = displayedChannels.firstOrNull() ?: return -1
-        val firstAdapterPos = if (viewMode == ViewMode.ALL) {
-            firstAdapterPositionOf(firstChannel)
+        val channel = displayedChannels.find { it.id == channelId } ?: return -1
+        return if (viewMode == ViewMode.ALL) {
+            firstAdapterPositionOf(channel)
         } else {
-            0
+            displayedChannels.indexOf(channel)
         }
-        return firstAdapterPos + index
     }
 
-    /** В режиме ALL перед каждой категорией стоит заголовок-строка; вычисляем сдвиг. */
+    /**
+     * В режиме ALL перед каждой категорией стоит заголовок-строка:
+     * позиция = (заголовок + каналы) предыдущих категорий + заголовок своей + индекс в ней.
+     */
     private fun firstAdapterPositionOf(channel: Channel): Int {
         val headers = ChannelGrouping.categoriesInOrder(displayedChannels)
             .takeWhile { it != channel.category }
-            .size
-        return headers + ChannelGrouping.channelsByCategory(displayedChannels, channel.category)
+            .sumOf { 1 + ChannelGrouping.channelsByCategory(displayedChannels, it).size } +
+            1 // заголовок самой категории канала
+        val indexInCategory = ChannelGrouping.channelsByCategory(displayedChannels, channel.category)
             .indexOfFirst { it.id == channel.id }
+        return if (indexInCategory < 0) -1 else headers + indexInCategory
     }
 
     private fun focusOnPosition(position: Int) {
