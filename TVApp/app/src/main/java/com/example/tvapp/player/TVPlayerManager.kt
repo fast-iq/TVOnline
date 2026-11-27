@@ -22,6 +22,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.BufferedInputStream
 import java.io.IOException
@@ -43,12 +45,15 @@ class TVPlayerManager(private val context: Context) {
     private var manualSwitch = false
     private var bufferingSince = 0L
     private var recoveryCooldownUntil = 0L
+    private val stallWatchdog = StallWatchdog()
+    private var watchdogJob: Job? = null
 
     private val stuckBufferingMs = 8_000L
     private val recoveryCooldownMs = 60_000L
 
     companion object {
         private const val TAG = "TVPlayerManager"
+        private const val WATCHDOG_TICK_MS = 5_000L
     }
 
     interface PlayerCallback {
@@ -131,6 +136,33 @@ class TVPlayerManager(private val context: Context) {
 
         applyQualityMode()
         playerView.player = exoPlayer
+        startStallWatchdog(callback)
+    }
+
+    /**
+     * Опрос «заморозки» эфира: ExoPlayer может играть вечно без новых кадров (stalled
+     * без ошибки). [StallWatchdog] решение принимает по позиции; при срабатывании
+     * берём свежий URL потока (живой токен) и перезапускаем воспроизведение.
+     */
+    private fun startStallWatchdog(callback: PlayerCallback?) {
+        watchdogJob?.cancel()
+        watchdogJob = scope.launch {
+            while (isActive) {
+                delay(WATCHDOG_TICK_MS)
+                val player = exoPlayer ?: continue
+                if (stallWatchdog.onTick(player.isPlaying, player.currentPosition) == StallAction.RECOVER) {
+                    val channel = currentChannel ?: continue
+                    android.util.Log.d(TAG, "stream stalled, restarting playback")
+                    callback?.onBuffering(true)
+                    val fresh = try {
+                        channelRepository.refreshStreamUrl(channel.id)
+                    } catch (e: Exception) {
+                        null
+                    }
+                    if (fresh != null) playChannel(channel, fresh) else playChannel(channel, channel.streamUrl)
+                }
+            }
+        }
     }
 
     private fun createDataSourceFactory(): DataSource.Factory = object : DataSource.Factory {
@@ -166,6 +198,7 @@ class TVPlayerManager(private val context: Context) {
         pendingUrl = url
         fallbackIndex = if (streamUrl == null) 0 else getCurrentStreamUrls().indexOf(streamUrl).coerceAtLeast(0)
         bufferingSince = 0L
+        stallWatchdog.reset()
 
         exoPlayer?.apply {
             clearMediaItems()
@@ -205,6 +238,7 @@ class TVPlayerManager(private val context: Context) {
         val channel = currentChannel ?: return
         recoveryCooldownUntil = now + recoveryCooldownMs
         android.util.Log.d(TAG, "stuck buffering ${now - bufferingSince}ms, refreshing stream URL")
+        stallWatchdog.reset()
         scope.launch {
             val fresh = try {
                 channelRepository.refreshStreamUrl(channel.id)
@@ -242,6 +276,8 @@ class TVPlayerManager(private val context: Context) {
     }
 
     fun releasePlayer() {
+        watchdogJob?.cancel()
+        watchdogJob = null
         scope.cancel()
         exoPlayer?.apply {
             stop()
