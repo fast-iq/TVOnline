@@ -40,6 +40,8 @@
             android:name=".ui.PlayerActivity"
             android:exported="false"
             android:screenOrientation="landscape"
+            android:supportsPictureInPicture="true"
+            android:resizeableActivity="true"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|locale|layoutDirection|uiMode"
             android:theme="@style/Theme.TVApp.Black" />
 

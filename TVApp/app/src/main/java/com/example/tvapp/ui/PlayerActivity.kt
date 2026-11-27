@@ -1,6 +1,12 @@
 package com.example.tvapp.ui
 
+import android.app.PictureInPictureParams
+import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.graphics.Rect
 import android.os.Bundle
+import android.util.Log
+import android.util.Rational
 import android.view.KeyEvent
 import android.view.View
 import android.widget.LinearLayout
@@ -32,7 +38,25 @@ class PlayerActivity : BaseActivity() {
 
         /** Быстрые пресеты отмотки time-shift (минуты назад от «сейчас»). */
         private val TIMESHIFT_OFFSET_MINUTES = listOf(5, 15, 30, 60)
+
+        /**
+         * Клавиши, которые в PiP-окне нечего делать: диалоги и оверлеи в
+         * плавающем окне невидимы, а BACK там не должен убивать воспроизведение
+         * (закрывается крестиком самого окна).
+         */
+        private val PIP_IGNORED_KEYS = setOf(
+            KeyEvent.KEYCODE_BACK,
+            KeyEvent.KEYCODE_MENU,
+            KeyEvent.KEYCODE_INFO,
+            KeyEvent.KEYCODE_CAPTIONS,
+            KeyEvent.KEYCODE_DPAD_UP,
+            KeyEvent.KEYCODE_DPAD_DOWN,
+            0x52c1 // кнопка «источник» на части пультов
+        )
     }
+
+    /** Чисто для тестов: подавляется ли клавиша в режиме картинки-в-картинке. */
+    internal fun pipBlocksKey(keyCode: Int, inPip: Boolean): Boolean = inPip && keyCode in PIP_IGNORED_KEYS
 
     private var channelId: String? = null
     private var streamUrl: String? = null
@@ -55,6 +79,9 @@ class PlayerActivity : BaseActivity() {
 
     /** Начало архивного окна при просмотре time-shift; null — мы в живом эфире. */
     private var timeshiftFromMs: Long? = null
+
+    /** Воспроизведение идёт в PiP-окне — системный onPause паузу ставить не должен. */
+    private var pipActive = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -180,10 +207,57 @@ class PlayerActivity : BaseActivity() {
 
     override fun onPause() {
         super.onPause()
+        // PiP-окно: система «приостанавливает» активность формально, воспроизведение остаётся.
+        if (isInPictureInPictureMode || pipActive) return
         playerManager.pause()
     }
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean = when (keyCode) {
+    /**
+     * Картинка-в-картинке: HOME во время воспроизведения отправляет плеер в
+     * плавающее окно. На устройствах без поддержки (и до запуска воспроизведения) — ничего.
+     */
+    /** Видимость для теста: сам хук protected в Activity. */
+    internal fun userLeaveHint(): Unit = onUserLeaveHint()
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (isInPictureInPictureMode) return
+        if (currentChannel == null) return
+        if (!packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) return
+        try {
+            val params = PictureInPictureParams.Builder()
+                .setAspectRatio(Rational(16, 9))
+                .apply {
+                    val rect = Rect()
+                    playerView.getWindowVisibleDisplayFrame(rect)
+                    if (!rect.isEmpty) setSourceRectHint(rect)
+                }
+                .build()
+            if (enterPictureInPictureMode(params)) {
+                pipActive = true
+            }
+        } catch (e: Exception) {
+            Log.w("PlayerActivity", "PiP enter failed: ${e.message}")
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        pipActive = isInPictureInPictureMode
+        if (isInPictureInPictureMode) {
+            // В плавающем окне видно только видеополотно — прячем оверлеи и отменяем их таймеры.
+            overlayHideJob?.cancel()
+            programOverlay.visibility = View.GONE
+            infoText.visibility = View.GONE
+        }
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean = when {
+        pipBlocksKey(keyCode, isInPictureInPictureMode) -> true
+        else -> onKeyDownUnlocked(keyCode, event)
+    }
+
+    private fun onKeyDownUnlocked(keyCode: Int, event: KeyEvent?): Boolean = when (keyCode) {
         KeyEvent.KEYCODE_BACK -> {
             val input = numberInput
             if (input != null && input.isActive()) {
