@@ -1,5 +1,6 @@
 package com.example.tvapp
 
+import android.annotation.SuppressLint
 import android.app.Application
 import android.util.Log
 import com.bumptech.glide.Glide
@@ -30,7 +31,11 @@ class TVApplication : Application() {
      * Ранняя (до первого Glide.with) настройка Glide: явные размеры кэшей и RGB_565
      * по умолчанию. Glide.init ленивая — тяжёлая инициализация откладывается до
      * первого запроса, так что main-поток это не тормозит.
+     * Glide помечает init/isInitialized как @VisibleForTests (канонический путь —
+     * AppGlideModule + процессор аннотаций), но при встроенном Kotlin AGP 9 процессора
+     * нет — это единственный публичный способ конфигурации.
      */
+    @SuppressLint("VisibleForTests")
     private fun configureGlide() {
         if (Glide.isInitialized()) return
         try {
