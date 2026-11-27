@@ -107,6 +107,8 @@
 
     <!-- Favorites / history / search -->
     <string name="favorite_badge_desc">Избранный канал</string>
+    <string name="favorite_added">Канал добавлен в избранное</string>
+    <string name="favorite_removed">Канал убран из избранного</string>
     <string name="favorites_toggle_desc">Показать избранные каналы</string>
     <string name="history_toggle_desc">Показать недавно просмотренные каналы</string>
     <string name="search_button_desc">Поиск каналов</string>

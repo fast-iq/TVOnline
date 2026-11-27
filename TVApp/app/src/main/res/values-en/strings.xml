@@ -104,6 +104,8 @@
 
     <!-- Favorites / history / search -->
     <string name="favorite_badge_desc">Favorite channel</string>
+    <string name="favorite_added">Added to favorites</string>
+    <string name="favorite_removed">Removed from favorites</string>
     <string name="favorites_toggle_desc">Show favorite channels</string>
     <string name="history_toggle_desc">Show recently watched channels</string>
     <string name="search_button_desc">Search channels</string>

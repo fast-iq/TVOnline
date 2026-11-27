@@ -9,6 +9,7 @@ import android.util.Log
 import android.util.Rational
 import android.view.KeyEvent
 import android.view.View
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -73,6 +74,7 @@ class PlayerActivity : BaseActivity() {
     private lateinit var programOverlay: LinearLayout
     private lateinit var programNowText: TextView
     private lateinit var programNextText: TextView
+    private lateinit var favoriteIndicator: ImageView
 
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private val preferences by lazy { AppPreferences(applicationContext) }
@@ -112,6 +114,7 @@ class PlayerActivity : BaseActivity() {
             programOverlay = findViewById(R.id.programOverlay)
             programNowText = findViewById(R.id.programNowText)
             programNextText = findViewById(R.id.programNextText)
+            favoriteIndicator = findViewById(R.id.favoriteIndicator)
 
             numberInput = NumberInputController(this, findViewById(R.id.numberOverlay)) { channel ->
                 playSelectedChannel(channel)
@@ -325,6 +328,10 @@ class PlayerActivity : BaseActivity() {
         }
         KeyEvent.KEYCODE_CAPTIONS -> {
             showSubtitleDialog()
+            true
+        }
+        KeyEvent.KEYCODE_STAR -> {
+            toggleFavorite()
             true
         }
         KeyEvent.KEYCODE_DPAD_RIGHT -> {
@@ -554,6 +561,35 @@ class PlayerActivity : BaseActivity() {
             .show()
     }
 
+    /**
+     * Кнопка ★ на пульте: избранный канал прямо из плеера (без выхода в сетку).
+     * Возвращает true, если канал добавлен.
+     */
+    internal fun toggleFavoriteChannel(channel: Channel): Boolean {
+        val favorites = preferences.favoriteChannelIds.toMutableSet()
+        val added: Boolean
+        if (channel.id in favorites) {
+            favorites.remove(channel.id)
+            added = false
+        } else {
+            favorites.add(channel.id)
+            added = true
+        }
+        preferences.favoriteChannelIds = favorites
+        return added
+    }
+
+    private fun toggleFavorite() {
+        val channel = currentChannel ?: return
+        val added = toggleFavoriteChannel(channel)
+        updateFavoriteIndicator(channel)
+        Toast.makeText(this, if (added) R.string.favorite_added else R.string.favorite_removed, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun updateFavoriteIndicator(channel: Channel) {
+        favoriteIndicator.visibility = if (channel.id in preferences.favoriteChannelIds) View.VISIBLE else View.GONE
+    }
+
     private fun showProgramOverlay(channel: Channel) {
         val title = channel.currentProgramTitle
         if (title == null || title.isBlank()) {
@@ -579,6 +615,7 @@ class PlayerActivity : BaseActivity() {
         }
 
         programOverlay.visibility = View.VISIBLE
+        updateFavoriteIndicator(channel)
         scheduleOverlayHide()
     }
 
