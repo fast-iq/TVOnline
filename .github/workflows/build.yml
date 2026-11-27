@@ -201,9 +201,9 @@ jobs:
           echo "Setting versionCode=$VC versionName=$VN"
           # Версии живут в build.gradle (атрибуты из манифеста убраны в session 51) —
           # тег остаётся источником истины.
-          sed -i "s/^def versionCode = .*/def versionCode = $VC/" TVApp/app/build.gradle
-          sed -i "s/^def versionName = .*/def versionName = \"$VN\"/" TVApp/app/build.gradle
-          grep -n "^def version" TVApp/app/build.gradle
+          sed -i "s/^def resolvedVersionCode = .*/def resolvedVersionCode = $VC/" TVApp/app/build.gradle
+          sed -i "s/^def resolvedVersionName = .*/def resolvedVersionName = \"$VN\"/" TVApp/app/build.gradle
+          grep -n "^def resolvedVersion" TVApp/app/build.gradle
 
       - name: Decode Keystore (for release builds)
         if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')

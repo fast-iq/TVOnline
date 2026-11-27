@@ -20,18 +20,20 @@ if (!appVersion) {
     }
 }
 
-def versionName = "1.0.18"
-def versionCode = 10018
+// ВАЖНО: имена не должны совпадать с property у defaultConfig — внутри closure
+// правая часть резолвится owner-first и 'versionCode = versionCode' присваивал null.
+def resolvedVersionName = "1.0.18"
+def resolvedVersionCode = 10018
 if (appVersion != null && appVersion) {
     def m = (appVersion =~ /v?(\d+)\.(\d+)(?:\.(\d+))?/)
     if (m.find()) {
         def major = m.group(1).toInteger()
         def minor = m.group(2).toInteger()
         def patch = m.group(3) != null ? m.group(3).toInteger() : 0
-        versionName = "${major}.${minor}.${patch}"
-        versionCode = (major * 10000) + (minor * 100) + patch
+        resolvedVersionName = "${major}.${minor}.${patch}"
+        resolvedVersionCode = (major * 10000) + (minor * 100) + patch
     } else {
-        versionName = appVersion
+        resolvedVersionName = appVersion
     }
 }
 
@@ -43,8 +45,8 @@ android {
         applicationId "com.example.tvapp"
         minSdk 28
         targetSdk 36
-        versionCode = versionCode
-        versionName = versionName
+        versionCode = resolvedVersionCode
+        versionName = resolvedVersionName
     }
 
     signingConfigs {
