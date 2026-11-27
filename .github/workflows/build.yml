@@ -63,12 +63,14 @@ jobs:
       - name: Clean Gradle Cache
         run: cd TVApp && ./gradlew clean --no-daemon
 
-  # Job проверки безопасности зависимостей
+  # Job проверки безопасности зависимостей: SBOM реального runtime classpath + скан osv.dev.
+  # (Раньше был OWASP Action по голому checkout — он видел только gradle-wrapper.jar,
+  # т.е. скан был фиктивным; gradle-плагин dependency-check Android-модули не поддерживает.)
   dependency-check:
     runs-on: ubuntu-24.04
-    name: Security Scan (OWASP)
+    name: Security Scan (osv.dev)
     needs: lint
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -79,35 +81,78 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Setup Gradle
+      - name: Setup Gradle (dependency cache)
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Resolve dependencies (populate cache for scan)
+      - name: Grant execute permission for gradlew
+        run: chmod +x TVApp/gradlew
+
+      - name: Generate SBOM (release runtime classpath)
+        run: cd TVApp && ./gradlew :app:generateSbom --no-daemon
+
+      - name: Install osv-scanner
         run: |
-          chmod +x TVApp/gradlew
-          cd TVApp
-          ./gradlew dependencies --configuration releaseRuntimeClasspath --no-daemon > /tmp/deps.txt 2>&1 || true
-          head -50 /tmp/deps.txt
+          curl -fsSL -o osv.tar.gz "https://github.com/google/osv-scanner/releases/download/v2.7.1/osv-scanner_linux_amd64.tar.gz"
+          tar xzf osv.tar.gz
+          ./osv-scanner --version
 
-      - name: OWASP Dependency-Check
-        uses: dependency-check/Dependency-Check_Action@main
-        env:
-          JAVA_HOME: /opt/jdk
-        with:
-          project: 'TVOnline'
-          path: '.'
-          format: 'HTML'
-          out: 'dc-reports'
-          args: >
-            -f JSON
-            --failOnCVSS 9
+      - name: Scan SBOM
+        run: |
+          ./osv-scanner scan source --sbom TVApp/app/build/sbom/bom.json -f json --output-file osv-report.json
+          python3 - <<'PY'
+          import json, collections
+          d = json.load(open('osv-report.json'))
+          rows = []
+          scanned = 0
+          for r in d.get('results', []):
+              for p in r.get('packages', []):
+                  scanned += 1
+                  pkg = p['package']
+                  for v in p.get('vulnerabilities', []):
+                      sev = ((v.get('database_specific') or {}).get('severity') or 'Unknown').capitalize()
+                      rows.append((sev, pkg['name'], pkg['version'], v['id']))
+          counts = collections.Counter(s for s, *_ in rows)
+          print('packages scanned: %d, advisories: %d %s' % (scanned, len(rows), dict(counts) or ''))
+          with open('/tmp/sev.md', 'w') as f:
+              if rows:
+                  f.write('| Severity | Package | Advisory |\n|---|---|---|\n')
+                  for s, n, ver, vid in sorted(rows):
+                      f.write('| %s | %s@%s | %s |\n' % (s, n, ver, vid))
+          PY
+          echo "### Security scan (osv.dev)" >> $GITHUB_STEP_SUMMARY
+          if [ -s /tmp/sev.md ]; then
+            cat /tmp/sev.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Уязвимостей не найдено." >> $GITHUB_STEP_SUMMARY
+          fi
 
-      - name: Upload Dependency-Check Report
+      - name: Gate on High/Critical
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          d = json.load(open('osv-report.json'))
+          bad = []
+          for r in d.get('results', []):
+              for p in r.get('packages', []):
+                  for v in p.get('vulnerabilities', []):
+                      sev = ((v.get('database_specific') or {}).get('severity') or '').lower()
+                      if sev in ('high', 'critical'):
+                          bad.append((p['package']['name'], p['package']['version'], v['id'], sev))
+          for b in bad:
+              print('::error::%s@%s %s (%s)' % b)
+          if bad:
+              sys.exit(1)
+          print('No High/Critical advisories — OK')
+          PY
+
+      - name: Upload Security Report
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: dependency-check-report
-          path: dc-reports/
+          name: security-report
+          path: |
+            osv-report.json
+            TVApp/app/build/sbom/bom.json
           retention-days: 14
 
   # Job для сборки и тестирования

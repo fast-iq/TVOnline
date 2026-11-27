@@ -122,6 +122,12 @@ dependencies {
     // Glide для загрузки изображений
     implementation 'com.github.bumptech.glide:glide:4.16.0'
 
+    // media3-common тянет guava 33.3.1-android с GHSA-xxph-c9ww-hj94 (High 8.2) —
+    // пиним на исправленную ветку (совместима: Android-вариант той же мажорной линии).
+    constraints {
+        implementation 'com.google.guava:guava:33.7.2-android'
+    }
+
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.json:json:20250517'
     testImplementation 'org.robolectric:robolectric:4.15.1'
@@ -181,5 +187,40 @@ tasks.register('jacocoDataPackageCoverage', JacocoCoverageVerification) {
                 minimum = 0.45
             }
         }
+    }
+}
+
+tasks.register('generateSbom') {
+    description 'CycloneDX SBOM runtime-зависимостей (основа CI-скана уязвимостей)'
+    group 'verification'
+    doLast {
+        def latest = new TreeMap<String, String>()
+        configurations.releaseRuntimeClasspath.incoming.resolutionResult.allComponents.each { c ->
+            def mv = c.moduleVersion
+            // версия unspecified — сам модуль приложения, не внешняя зависимость
+            if (mv != null && mv.version != 'unspecified') latest["${mv.group}:${mv.name}"] = mv.version
+        }
+        def components = latest.collect { ga, v ->
+            def parts = ga.split(':', 2)
+            [
+                'bom-ref': "${ga}@${v}".toString(),
+                type     : 'library',
+                group    : parts[0],
+                name     : parts[1],
+                version  : v,
+                purl     : "pkg:maven/${parts[0]}/${parts[1]}@${v}".toString()
+            ]
+        }
+        def bom = [
+            bomFormat : 'CycloneDX',
+            specVersion: '1.5',
+            version   : 1,
+            metadata  : [tools: [[vendor: 'TVOnline', name: 'generateSbom']]],
+            components: components
+        ]
+        def out = layout.buildDirectory.file('sbom/bom.json').get().asFile
+        out.parentFile.mkdirs()
+        out.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(bom))
+        println "SBOM: ${components.size()} components -> ${out}"
     }
 }
