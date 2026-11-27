@@ -12,6 +12,7 @@ import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.media3.ui.PlayerView
 import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
@@ -32,6 +33,9 @@ import java.util.Date
 import java.util.Locale
 
 class PlayerActivity : BaseActivity() {
+
+    // Плеер всегда на чёрном фоне: тема задаёт акценты, но не светлые поверхности.
+    override fun prefersBlackStage(): Boolean = true
 
     companion object {
         private const val OVERLAY_VISIBLE_MS = 5000L
@@ -373,7 +377,7 @@ class PlayerActivity : BaseActivity() {
             Toast.makeText(this, R.string.timeshift_no_archive, Toast.LENGTH_SHORT).show()
             return
         }
-        android.app.AlertDialog.Builder(this)
+        AlertDialog.Builder(this)
             .setTitle(R.string.timeshift_title)
             .setItems(offsets.map { it.first }.toTypedArray()) { _, which -> startTimeshift(offsets[which].second) }
             .show()
@@ -428,7 +432,7 @@ class PlayerActivity : BaseActivity() {
         val current = TrackLabels.selectedTrackIndex(groups)
         val items = (listOf(getString(R.string.audio_track_auto)) + labels.mapIndexed { i, l -> if (i == current) "$l ${getString(R.string.source_current)}" else l })
             .toTypedArray()
-        android.app.AlertDialog.Builder(this)
+        AlertDialog.Builder(this)
             .setTitle(R.string.audio_track_title)
             .setItems(items) { _, which ->
                 playerManager.selectAudioTrack(which)
@@ -448,7 +452,7 @@ class PlayerActivity : BaseActivity() {
         val current = TrackLabels.selectedTrackIndex(groups)
         val items = (listOf(getString(R.string.subtitle_off)) + labels.mapIndexed { i, l -> if (i == current) "$l ${getString(R.string.source_current)}" else l })
             .toTypedArray()
-        android.app.AlertDialog.Builder(this)
+        AlertDialog.Builder(this)
             .setTitle(R.string.subtitle_title)
             .setItems(items) { _, which ->
                 playerManager.selectTextTrack(which)
@@ -468,7 +472,7 @@ class PlayerActivity : BaseActivity() {
             val active = sleepTimerJob?.isActive == true && sleepTimerMinutes == minutes
             if (active) "$base ${getString(R.string.source_current)}" else base
         }
-        android.app.AlertDialog.Builder(this)
+        AlertDialog.Builder(this)
             .setTitle(getString(R.string.sleep_timer_title))
             .setItems(labels.toTypedArray()) { _, which ->
                 applySleepTimer(options[which])
@@ -509,7 +513,7 @@ class PlayerActivity : BaseActivity() {
             items.add("$label$marker")
         }
 
-        android.app.AlertDialog.Builder(this)
+        AlertDialog.Builder(this)
             .setTitle(getString(R.string.switch_source_title))
             .setItems(items.toTypedArray()) { _, which ->
                 playerManager.switchToUrl(urls[which])

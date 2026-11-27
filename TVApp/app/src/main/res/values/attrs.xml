@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Семантические цвета тем: layouts/drawables ссылаются через ?attr, значения задаёт Theme.TVApp.* -->
+<resources>
+    <attr name="tvBackground" format="color" />
+    <attr name="tvBgTop" format="color" />
+    <attr name="tvBgBottom" format="color" />
+    <attr name="tvSurface" format="color" />
+    <attr name="tvSurfaceHigh" format="color" />
+    <attr name="tvSurfaceStroke" format="color" />
+    <attr name="tvAccent" format="color" />
+    <attr name="tvAccentSecondary" format="color" />
+    <attr name="tvTextPrimary" format="color" />
+    <attr name="tvTextSecondary" format="color" />
+    <attr name="tvTextHint" format="color" />
+    <attr name="tvLive" format="color" />
+    <attr name="tvLiveBg" format="color" />
+    <attr name="tvSelected" format="color" />
+    <attr name="tvSelectedBg" format="color" />
+    <attr name="tvWarning" format="color" />
+    <attr name="tvOptionText" format="reference" />
+</resources>

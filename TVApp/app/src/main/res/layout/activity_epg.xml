@@ -12,7 +12,7 @@
         android:text="@string/epg"
         android:textSize="28sp"
         android:textStyle="bold"
-        android:textColor="@color/text_primary"
+        android:textColor="?attr/tvTextPrimary"
         android:layout_marginStart="32dp"
         android:layout_marginTop="24dp"
         app:layout_constraintTop_toTopOf="parent"
@@ -24,7 +24,7 @@
         android:layout_height="wrap_content"
         android:text="@string/time_placeholder"
         android:textSize="16sp"
-        android:textColor="@color/accent_secondary"
+        android:textColor="?attr/tvAccentSecondary"
         android:layout_marginStart="16dp"
         app:layout_constraintTop_toTopOf="@id/titleText"
         app:layout_constraintBottom_toBottomOf="@id/titleText"
@@ -77,7 +77,7 @@
             android:layout_height="wrap_content"
             android:text="@string/channels"
             android:textSize="14sp"
-            android:textColor="@color/text_secondary"
+            android:textColor="?attr/tvTextSecondary"
             android:layout_gravity="center" />
     </FrameLayout>
 

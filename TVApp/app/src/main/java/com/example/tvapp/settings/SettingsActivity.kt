@@ -24,6 +24,8 @@ import com.example.tvapp.data.SettingsBackup
 import com.example.tvapp.data.UpdateChecker
 import com.example.tvapp.data.UpdateInfo
 import com.example.tvapp.data.UpdateResult
+import com.example.tvapp.ui.ThemeCatalog
+import com.example.tvapp.ui.UiTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -37,6 +39,7 @@ class SettingsActivity : BaseActivity() {
     private lateinit var regionButton: TextView
     private lateinit var qualityOptions: LinearLayout
     private lateinit var languageOptions: LinearLayout
+    private lateinit var themeOptions: LinearLayout
     private lateinit var refreshButton: TextView
 
     private val preferences by lazy { AppPreferences(applicationContext) }
@@ -68,11 +71,13 @@ class SettingsActivity : BaseActivity() {
         regionButton = findViewById(R.id.regionButton)
         qualityOptions = findViewById(R.id.qualityOptions)
         languageOptions = findViewById(R.id.languageOptions)
+        themeOptions = findViewById(R.id.themeOptions)
 
         setupRegionSelector()
         ensureRegionsLoaded {}
         setupQualitySelector()
         setupLanguageSelector()
+        setupThemeSelector()
         setupRefreshButton()
         setupUpdateButton()
         setupBackupButtons()
@@ -104,7 +109,7 @@ class SettingsActivity : BaseActivity() {
             val base = if (code == 0) getString(R.string.region_auto) else name
             if (code == currentCode) "$base ${getString(R.string.source_current)}" else base
         }
-        android.app.AlertDialog.Builder(this)
+        AlertDialog.Builder(this)
             .setTitle(getString(R.string.region_select_title))
             .setSingleChoiceItems(labels.toTypedArray(), currentRegionIndex) { dialog, which ->
                 currentRegionIndex = which
@@ -251,6 +256,17 @@ class SettingsActivity : BaseActivity() {
         val selected = languages.indexOfFirst { it.first == preferences.language }.takeIf { it != -1 } ?: 0
         buildOptionRow(languageOptions, languages.map { it.second }, selected) { index ->
             preferences.language = languages[index].first
+            recreate()
+        }
+    }
+
+    private fun setupThemeSelector() {
+        val themes = UiTheme.ordered
+        val labels = themes.map { getString(it.labelRes) }
+        val selected = themes.indexOf(ThemeCatalog.savedTheme(this))
+        buildOptionRow(themeOptions, labels, selected) { index ->
+            preferences.uiTheme = themes[index].id
+            // Пересоздать нельзя: тема читается в BaseActivity.onCreate до setContentView.
             recreate()
         }
     }

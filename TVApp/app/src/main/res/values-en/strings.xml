@@ -115,6 +115,11 @@
     <string name="search_no_results">Nothing found</string>
     <string name="voice_search_desc">Voice search</string>
     <string name="voice_unavailable">Voice search is not available on this device</string>
+    <string name="theme_label">Appearance theme</string>
+    <string name="theme_midnight">Midnight</string>
+    <string name="theme_emerald">Emerald</string>
+    <string name="theme_sunset">Sunset</string>
+    <string name="theme_light">Light</string>
 
     <!-- Categories -->
     <string name="category_federal">Federal</string>

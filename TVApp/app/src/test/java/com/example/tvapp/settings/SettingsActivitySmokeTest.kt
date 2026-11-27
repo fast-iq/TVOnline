@@ -112,6 +112,38 @@ class SettingsActivitySmokeTest {
     }
 
     @Test
+    fun themeRowStoresChoice() {
+        prefs.uiTheme = "midnight"
+
+        val activity = launch()
+        val row = activity.findViewById<LinearLayout>(R.id.themeOptions)
+
+        assertEquals(4, row.childCount)
+        assertTrue(row.button(0).isSelected)
+        assertEquals(
+            activity.getString(R.string.theme_light),
+            row.button(3).text.toString()
+        )
+
+        row.button(3).performClick()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertEquals("light", prefs.uiTheme)
+    }
+
+    @Test
+    fun savedThemeIsAppliedToActivityStyle() {
+        prefs.uiTheme = "light"
+
+        val activity = launch()
+        val value = android.util.TypedValue()
+        val resolved = activity.theme.resolveAttribute(R.attr.tvAccent, value, true)
+
+        assertTrue("tvAccent не резолвится", resolved)
+        assertEquals(R.color.light_accent, value.resourceId)
+    }
+
+    @Test
     fun regionShowsAutoByDefaultWithoutNetwork() {
         prefs.limehdRegion = 0
 

@@ -5,5 +5,5 @@
     <corners android:radius="12dp" />
     <stroke
         android:width="3dp"
-        android:color="@color/selected_indicator" />
+        android:color="?attr/tvSelected" />
 </shape>

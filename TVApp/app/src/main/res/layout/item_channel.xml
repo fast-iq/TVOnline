@@ -8,7 +8,7 @@
     android:clickable="true"
     app:cardCornerRadius="18dp"
     app:cardElevation="3dp"
-    app:cardBackgroundColor="@color/surface"
+    app:cardBackgroundColor="?attr/tvSurface"
     android:foreground="?attr/selectableItemBackground">
 
     <LinearLayout
@@ -42,7 +42,7 @@
                 android:paddingBottom="2dp"
                 android:textSize="11sp"
                 android:textStyle="bold"
-                android:textColor="@color/accent_secondary"
+                android:textColor="?attr/tvAccentSecondary"
                 android:visibility="gone" />
 
             <TextView
@@ -56,7 +56,7 @@
                 android:paddingBottom="2dp"
                 android:textSize="11sp"
                 android:textStyle="bold"
-                android:textColor="@color/live_indicator"
+                android:textColor="?attr/tvLive"
                 android:text="@string/drm_badge"
                 android:visibility="gone" />
 
@@ -66,7 +66,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom|end"
                 android:src="@drawable/ic_favorite"
-                app:tint="@color/accent_secondary"
+                app:tint="?attr/tvAccentSecondary"
                 android:padding="4dp"
                 android:visibility="gone"
                 android:contentDescription="@string/favorite_badge_desc" />
@@ -79,7 +79,7 @@
             android:text="@string/channel_name_placeholder"
             android:textSize="13sp"
             android:textStyle="bold"
-            android:textColor="@color/text_primary"
+            android:textColor="?attr/tvTextPrimary"
             android:gravity="center"
             android:layout_marginTop="8dp"
             android:maxLines="1"
@@ -91,7 +91,7 @@
             android:layout_height="wrap_content"
             android:text="@string/program_title_placeholder"
             android:textSize="11sp"
-            android:textColor="@color/text_secondary"
+            android:textColor="?attr/tvTextSecondary"
             android:gravity="center"
             android:layout_marginTop="2dp"
             android:maxLines="1"

@@ -124,7 +124,7 @@ class EpgRowAdapter(
 
         val nowOffset = ((System.currentTimeMillis() - baseTime) / 1000f / 60f).coerceIn(0f, totalMinutes.toFloat())
         val nowLine = View(context)
-        nowLine.setBackgroundColor(context.getColor(R.color.accent))
+        nowLine.setBackgroundColor(context.themeColor(R.attr.tvAccent))
         val nowParams = FrameLayout.LayoutParams(3, rowHeight)
         nowParams.marginStart = (nowOffset * pixelsPerMinute).toInt()
         row.addView(nowLine, nowParams)
@@ -164,7 +164,7 @@ class EpgRowAdapter(
         val programText = TextView(context).apply {
             text = context.getString(R.string.epg_program_text, timeStr, program.title)
             textSize = 12f
-            setTextColor(context.getColor(R.color.white))
+            setTextColor(context.themeColor(R.attr.tvTextPrimary))
             maxLines = 1
             ellipsize = android.text.TextUtils.TruncateAt.END
         }
@@ -202,7 +202,7 @@ class EpgLabelAdapter(private val rowHeight: Int) : RecyclerView.Adapter<EpgLabe
         val text = TextView(parent.context).apply {
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, rowHeight)
             textSize = 14f
-            setTextColor(parent.context.getColor(R.color.white))
+            setTextColor(parent.context.themeColor(R.attr.tvTextPrimary))
             gravity = android.view.Gravity.CENTER_VERTICAL
             setPadding(16, 0, 16, 0)
             maxLines = 1

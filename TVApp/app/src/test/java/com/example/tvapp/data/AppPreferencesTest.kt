@@ -26,6 +26,15 @@ class AppPreferencesTest {
     }
 
     @Test
+    fun uiThemeDefaultsAndPersists() {
+        val store = FakeSharedPreferences()
+        assertEquals("midnight", AppPreferences(store).uiTheme)
+
+        AppPreferences(store).uiTheme = "sunset"
+        assertEquals("sunset", AppPreferences(store).uiTheme)
+    }
+
+    @Test
     fun allSettingsPersistAcrossInstances() {
         val store = FakeSharedPreferences()
         val first = AppPreferences(store)
@@ -33,12 +42,14 @@ class AppPreferencesTest {
         first.language = "en"
         first.lastChannelId = "ntv"
         first.timezoneOffset = 5
+        first.uiTheme = "emerald"
 
         val second = AppPreferences(store)
         assertEquals(AppPreferences.QualityMode.MINIMUM, second.qualityMode)
         assertEquals("en", second.language)
         assertEquals("ntv", second.lastChannelId)
         assertEquals(5, second.timezoneOffset)
+        assertEquals("emerald", second.uiTheme)
     }
 
     @Test

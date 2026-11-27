@@ -9,4 +9,4 @@
     android:paddingBottom="4dp"
     android:textSize="17sp"
     android:textStyle="bold"
-    android:textColor="@color/accent_secondary" />
+    android:textColor="?attr/tvAccentSecondary" />

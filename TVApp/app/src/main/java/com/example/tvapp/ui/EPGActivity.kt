@@ -156,7 +156,7 @@ class EPGActivity : BaseActivity() {
             val timeText = TextView(this).apply {
                 text = String.format(Locale.US, "%02d:00", hourVal)
                 textSize = 14f
-                setTextColor(getColor(R.color.text_secondary))
+                setTextColor(themeColor(R.attr.tvTextSecondary))
                 gravity = android.view.Gravity.START
             }
             val params = FrameLayout.LayoutParams(pixelsPerHour.toInt(), FrameLayout.LayoutParams.MATCH_PARENT)

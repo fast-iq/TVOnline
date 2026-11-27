@@ -10,8 +10,8 @@
         <clip>
             <shape android:shape="rectangle">
                 <gradient
-                    android:startColor="@color/accent"
-                    android:endColor="@color/accent_secondary"
+                    android:startColor="?attr/tvAccent"
+                    android:endColor="?attr/tvAccentSecondary"
                     android:angle="0" />
                 <corners android:radius="100dp" />
             </shape>

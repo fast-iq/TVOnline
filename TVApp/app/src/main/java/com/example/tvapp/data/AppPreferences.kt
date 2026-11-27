@@ -15,6 +15,7 @@ class AppPreferences(private val prefs: SharedPreferences) {
         private const val KEY_TIMEZONE_OFFSET = "timezone_offset"
         private const val KEY_QUALITY_MODE = "quality_mode"
         private const val KEY_LANGUAGE = "language"
+        private const val KEY_UI_THEME = "ui_theme"
         private const val KEY_LIMEHD_DEVICE_ID = "limehd_device_id"
         private const val KEY_LIMEHD_REGION = "limehd_region"
         private const val KEY_LIMEHD_REGION_NAME = "limehd_region_name"
@@ -60,6 +61,13 @@ class AppPreferences(private val prefs: SharedPreferences) {
         get() = prefs.getString(KEY_LANGUAGE, "ru") ?: "ru"
         set(value) {
             prefs.edit { putString(KEY_LANGUAGE, value) }
+        }
+
+    /** id темы оформления (ThemeCatalog.UiTheme.id); по умолчанию «midnight». */
+    var uiTheme: String
+        get() = prefs.getString(KEY_UI_THEME, "midnight") ?: "midnight"
+        set(value) {
+            prefs.edit { putString(KEY_UI_THEME, value) }
         }
 
     var limehdDeviceId: String?

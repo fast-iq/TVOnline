@@ -118,6 +118,11 @@
     <string name="search_no_results">Ничего не найдено</string>
     <string name="voice_search_desc">Голосовой поиск</string>
     <string name="voice_unavailable">Голосовой поиск недоступен на этом устройстве</string>
+    <string name="theme_label">Тема оформления</string>
+    <string name="theme_midnight">Полночь</string>
+    <string name="theme_emerald">Изумруд</string>
+    <string name="theme_sunset">Закат</string>
+    <string name="theme_light">Светлая</string>
 
     <!-- Categories -->
     <string name="category_federal">Федеральные</string>

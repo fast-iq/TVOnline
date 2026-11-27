@@ -201,8 +201,8 @@ class MainActivity : BaseActivity() {
     }
 
     private fun updateModeButtonTints() {
-        val active = ContextCompat.getColor(this, R.color.accent_secondary)
-        val inactive = ContextCompat.getColor(this, R.color.text_secondary)
+        val active = themeColor(R.attr.tvAccentSecondary)
+        val inactive = themeColor(R.attr.tvTextSecondary)
         favoritesButton.setColorFilter(if (viewMode == ViewMode.FAVORITES) active else inactive)
         historyButton.setColorFilter(if (viewMode == ViewMode.HISTORY) active else inactive)
     }
