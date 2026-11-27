@@ -40,6 +40,12 @@
     <string name="source_alternative">Альтернативный</string>
     <string name="source_alternative_indexed">Альтернативный %1$d</string>
     <string name="only_one_source">Доступен только один источник</string>
+    <string name="timeshift_title">Смотреть с</string>
+    <string name="timeshift_from_program">Начала передачи</string>
+    <string name="timeshift_minutes_ago">%1$d мин назад</string>
+    <string name="timeshift_started">Воспроизведение с %1$s</string>
+    <string name="timeshift_back_live">Прямой эфир</string>
+    <string name="timeshift_no_archive">Архив недоступен для этого канала</string>
     <string name="source_current">(текущий)</string>
 
     <!-- EPG -->

@@ -28,6 +28,9 @@ class PlayerActivity : BaseActivity() {
 
     companion object {
         private const val OVERLAY_VISIBLE_MS = 5000L
+
+        /** Быстрые пресеты отмотки time-shift (минуты назад от «сейчас»). */
+        private val TIMESHIFT_OFFSET_MINUTES = listOf(5, 15, 30, 60)
     }
 
     private var channelId: String? = null
@@ -48,6 +51,9 @@ class PlayerActivity : BaseActivity() {
     private var sleepTimerJob: Job? = null
     private var sleepTimerMinutes = 0
     private var numberInput: NumberInputController? = null
+
+    /** Начало архивного окна при просмотре time-shift; null — мы в живом эфире. */
+    private var timeshiftFromMs: Long? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -120,6 +126,13 @@ class PlayerActivity : BaseActivity() {
                             infoText.visibility = View.VISIBLE
                         }
                     }
+
+                    override fun onPlaybackEnded() {
+                        // Архивное окно (time-shift) закончилось — «догоняем» живой эфир.
+                        runOnUiThread {
+                            if (timeshiftFromMs != null) returnToLive()
+                        }
+                    }
                 }
             )
 
@@ -134,6 +147,7 @@ class PlayerActivity : BaseActivity() {
                     currentChannel!!
                 }
                 playerManager.playChannel(playChannel, playUrl)
+                if (archivePlayUrl != null) timeshiftFromMs = archiveStart
                 showProgramOverlay(currentChannel!!)
             } else if (!streamUrl.isNullOrEmpty()) {
                 val url = archivePlayUrl ?: streamUrl!!
@@ -193,6 +207,10 @@ class PlayerActivity : BaseActivity() {
             showSleepTimerDialog()
             true
         }
+        KeyEvent.KEYCODE_DPAD_DOWN -> {
+            onTimeshiftKey()
+            true
+        }
         KeyEvent.KEYCODE_DPAD_RIGHT -> {
             switchChannel(1)
             true
@@ -214,6 +232,7 @@ class PlayerActivity : BaseActivity() {
         channelId = channel.id
         channelName = channel.name
         currentChannel = channel
+        timeshiftFromMs = null
         preferences.lastChannelId = channel.id
         preferences.addToWatchHistory(channel.id)
         playerManager.playChannel(channel, channel.streamUrl)
@@ -233,6 +252,7 @@ class PlayerActivity : BaseActivity() {
         channelId = newChannel.id
         channelName = newChannel.name
         currentChannel = newChannel
+        timeshiftFromMs = null
         preferences.addToWatchHistory(newChannel.id)
         playerManager.playChannel(
             newChannel,
@@ -248,6 +268,70 @@ class PlayerActivity : BaseActivity() {
         numberInput?.release()
         scope.cancel()
         playerManager.releasePlayer()
+    }
+
+    /**
+     * Time-shift живого эфира через архив канала (LimeHD `index-{from}-{to}.m3u8`):
+     * Кнопка ВНИЗ открывает меню отмотки, повторное нажатие в режиме
+     * time-shift возвращает в прямой эфир. По окончании архивного окна — авторат в эфир.
+     */
+    private fun onTimeshiftKey() {
+        if (timeshiftFromMs != null) {
+            returnToLive()
+            return
+        }
+        val channel = currentChannel ?: return
+        if (!ArchivePlayback.hasArchive(channel)) {
+            Toast.makeText(this, R.string.timeshift_no_archive, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val offsets = timeshiftMenuOptions(channel, System.currentTimeMillis())
+        if (offsets.isEmpty()) {
+            Toast.makeText(this, R.string.timeshift_no_archive, Toast.LENGTH_SHORT).show()
+            return
+        }
+        android.app.AlertDialog.Builder(this)
+            .setTitle(R.string.timeshift_title)
+            .setItems(offsets.map { it.first }.toTypedArray()) { _, which -> startTimeshift(offsets[which].second) }
+            .show()
+    }
+
+    /**
+     * Доступные точки старта отмотки: начало текущей передачи (если архив её
+     * покрывает) + пресеты «N минут назад». Пусто — предлагать нечего.
+     */
+    internal fun timeshiftMenuOptions(channel: Channel, nowMs: Long): List<Pair<String, Long>> {
+        val offsets = mutableListOf<Pair<String, Long>>()
+        val programStart = channel.currentProgramStart
+        if (programStart != null && ArchivePlayback.windowFor(channel, programStart, nowMs, nowMs) != null) {
+            offsets.add(getString(R.string.timeshift_from_program) to programStart)
+        }
+        for (minutes in TIMESHIFT_OFFSET_MINUTES) {
+            val from = nowMs - minutes * 60_000L
+            if (ArchivePlayback.windowFor(channel, from, nowMs, nowMs) != null) {
+                offsets.add(getString(R.string.timeshift_minutes_ago, minutes) to from)
+            }
+        }
+        return offsets
+    }
+
+    private fun startTimeshift(fromMs: Long) {
+        val channel = currentChannel ?: return
+        val now = System.currentTimeMillis()
+        val window = ArchivePlayback.windowFor(channel, fromMs, now, now) ?: return
+        val url = ArchivePlayback.buildUrl(channel.archiveUrl, window.first, window.second)
+        timeshiftFromMs = window.first
+        // В currentChannel остаётся живой канал — на него возвращаемся по конце окна/по кнопке.
+        playerManager.playChannel(channel.copy(streamUrl = url, fallbackStreamUrls = emptyList()), url)
+        val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(window.first))
+        Toast.makeText(this, getString(R.string.timeshift_started, time), Toast.LENGTH_SHORT).show()
+    }
+
+    private fun returnToLive() {
+        val channel = currentChannel ?: return
+        timeshiftFromMs = null
+        playerManager.playChannel(channel, channel.streamUrl)
+        Toast.makeText(this, R.string.timeshift_back_live, Toast.LENGTH_SHORT).show()
     }
 
     private fun showSleepTimerDialog() {

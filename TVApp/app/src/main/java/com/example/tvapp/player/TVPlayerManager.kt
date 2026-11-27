@@ -61,6 +61,9 @@ class TVPlayerManager(private val context: Context) {
         fun onPlaybackError(error: String)
         fun onBuffering(isBuffering: Boolean)
         fun onFallbackUsed(fallbackUrl: String)
+
+        /** Архивное (time-shift) воспроизведение дошло до конца окна. По умолчанию no-op. */
+        fun onPlaybackEnded() {}
     }
 
     fun initializePlayer(playerView: PlayerView, callback: PlayerCallback? = null) {
@@ -90,6 +93,7 @@ class TVPlayerManager(private val context: Context) {
                             Player.STATE_IDLE, Player.STATE_ENDED -> {
                                 callback?.onBuffering(false)
                                 bufferingSince = 0L
+                                if (state == Player.STATE_ENDED) callback?.onPlaybackEnded()
                             }
                         }
                     }

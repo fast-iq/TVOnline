@@ -37,6 +37,12 @@
     <string name="source_alternative">Alternative</string>
     <string name="source_alternative_indexed">Alternative %1$d</string>
     <string name="only_one_source">Only one source available</string>
+    <string name="timeshift_title">Watch from</string>
+    <string name="timeshift_from_program">Start of the programme</string>
+    <string name="timeshift_minutes_ago">%1$d min ago</string>
+    <string name="timeshift_started">Playing from %1$s</string>
+    <string name="timeshift_back_live">Back to live</string>
+    <string name="timeshift_no_archive">No archive available for this channel</string>
     <string name="source_current">(current)</string>
 
     <!-- EPG -->
