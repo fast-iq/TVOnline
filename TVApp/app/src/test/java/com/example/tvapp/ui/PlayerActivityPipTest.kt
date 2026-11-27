@@ -43,7 +43,6 @@ class PlayerActivityPipTest {
         val activity = activity()
 
         for (key in listOf(
-            KeyEvent.KEYCODE_BACK,
             KeyEvent.KEYCODE_MENU,
             KeyEvent.KEYCODE_INFO,
             KeyEvent.KEYCODE_CAPTIONS,
@@ -60,11 +59,14 @@ class PlayerActivityPipTest {
         val activity = activity()
 
         // Переключение каналов, плей/пауза и цифры работают и в плавающем окне.
+        // BACK тоже жив: с пульта это «стоп» — закрывает PiP и останавливает показ.
         for (key in listOf(
+            KeyEvent.KEYCODE_BACK,
             KeyEvent.KEYCODE_DPAD_LEFT,
             KeyEvent.KEYCODE_DPAD_RIGHT,
             KeyEvent.KEYCODE_DPAD_CENTER,
             KeyEvent.KEYCODE_ENTER,
+            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
             KeyEvent.KEYCODE_5
         )) {
             assertFalse("в PiP не должна подавляться $key", activity.pipBlocksKey(key, inPip = true))

@@ -45,11 +45,11 @@ class PlayerActivity : BaseActivity() {
 
         /**
          * Клавиши, которые в PiP-окне нечего делать: диалоги и оверлеи в
-         * плавающем окне невидимы, а BACK там не должен убивать воспроизведение
-         * (закрывается крестиком самого окна).
+         * плавающем окне невидимы. BACK при этом НЕ глушим: с пульта это
+         * штатный «стоп» — останавливает воспроизведение и закрывает окно
+         * (крестика на ТВ-пульте нет).
          */
         private val PIP_IGNORED_KEYS = setOf(
-            KeyEvent.KEYCODE_BACK,
             KeyEvent.KEYCODE_MENU,
             KeyEvent.KEYCODE_INFO,
             KeyEvent.KEYCODE_CAPTIONS,
@@ -273,9 +273,25 @@ class PlayerActivity : BaseActivity() {
             }
         }
         KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
-            if (!playerManager.isPlaying()) {
+            // Долгое удержание ОК — явный вход в PiP (на пультах без HOME).
+            if (event?.isLongPress == true && !isInPictureInPictureMode && currentChannel != null) {
+                userLeaveHint()
+            } else if (!playerManager.isPlaying()) {
                 playerManager.resume()
             }
+            true
+        }
+        KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, KeyEvent.KEYCODE_HEADSETHOOK -> {
+            // Работает и в PiP: пульт = плей/пауза, BACK = стоп.
+            if (playerManager.isPlaying()) playerManager.pause() else playerManager.resume()
+            true
+        }
+        KeyEvent.KEYCODE_MEDIA_PLAY -> {
+            playerManager.resume()
+            true
+        }
+        KeyEvent.KEYCODE_MEDIA_PAUSE -> {
+            playerManager.pause()
             true
         }
         KeyEvent.KEYCODE_MENU, 0x52c1 -> {
