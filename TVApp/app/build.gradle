@@ -176,7 +176,7 @@ tasks.register('jacocoTestReport', JacocoReport) {
 
 tasks.register('jacocoDataPackageCoverage', JacocoCoverageVerification) {
     dependsOn 'testDebugUnitTest'
-    description 'Порог покрытия пакета data (ядро: парсеры, кэши, репозитории)'
+    description 'Порог покрытия пакета data (ядро: парсеры, кэши, репозитории); факт ~58%'
     group 'verification'
     sourceDirectories.setFrom(coverageSources)
     classDirectories.setFrom(coverageClasses)
@@ -187,7 +187,26 @@ tasks.register('jacocoDataPackageCoverage', JacocoCoverageVerification) {
             includes = ['com.example.tvapp.data']
             limit {
                 counter = 'INSTRUCTION'
-                minimum = 0.45
+                minimum = 0.55
+            }
+        }
+    }
+}
+
+tasks.register('jacocoUiPackageCoverage', JacocoCoverageVerification) {
+    dependsOn 'testDebugUnitTest'
+    description 'Порог покрытия пакета ui (вынесенная логика: EpgMarks, PlayerLaunch, SleepTimer, хелперы); факт ~35%'
+    group 'verification'
+    sourceDirectories.setFrom(coverageSources)
+    classDirectories.setFrom(coverageClasses)
+    executionData.setFrom(coverageExec)
+    violationRules {
+        rule {
+            element = 'PACKAGE'
+            includes = ['com.example.tvapp.ui']
+            limit {
+                counter = 'INSTRUCTION'
+                minimum = 0.30
             }
         }
     }

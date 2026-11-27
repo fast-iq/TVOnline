@@ -279,8 +279,8 @@ jobs:
       - name: Run Unit Tests
         run: cd TVApp && ./gradlew testDebugUnitTest --no-daemon
 
-      - name: Coverage threshold (data package)
-        run: cd TVApp && ./gradlew jacocoDataPackageCoverage --no-daemon
+      - name: Coverage thresholds (data + ui packages)
+        run: cd TVApp && ./gradlew jacocoDataPackageCoverage jacocoUiPackageCoverage --no-daemon
 
       - name: Generate Coverage Report
         if: always()
