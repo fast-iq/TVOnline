@@ -3,9 +3,6 @@ package com.example.tvapp.ui
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.ConnectivityManager
-import android.net.Network
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -13,7 +10,6 @@ import android.view.KeyEvent
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
@@ -25,8 +21,6 @@ import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
 import com.example.tvapp.data.ChannelRepository
 import com.example.tvapp.data.LivePrograms
-import com.example.tvapp.data.UpdateChecker
-import com.example.tvapp.data.UpdateInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -59,7 +53,8 @@ class MainActivity : BaseActivity() {
     private var pendingFocusRestore: Boolean = false
     private var liveTickerJob: Job? = null
     private var isOnline: Boolean = true
-    private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    private var networkMonitor: NetworkMonitor? = null
+    private var updateController: UpdateController? = null
 
     private var numberInput: NumberInputController? = null
 
@@ -114,38 +109,7 @@ class MainActivity : BaseActivity() {
         loadChannels()
         startNetworkMonitoring()
         requestNotificationPermissionIfNeeded()
-        checkForUpdatesIfNeeded()
-    }
-
-    private fun checkForUpdatesIfNeeded() {
-        if (System.currentTimeMillis() - preferences.lastUpdateCheckMs < UPDATE_CHECK_INTERVAL_MS) return
-        scope.launch {
-            try {
-                val info = withContext(Dispatchers.IO) { UpdateChecker.check(this@MainActivity) }
-                preferences.lastUpdateCheckMs = System.currentTimeMillis()
-                if (info != null && !isFinishing) showUpdateDialog(info)
-            } catch (e: Exception) {
-                Log.w("MainActivity", "update check failed: ${e.message}")
-            }
-        }
-    }
-
-    private fun showUpdateDialog(info: UpdateInfo) {
-        AlertDialog.Builder(this)
-            .setTitle(getString(R.string.update_available, info.version))
-            .setMessage(info.notes.ifBlank { getString(R.string.update_no_notes) })
-            .setPositiveButton(R.string.update_download) { _, _ ->
-                try {
-                    val url = info.apkUrl ?: info.url
-                    if (url.isNotBlank()) {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                    }
-                } catch (e: Exception) {
-                    android.widget.Toast.makeText(this, R.string.update_failed, android.widget.Toast.LENGTH_SHORT).show()
-                }
-            }
-            .setNegativeButton(R.string.update_later, null)
-            .show()
+        updateController = UpdateController(this, scope, preferences).also { it.checkIfNeeded() }
     }
 
     private fun requestNotificationPermissionIfNeeded() {
@@ -155,33 +119,16 @@ class MainActivity : BaseActivity() {
     }
 
     /**
-     * Монитор связи: при пропаже сети показываем баннер «офлайн — список из кэша»,
-     * чтобы пустая/устаревшая сетка не выглядела поломкой.
+     * Монитор связи: при пропаже сети показываем баннер «офлайн — список из кэша»
+     * (реализация — [NetworkMonitor]).
      */
     private fun startNetworkMonitoring() {
-        val manager = getSystemService(ConnectivityManager::class.java)
-        setNetworkOnline(manager.activeNetwork != null)
-        networkCallback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                runOnUiThread { setNetworkOnline(true) }
-            }
-
-            override fun onLost(network: Network) {
-                // При нескольких интерфейсах (eth0+wifi) сеть мог унаследовать другой активный.
-                runOnUiThread { setNetworkOnline(manager.activeNetwork != null) }
-            }
-        }.also { manager.registerDefaultNetworkCallback(it) }
+        networkMonitor = NetworkMonitor(this) { online -> setNetworkOnline(online) }.also { it.start() }
     }
 
     private fun stopNetworkMonitoring() {
-        networkCallback?.let {
-            try {
-                getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(it)
-            } catch (e: Exception) {
-                Log.w("MainActivity", "network callback unregister: ${e.message}")
-            }
-        }
-        networkCallback = null
+        networkMonitor?.stop()
+        networkMonitor = null
     }
 
     internal fun setNetworkOnline(online: Boolean) {
@@ -311,27 +258,10 @@ class MainActivity : BaseActivity() {
         liveTickerJob = null
     }
 
-    private fun adapterPositionForChannel(channelId: String): Int {
-        val channel = displayedChannels.find { it.id == channelId } ?: return -1
-        return if (viewMode == ViewMode.ALL) {
-            firstAdapterPositionOf(channel)
-        } else {
-            displayedChannels.indexOf(channel)
-        }
-    }
-
-    /**
-     * В режиме ALL перед каждой категорией стоит заголовок-строка:
-     * позиция = (заголовок + каналы) предыдущих категорий + заголовок своей + индекс в ней.
-     */
-    private fun firstAdapterPositionOf(channel: Channel): Int {
-        val headers = ChannelGrouping.categoriesInOrder(displayedChannels)
-            .takeWhile { it != channel.category }
-            .sumOf { 1 + ChannelGrouping.channelsByCategory(displayedChannels, it).size } +
-            1 // заголовок самой категории канала
-        val indexInCategory = ChannelGrouping.channelsByCategory(displayedChannels, channel.category)
-            .indexOfFirst { it.id == channel.id }
-        return if (indexInCategory < 0) -1 else headers + indexInCategory
+    private fun adapterPositionForChannel(channelId: String): Int = if (viewMode == ViewMode.ALL) {
+        GridPositions.groupedPosition(displayedChannels, channelId)
+    } else {
+        displayedChannels.indexOfFirst { it.id == channelId }
     }
 
     private fun focusOnPosition(position: Int) {
@@ -382,17 +312,13 @@ class MainActivity : BaseActivity() {
         updateEmptyState()
     }
 
-    private fun channelAtAdapterPosition(position: Int): Channel? = displayedChannels.getOrNull(cardIndexAt(position))
-
-    /** Индекс карточки-канала по позиции адаптера (без заголовков категорий). */
-    private fun cardIndexAt(position: Int): Int {
-        if (viewMode != ViewMode.ALL) return position
-        var cards = 0
-        for (pos in 0 until position) {
-            if (channelAdapter.getItemViewType(pos) != ChannelAdapter.TYPE_HEADER) cards++
-        }
-        return cards
-    }
+    private fun channelAtAdapterPosition(position: Int): Channel? = displayedChannels.getOrNull(
+        GridPositions.cardIndexAt(
+            position,
+            grouped = viewMode == ViewMode.ALL,
+            isHeaderAt = { channelAdapter.getItemViewType(it) == ChannelAdapter.TYPE_HEADER }
+        )
+    )
 
     private fun updateHeaderProgram(channels: List<Channel>) {
         val channelIdToShow = lastSelectedChannelId ?: preferences.lastChannelId
@@ -571,7 +497,6 @@ class MainActivity : BaseActivity() {
     companion object {
         private const val LIVE_TICK_MS = 60_000L
         private const val GRID_SPAN_COUNT = 5
-        private const val UPDATE_CHECK_INTERVAL_MS = 24L * 60L * 60L * 1000L
     }
 
     override fun onDestroy() {

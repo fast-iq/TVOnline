@@ -1,26 +1,18 @@
 package com.example.tvapp.data
 
 import android.content.Context
-import android.os.Build
-import android.util.Base64
 import android.util.Log
-import org.json.JSONArray
 import org.json.JSONObject
-import java.io.OutputStream
-import java.net.HttpURLConnection
-import java.net.URL
 import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
-import java.security.KeyFactory
-import java.security.PublicKey
-import java.security.spec.X509EncodedKeySpec
-import java.util.Locale
 import java.util.UUID
-import javax.crypto.Cipher
 
 /**
- * Клиент LimeHD API. open + internal швы на HTTP-методы — чтобы юнит-тесты
- * подменяли транспорт заглушками (LimeHdClientFlowTest) без сети.
+ * Оркестрация LimeHD API: авторизация, сборка запросов, разбор ответов.
+ * Криптография/UA — в [LimeHdAuth], разбор JSON — в [LimeHdParser],
+ * HTTP на HttpURLConnection — в [LimeHdTransport].
+ *
+ * open + internal швы на HTTP-методы — чтобы юнит-тесты подменяли транспорт
+ * заглушками (LimeHdClientFlowTest) без сети.
  */
 open class LimeHdClient(context: Context) {
 
@@ -32,7 +24,7 @@ open class LimeHdClient(context: Context) {
     private var cachedRegions: List<LimeHdRegion>? = null
     private var currentRegionCode: Int? = null
 
-    private val userAgent: String by lazy { buildUserAgent() }
+    private val userAgent: String by lazy { LimeHdAuth.userAgent(deviceId()) }
     private val playerHeaders: Map<String, String> by lazy {
         mapOf(
             "User-Agent" to userAgent,
@@ -50,19 +42,12 @@ open class LimeHdClient(context: Context) {
          * (несуществующий порт), чтобы не ходить в живую сеть.
          */
         internal var baseUrl = "https://pl.iptv2021.com/"
-        private const val APP_VERSION_NAME = "4.1.2"
-        private const val APP_VERSION_CODE = "514"
         private const val INSTALL_TS = 1700000000L
-        private const val ORIGINAL_SIGNATURE =
-            "909adaa8726a311c84469dc7687245890768cf1a8c6445ad601f1a2c15409321"
-        private const val FALLBACK_PUBLIC_KEY =
-            "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA27pXRDTT1mshNBVRlvngJ7lb0xcenUL435fNC+arb7rNSTPO1veFrZwJfi+yWRqLdmLGYwol363AFL4zudp3OMIEOeXi2AGgxhaNrr2STRiZnkeu5oLfScWCi0qsMcMlR0pL/F0Xn/k82e1UHUF4U3jlqek0Bn3nWluIrLfUvK51hr2TccrYJGyh5xYRiQatfJW1fTDggvI8/D+y1uhpc3Ef66fYdoy54UbYxkjdP7+xwUeZ7w31h/cX8wDQtoD/wyA82lOJ5ySqbzJyefAitmLqKmrKt21pjS/9DC37E0BU99iBoUZPf4BUulDZphGXk+ob3bnOgXYXwP/v2Ecc7wIDAQAB"
     }
 
     fun getChannels(): List<Channel> {
         return try {
             ensureAuth()
-            Log.d(TAG, "auth done, publicKey=${cachedPublicKey != null}")
             val tz = effectiveTz()
             val region = prefs.limehdRegion
             Log.d(TAG, "playlist request: tz=$tz region=$region")
@@ -70,15 +55,10 @@ open class LimeHdClient(context: Context) {
                 "api/v4/playlist?tz=$tz&region=$region&limit=0&epg=1&epgcnt=4&epg_limit=4" +
                 "&installts=$INSTALL_TS&needCategories=0&drm=0"
             val payload = createPayload()
-            Log.d(TAG, "payload len=${payload.length}")
             val rawResponse = httpPostForm(url, "payload=" + URLEncoder.encode(payload, "UTF-8"))
-            Log.d(TAG, "playlist raw response: ${rawResponse?.take(200)} ?: null")
             val body = JSONObject(rawResponse ?: return emptyList())
             val channelsArray = body.optJSONArray("channels") ?: return emptyList()
-            Log.d(TAG, "playlist channels array length: ${channelsArray.length()}")
-            val parsed = parseChannels(channelsArray)
-            Log.d(TAG, "playlist parsed channels: ${parsed.size}")
-            parsed
+            LimeHdParser.parseChannels(channelsArray)
         } catch (e: Exception) {
             Log.e(TAG, "getChannels failed: ${e.message}")
             emptyList()
@@ -92,7 +72,7 @@ open class LimeHdClient(context: Context) {
             val url = baseUrl +
                 "api/v4/epg?id=$epgId&tz=$tz&epg_from=$epgFrom&epg_limit=$epgLimit&grouping=1&region=$region&lang=ru"
             val body = JSONObject(httpGet(url, apiHeaders()) ?: return emptyList())
-            parseEpg(body, channelId)
+            LimeHdParser.parseEpg(body, channelId)
         } catch (e: Exception) {
             Log.e(TAG, "fetchEpg failed: ${e.message}")
             emptyList()
@@ -108,7 +88,7 @@ open class LimeHdClient(context: Context) {
             val root = JSONObject(body)
             val data = root.optJSONObject("data")
             val regionsArray = root.optJSONArray("regions") ?: data?.optJSONArray("regions")
-            val parsed = parseRegions(regionsArray)
+            val parsed = LimeHdParser.parseRegions(regionsArray)
             if (parsed.isNotEmpty()) {
                 cachedRegions = parsed
             }
@@ -128,53 +108,23 @@ open class LimeHdClient(context: Context) {
 
     fun playerRequestHeaders(): Map<String, String> = playerHeaders
 
-    private fun parseRegions(array: JSONArray?): List<LimeHdRegion> = LimeHdParser.parseRegions(array)
-
-    private fun parseChannels(array: JSONArray): List<Channel> = LimeHdParser.parseChannels(array)
-
-    private fun parseEpg(root: JSONObject, channelId: String): List<Program> = LimeHdParser.parseEpg(root, channelId)
-
     private fun ensureAuth() {
         if (cachedPublicKey != null) return
         try {
             val body = httpGet(baseUrl + "auth", apiHeaders(), true)
             if (body == null) {
-                cachedPublicKey = FALLBACK_PUBLIC_KEY
+                cachedPublicKey = LimeHdAuth.FALLBACK_PUBLIC_KEY
                 return
             }
-            val obj = JSONObject(body)
-            val key = obj.optString("public_key", FALLBACK_PUBLIC_KEY)
-            cachedPublicKey = if (key.isBlank()) FALLBACK_PUBLIC_KEY else key
+            val key = JSONObject(body).optString("public_key", LimeHdAuth.FALLBACK_PUBLIC_KEY)
+            cachedPublicKey = if (key.isBlank()) LimeHdAuth.FALLBACK_PUBLIC_KEY else key
         } catch (e: Exception) {
-            cachedPublicKey = FALLBACK_PUBLIC_KEY
+            cachedPublicKey = LimeHdAuth.FALLBACK_PUBLIC_KEY
             Log.e(TAG, "auth failed: ${e.message}")
         }
     }
 
-    private fun createPayload(): String {
-        val deviceId = deviceId()
-        val requestTime = System.currentTimeMillis() / 1000L - cachedTimeOffset
-        val json = "{'request_time':$requestTime,'device_id':'$deviceId','signature':'$ORIGINAL_SIGNATURE'}"
-        return encrypt(json, cachedPublicKey ?: FALLBACK_PUBLIC_KEY)
-    }
-
-    private fun encrypt(data: String, publicKey: String): String {
-        val cipher = Cipher.getInstance("RSA/NONE/PKCS1Padding")
-        cipher.init(Cipher.ENCRYPT_MODE, parsePublicKey(publicKey))
-        val encoded = cipher.doFinal(data.toByteArray(StandardCharsets.UTF_8))
-        return Base64.encodeToString(encoded, Base64.NO_WRAP)
-    }
-
-    private fun parsePublicKey(pem: String): PublicKey {
-        val cleaned = pem
-            .replace("-----BEGIN PUBLIC KEY-----", "")
-            .replace("-----END PUBLIC KEY-----", "")
-            .replace("\r", "")
-            .replace("\n", "")
-            .replace(" ", "")
-        val der = Base64.decode(cleaned, Base64.NO_WRAP)
-        return KeyFactory.getInstance("RSA").generatePublic(X509EncodedKeySpec(der))
-    }
+    private fun createPayload(): String = LimeHdAuth.buildPayload(deviceId(), System.currentTimeMillis() / 1000L - cachedTimeOffset, cachedPublicKey ?: LimeHdAuth.FALLBACK_PUBLIC_KEY)
 
     private fun apiHeaders(): Map<String, String> = mapOf(
         "User-Agent" to userAgent,
@@ -183,53 +133,17 @@ open class LimeHdClient(context: Context) {
         "Accept-Encoding" to "identity"
     )
 
+    /** Шов теста: GET через [LimeHdTransport] + сверка часов по дате сервера. */
     internal open fun httpGet(url: String, headers: Map<String, String>, updateTimeOffset: Boolean = false): String? {
-        val connection = URL(url).openConnection() as HttpURLConnection
-        return try {
-            connection.requestMethod = "GET"
-            applyHeaders(connection, headers)
-            connection.connectTimeout = 15000
-            connection.readTimeout = 25000
-            if (updateTimeOffset && connection.date > 0L) {
-                cachedTimeOffset = (System.currentTimeMillis() - connection.date) / 1000L
-            }
-            if (connection.responseCode != 200) return null
-            connection.inputStream.bufferedReader().use { it.readText() }
-        } catch (e: Exception) {
-            Log.e(TAG, "GET $url failed: ${e.message}")
-            null
-        } finally {
-            connection.disconnect()
+        val response = LimeHdTransport.get(url, headers)
+        if (updateTimeOffset && response.serverDateMs > 0L) {
+            cachedTimeOffset = (System.currentTimeMillis() - response.serverDateMs) / 1000L
         }
+        return response.body
     }
 
-    internal open fun httpPostForm(url: String, body: String): String? {
-        val connection = URL(url).openConnection() as HttpURLConnection
-        return try {
-            connection.requestMethod = "POST"
-            applyHeaders(connection, apiHeaders())
-            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-            connection.connectTimeout = 15000
-            connection.readTimeout = 30000
-            connection.doOutput = true
-            connection.outputStream.use { stream: OutputStream ->
-                stream.write(body.toByteArray(StandardCharsets.UTF_8))
-            }
-            if (connection.responseCode != 200) return null
-            connection.inputStream.bufferedReader().use { it.readText() }
-        } catch (e: Exception) {
-            Log.e(TAG, "POST $url failed: ${e.message}")
-            null
-        } finally {
-            connection.disconnect()
-        }
-    }
-
-    private fun applyHeaders(connection: HttpURLConnection, headers: Map<String, String>) {
-        for ((key, value) in headers) {
-            connection.setRequestProperty(key, value)
-        }
-    }
+    /** Шов теста: POST формы через [LimeHdTransport]. */
+    internal open fun httpPostForm(url: String, body: String): String? = LimeHdTransport.postForm(url, body, apiHeaders()).body
 
     private fun deviceId(): String {
         val saved = prefs.limehdDeviceId
@@ -238,254 +152,4 @@ open class LimeHdClient(context: Context) {
         prefs.limehdDeviceId = generated
         return generated
     }
-
-    private fun buildUserAgent(): String {
-        val huawei = Build.MANUFACTURER.lowercase(Locale.US).contains("huawei")
-        return "{" +
-            "\"platform\":\"android.tv\"," +
-            "\"app\":\"limehd.ru.lite\"," +
-            "\"version_name\":\"$APP_VERSION_NAME\"," +
-            "\"version_code\":\"$APP_VERSION_CODE\"," +
-            "\"sdk\":\"${Build.VERSION.SDK_INT}\"," +
-            "\"name\":\"${jsonEscape(Build.MODEL)}\"," +
-            "\"device_id\":\"${deviceId()}\"," +
-            "\"is_huawei\":\"${if (huawei) "1" else "0"}\"" +
-            "}"
-    }
-
-    private fun jsonEscape(value: String): String = safeHeader(value).replace("\\", "\\\\").replace("\"", "\\\"")
-
-    private fun safeHeader(value: String): String = buildString {
-        for (c in value) {
-            append(if (c.code in 32..126) c else '?')
-        }
-    }
 }
-
-internal object LimeHdParser {
-
-    fun parseRegions(array: JSONArray?): List<LimeHdRegion> {
-        if (array == null) return emptyList()
-        val result = mutableListOf<LimeHdRegion>()
-        for (i in 0 until array.length()) {
-            val item = array.optJSONObject(i) ?: continue
-            val code = item.optInt("code", 0)
-            val name = item.optString("name", "")
-            if (code <= 0 || name.isBlank()) continue
-            result.add(
-                LimeHdRegion(
-                    code = code,
-                    name = name,
-                    tzOffsets = parseTzOffsets(item.optJSONArray("tz"))
-                )
-            )
-        }
-        return result.sortedBy { it.name }
-    }
-
-    fun parseTzOffsets(array: JSONArray?): List<Int> {
-        if (array == null) return emptyList()
-        val result = mutableListOf<Int>()
-        for (i in 0 until array.length()) {
-            val value = array.optInt(i, Int.MIN_VALUE)
-            if (value != Int.MIN_VALUE) result.add(value)
-        }
-        return result.toList()
-    }
-
-    fun parseChannels(array: JSONArray): List<Channel> {
-        val entries = mutableListOf<Pair<Int, Channel>>()
-
-        for (i in 0 until array.length()) {
-            val item = array.optJSONObject(i) ?: continue
-            if (!item.optBoolean("available", true)) continue
-            if (item.optInt("is_disabled_player", 0) != 0) continue
-
-            val ourId = item.optLong("our_id", -1L)
-            if (ourId < 0L) continue
-
-            val stream = item.optJSONObject("stream")
-            val streamUrl = firstNonBlank(
-                stream?.optString("common"),
-                item.optString("url"),
-                stream?.optString("cdn"),
-                item.optString("foreign_url")
-            )
-            if (streamUrl == null) continue
-
-            val title = firstNonBlank(
-                item.optString("name_ru"),
-                item.optString("title"),
-                item.optString("name")
-            ) ?: continue
-
-            val logoUrl = firstNonBlank(
-                item.optString("cached_logo_url"),
-                item.optString("image")
-            ) ?: ""
-
-            val fallbacks = mutableListOf<String>()
-            addUrl(fallbacks, streamUrl)
-            addUrl(fallbacks, item.optString("foreign_url"))
-            addUrl(fallbacks, stream?.optString("cdn"))
-            addUrl(fallbacks, item.optString("url"))
-
-            val current = parseCurrentProgram(item.optJSONArray("current") ?: item.optJSONObject("current"))
-            val programs = parseProgramList(item.optJSONArray("current") ?: item.optJSONObject("current"), "limehd_$ourId")
-
-            val archiveUrl = firstNonBlank(
-                stream?.optString("archive"),
-                item.optString("url_archive")
-            ) ?: ""
-            val dayArchive = if (item.optBoolean("with_archive", archiveUrl.isNotEmpty())) {
-                item.optInt("day_archive", if (archiveUrl.isNotEmpty()) 1 else 0)
-            } else {
-                0
-            }
-
-            val channel = Channel(
-                id = "limehd_$ourId",
-                name = title,
-                logoUrl = logoUrl,
-                streamUrl = streamUrl,
-                category = if (item.optBoolean("is_federal")) "federal" else "general",
-                epgId = ourId.toString(),
-                channelImageUrl = logoUrl,
-                fallbackStreamUrls = fallbacks.toList(),
-                currentProgramTitle = current?.title,
-                currentProgramStart = current?.startMs,
-                currentProgramEnd = current?.endMs,
-                programs = programs,
-                isDrm = item.optBoolean("drm", false),
-                regionCode = item.optInt("region_code", 0),
-                number = item.optInt("number", 0),
-                archiveUrl = archiveUrl,
-                dayArchive = dayArchive
-            )
-
-            entries.add(Pair(item.optInt("number", Int.MAX_VALUE), channel))
-        }
-
-        return entries.sortedBy { it.first }.map { it.second }
-    }
-
-    private fun parseProgramList(value: Any?, channelId: String): List<Program> {
-        val items = mutableListOf<JSONObject>()
-        when (value) {
-            is JSONArray -> {
-                for (i in 0 until value.length()) {
-                    value.optJSONObject(i)?.let { items.add(it) }
-                }
-            }
-            is JSONObject -> items.add(value)
-        }
-
-        val result = mutableListOf<Program>()
-        for (item in items) {
-            val startSec = item.optLong("timestart", 0L)
-            val endSec = item.optLong("timestop", 0L)
-            val title = item.optString("title", "")
-            if (startSec <= 0L || endSec <= 0L || title.isBlank()) continue
-            result.add(
-                Program(
-                    channelId = channelId,
-                    title = title,
-                    description = item.optString("desc", "").takeIf { it.isNotBlank() },
-                    startTime = startSec * 1000L,
-                    endTime = endSec * 1000L,
-                    iconUrl = firstNonBlank(item.optString("preview"), item.optString("posterUrl"))
-                )
-            )
-        }
-        return result.sortedBy { it.startTime }
-    }
-
-    private fun parseCurrentProgram(value: Any?): LimeHdProgram? {
-        val obj = when (value) {
-            is JSONArray -> value.optJSONObject(0)
-            is JSONObject -> value
-            else -> null
-        } ?: return null
-
-        val title = obj.optString("title", "").takeIf { it.isNotBlank() } ?: return null
-        val startSec = obj.optLong("timestart", 0L)
-        val endSec = obj.optLong("timestop", 0L)
-        return LimeHdProgram(
-            title = title,
-            startMs = if (startSec > 0L) startSec * 1000L else null,
-            endMs = if (endSec > 0L) endSec * 1000L else null
-        )
-    }
-
-    internal fun parseEpg(root: JSONObject, channelId: String): List<Program> {
-        val days = root.optJSONArray("epg") ?: return emptyList()
-        val result = mutableListOf<Program>()
-        for (i in 0 until days.length()) {
-            val day = days.optJSONObject(i) ?: continue
-            val items = day.optJSONArray("data") ?: continue
-            for (j in 0 until items.length()) {
-                val item = items.optJSONObject(j) ?: continue
-                val startSec = item.optLong("timestart", 0L)
-                val endSec = item.optLong("timestop", 0L)
-                if (startSec <= 0L || endSec <= 0L) continue
-                val title = item.optString("title", "")
-                if (title.isBlank()) continue
-                result.add(
-                    Program(
-                        channelId = channelId,
-                        title = title,
-                        description = item.optString("desc", "").takeIf { it.isNotBlank() },
-                        startTime = startSec * 1000L,
-                        endTime = endSec * 1000L,
-                        iconUrl = firstNonBlank(item.optString("preview"), item.optString("posterUrl"))
-                    )
-                )
-            }
-        }
-        return result.sortedBy { it.startTime }
-    }
-
-    private fun firstNonBlank(vararg values: String?): String? {
-        for (value in values) {
-            if (!value.isNullOrBlank()) return value
-        }
-        return null
-    }
-
-    private fun addUrl(list: MutableList<String>, url: String?) {
-        if (url.isNullOrBlank()) return
-        if (!list.contains(url)) list.add(url)
-    }
-}
-
-data class LimeHdRegion(
-    val code: Int,
-    val name: String,
-    val tzOffsets: List<Int> = emptyList()
-)
-
-internal object RegionsCodec {
-    fun encode(regions: List<LimeHdRegion>): String = regions.joinToString("\n") { r ->
-        "${r.code}|${r.name}|${r.tzOffsets.joinToString(",")}"
-    }
-
-    fun decode(raw: String?): List<LimeHdRegion> {
-        if (raw.isNullOrEmpty()) return emptyList()
-        return raw.split("\n").mapNotNull { line ->
-            val parts = line.split("|", limit = 3)
-            if (parts.size < 2) return@mapNotNull null
-            val code = parts[0].trim().toIntOrNull() ?: return@mapNotNull null
-            if (code <= 0) return@mapNotNull null
-            val name = parts[1].trim()
-            if (name.isEmpty()) return@mapNotNull null
-            val offsets = if (parts.size == 3) {
-                parts[2].split(",").mapNotNull { it.trim().toIntOrNull() }
-            } else {
-                emptyList()
-            }
-            LimeHdRegion(code = code, name = name, tzOffsets = offsets)
-        }
-    }
-}
-
-private data class LimeHdProgram(val title: String?, val startMs: Long?, val endMs: Long?)
