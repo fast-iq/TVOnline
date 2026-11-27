@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.application'
     id 'org.jlleitschuh.gradle.ktlint'
+    id 'jacoco'
 }
 
 ktlint {
@@ -124,4 +125,61 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.json:json:20250517'
     testImplementation 'org.robolectric:robolectric:4.15.1'
+}
+
+// --- Покрытие (JaCoCo) ---
+// Юнит-тесты идут под Robolectric; агент JaCoCo цепляется к testDebugUnitTest автоматически.
+tasks.withType(Test).configureEach {
+    jacoco {
+        includeNoLocationClasses = true
+        excludes = ['jdk.internal.*']
+    }
+}
+
+def coverageExcludes = [
+    '**/R.class',
+    '**/R$*.class',
+    '**/BuildConfig.*',
+    '**/databinding/**',
+    '**/*_Injector*',
+    '**/*_Factory*'
+]
+
+def coverageClasses = files(
+    fileTree(dir: layout.buildDirectory.dir('intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes').get().asFile, excludes: coverageExcludes),
+    fileTree(dir: layout.buildDirectory.dir('intermediates/javac/debug/classes').get().asFile, excludes: coverageExcludes)
+)
+def coverageSources = files('src/main/java')
+def coverageExec = files(layout.buildDirectory.file('jacoco/testDebugUnitTest.exec'))
+
+tasks.register('jacocoTestReport', JacocoReport) {
+    dependsOn 'testDebugUnitTest'
+    description 'HTML+XML отчёт покрытия юнит-тестами'
+    group 'verification'
+    reports {
+        xml.required = true
+        html.required = true
+    }
+    sourceDirectories.setFrom(coverageSources)
+    classDirectories.setFrom(coverageClasses)
+    executionData.setFrom(coverageExec)
+}
+
+tasks.register('jacocoDataPackageCoverage', JacocoCoverageVerification) {
+    dependsOn 'testDebugUnitTest'
+    description 'Порог покрытия пакета data (ядро: парсеры, кэши, репозитории)'
+    group 'verification'
+    sourceDirectories.setFrom(coverageSources)
+    classDirectories.setFrom(coverageClasses)
+    executionData.setFrom(coverageExec)
+    violationRules {
+        rule {
+            element = 'PACKAGE'
+            includes = ['com.example.tvapp.data']
+            limit {
+                counter = 'INSTRUCTION'
+                minimum = 0.45
+            }
+        }
+    }
 }

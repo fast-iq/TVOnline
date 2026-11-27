@@ -232,6 +232,54 @@ jobs:
       - name: Run Unit Tests
         run: cd TVApp && ./gradlew testDebugUnitTest --no-daemon
 
+      - name: Coverage threshold (data package)
+        run: cd TVApp && ./gradlew jacocoDataPackageCoverage --no-daemon
+
+      - name: Generate Coverage Report
+        if: always()
+        run: cd TVApp && ./gradlew jacocoTestReport --no-daemon || true
+
+      - name: Coverage Summary
+        if: always()
+        run: |
+          XML=TVApp/app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
+          if [ -f "$XML" ]; then
+            # Инструкционные счётчики всего проекта — последний INSTRUCTION-counter в XML
+            TOTAL=$(sed 's/<counter /\n<counter /g' "$XML" | grep 'type="INSTRUCTION"' | tail -1)
+            MISSED=$(echo "$TOTAL" | sed -n 's/.*missed="\([0-9]*\)".*/\1/p')
+            COVERED=$(echo "$TOTAL" | sed -n 's/.*covered="\([0-9]*\)".*/\1/p')
+            PCT=$(awk -v m="$MISSED" -v c="$COVERED" 'BEGIN{ if (m+c>0) printf "%.0f", 100*c/(m+c); else print 0 }')
+            echo "### Покрытие: ${PCT}% инструкций (порог 45% для пакета data)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Отчёт покрытия не найден" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: coverage-report
+          path: TVApp/app/build/reports/jacoco/
+          retention-days: 14
+
+      - name: Publish Coverage Badge
+        if: always()
+        run: |
+          # Публичный бейдж: badge.json коммитится в orphan-ветку coverage (её push не
+          # запускает workflow — триггеры только main и теги).
+          XML=TVApp/app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
+          [ -f "$XML" ] || exit 0
+          TOTAL=$(sed 's/<counter /\n<counter /g' "$XML" | grep 'type="INSTRUCTION"' | tail -1)
+          MISSED=$(echo "$TOTAL" | sed -n 's/.*missed="\([0-9]*\)".*/\1/p')
+          COVERED=$(echo "$TOTAL" | sed -n 's/.*covered="\([0-9]*\)".*/\1/p')
+          PCT=$(awk -v m="$MISSED" -v c="$COVERED" 'BEGIN{ if (m+c>0) printf "%.0f", 100*c/(m+c); else print 0 }')
+          COLOR=$(awk -v p="$PCT" 'BEGIN{ if (p>=70) print "brightgreen"; else if (p>=50) print "yellow"; else print "red" }')
+          mkdir -p /tmp/badge && cd /tmp/badge
+          git init -q && git config user.name "coverage-bot" && git config user.email "ci@local"
+          printf '{"schemaVersion":1,"label":"coverage","message":"%s%%","color":"%s"}\n' "$PCT" "$COLOR" > badge.json
+          git add badge.json && git commit -qm "coverage $PCT%"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/coverage
+
       - name: Show Failed Tests Summary
         if: failure()
         run: |
