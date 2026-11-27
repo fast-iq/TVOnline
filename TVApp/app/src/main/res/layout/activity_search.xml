@@ -35,12 +35,28 @@
         android:paddingTop="12dp"
         android:paddingBottom="12dp"
         android:layout_marginStart="32dp"
-        android:layout_marginEnd="32dp"
+        android:layout_marginEnd="12dp"
         android:layout_marginTop="16dp"
         app:layout_constraintTop_toBottomOf="@id/searchTitle"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/voiceButton"
         android:importantForAutofill="no" />
+
+    <ImageView
+        android:id="@+id/voiceButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_mic"
+        android:contentDescription="@string/voice_search_desc"
+        android:focusable="true"
+        android:clickable="true"
+        android:background="@drawable/bg_icon_button"
+        android:padding="12dp"
+        android:layout_marginEnd="32dp"
+        app:tint="@color/text_secondary"
+        app:layout_constraintTop_toTopOf="@id/searchInput"
+        app:layout_constraintBottom_toBottomOf="@id/searchInput"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/searchResultsList"

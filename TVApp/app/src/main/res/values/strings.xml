@@ -116,6 +116,8 @@
     <string name="search_title">Поиск каналов</string>
     <string name="search_hint">Введите название канала</string>
     <string name="search_no_results">Ничего не найдено</string>
+    <string name="voice_search_desc">Голосовой поиск</string>
+    <string name="voice_unavailable">Голосовой поиск недоступен на этом устройстве</string>
 
     <!-- Categories -->
     <string name="category_federal">Федеральные</string>

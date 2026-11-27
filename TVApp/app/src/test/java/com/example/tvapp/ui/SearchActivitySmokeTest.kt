@@ -10,6 +10,7 @@ import com.example.tvapp.data.ChannelList
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -118,5 +119,34 @@ class SearchActivitySmokeTest {
         activity.startActivity(intent)
         val started = shadowOf(activity).nextStartedActivity
         assertEquals("https://example/1.m3u8", started?.getStringExtra("stream_url"))
+    }
+
+    @Test
+    fun voiceButtonLaunchesSpeechRecognizer() {
+        val (activity, _) = launch()
+
+        activity.findViewById<android.widget.ImageView>(R.id.voiceButton).performClick()
+
+        val started = shadowOf(activity).nextStartedActivity
+        assertNotNull(started)
+        assertEquals(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH, started.action)
+    }
+
+    @Test
+    fun voiceResultBecomesQuery() {
+        val data = Intent().putStringArrayListExtra(
+            android.speech.RecognizerIntent.EXTRA_RESULTS,
+            arrayListOf("матч", "матч игра")
+        )
+
+        assertEquals("матч", SearchActivity.voiceResultToQuery(data))
+    }
+
+    @Test
+    fun voiceResultWithoutRecognitionIsIgnored() {
+        assertNull(SearchActivity.voiceResultToQuery(null))
+        assertNull(SearchActivity.voiceResultToQuery(Intent()))
+        val blank = Intent().putStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS, arrayListOf("  "))
+        assertNull(SearchActivity.voiceResultToQuery(blank))
     }
 }

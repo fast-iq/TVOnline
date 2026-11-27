@@ -1,7 +1,10 @@
 package com.example.tvapp.ui
 
+import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
+import android.speech.RecognizerIntent
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.KeyEvent
@@ -12,6 +15,8 @@ import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -21,6 +26,7 @@ import com.example.tvapp.R
 import com.example.tvapp.data.AppPreferences
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
+import java.util.Locale
 
 class SearchActivity : BaseActivity() {
 
@@ -31,6 +37,17 @@ class SearchActivity : BaseActivity() {
 
     private val preferences by lazy { AppPreferences(applicationContext) }
 
+    private val voiceLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val query = voiceResultToQuery(result.data)
+            if (!query.isNullOrBlank()) {
+                searchInput.setText(query)
+                searchInput.setSelection(searchInput.text.length)
+                resultsList.requestFocus()
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_search)
@@ -38,6 +55,7 @@ class SearchActivity : BaseActivity() {
         searchInput = findViewById(R.id.searchInput)
         resultsList = findViewById(R.id.searchResultsList)
         emptyText = findViewById(R.id.searchEmptyText)
+        findViewById<ImageView>(R.id.voiceButton).setOnClickListener { startVoiceSearch() }
 
         resultsAdapter = SearchResultAdapter(filterChannels("")) { channel -> openChannel(channel) }
         resultsList.layoutManager = LinearLayoutManager(this)
@@ -68,6 +86,20 @@ class SearchActivity : BaseActivity() {
         val filtered = filterChannels(query)
         resultsAdapter.updateChannels(filtered)
         emptyText.visibility = if (filtered.isEmpty() && query.isNotBlank()) View.VISIBLE else View.GONE
+    }
+
+    /** Голосовой поиск через системный RecognizerIntent (голосовые пульты Android TV). */
+    private fun startVoiceSearch() {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag())
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+        }
+        try {
+            voiceLauncher.launch(intent)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(this, R.string.voice_unavailable, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun openChannel(channel: Channel) {
@@ -154,5 +186,8 @@ class SearchActivity : BaseActivity() {
                 channel.name.lowercase().replace(" ", "").contains(normalized)
             }
         }
+
+        /** Реплика распознавателя -> строка запроса (первая и единственная). */
+        fun voiceResultToQuery(data: Intent?): String? = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.takeIf { it.isNotBlank() }
     }
 }
