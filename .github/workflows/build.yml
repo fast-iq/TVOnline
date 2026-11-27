@@ -92,8 +92,8 @@ jobs:
 
       - name: Install osv-scanner
         run: |
-          curl -fsSL -o osv.tar.gz "https://github.com/google/osv-scanner/releases/download/v2.7.1/osv-scanner_linux_amd64.tar.gz"
-          tar xzf osv.tar.gz
+          curl -fsSL -o osv-scanner "https://github.com/google/osv-scanner/releases/download/v2.7.1/osv-scanner_linux_amd64"
+          chmod +x osv-scanner
           ./osv-scanner --version
 
       - name: Scan SBOM
