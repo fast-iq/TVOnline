@@ -79,8 +79,12 @@ class PlayerActivity : BaseActivity() {
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private val preferences by lazy { AppPreferences(applicationContext) }
     private var overlayHideJob: Job? = null
-    private var sleepTimerJob: Job? = null
-    private var sleepTimerMinutes = 0
+    private val sleepTimer by lazy {
+        SleepTimer(scope) {
+            playerManager.pause()
+            Toast.makeText(this, R.string.sleep_timer_fired, Toast.LENGTH_LONG).show()
+        }
+    }
     private var numberInput: NumberInputController? = null
 
     /** Начало архивного окна при просмотре time-shift; null — мы в живом эфире. */
@@ -500,14 +504,14 @@ class PlayerActivity : BaseActivity() {
     }
 
     private fun showSleepTimerDialog() {
-        val options = listOf(0, 15, 30, 60, 90)
+        val options = sleepTimer.options
         val labels = options.map { minutes ->
             val base = if (minutes == 0) {
                 getString(R.string.sleep_timer_off)
             } else {
                 getString(R.string.sleep_timer_minutes, minutes)
             }
-            val active = sleepTimerJob?.isActive == true && sleepTimerMinutes == minutes
+            val active = sleepTimer.isActive() && sleepTimer.activeMinutes == minutes
             if (active) "$base ${getString(R.string.source_current)}" else base
         }
         AlertDialog.Builder(this)
@@ -519,16 +523,11 @@ class PlayerActivity : BaseActivity() {
     }
 
     private fun applySleepTimer(minutes: Int) {
-        sleepTimerJob?.cancel()
-        sleepTimerJob = null
-        sleepTimerMinutes = minutes
+        val started = sleepTimer.set(minutes)
         if (minutes <= 0) return
-        sleepTimerJob = scope.launch {
-            delay(minutes * 60_000L)
-            playerManager.pause()
-            Toast.makeText(this@PlayerActivity, R.string.sleep_timer_fired, Toast.LENGTH_LONG).show()
+        if (started) {
+            Toast.makeText(this, getString(R.string.sleep_timer_set, minutes), Toast.LENGTH_SHORT).show()
         }
-        Toast.makeText(this, getString(R.string.sleep_timer_set, minutes), Toast.LENGTH_SHORT).show()
     }
 
     private fun showSourceSwitchDialog() {

@@ -61,8 +61,7 @@ class EPGActivity : BaseActivity() {
 
     private var cursorChannel: Channel? = null
     private var cursorProgram: Program? = null
-    private val markedPrograms = LinkedHashMap<String, MarkedProgram>()
-    private val promptedKeys = mutableSetOf<String>()
+    private val marks by lazy { EpgMarks(preferences, notifyAheadMs = MARK_NOTIFY_AHEAD_MS) }
     private var promptShowing = false
 
     private val scope = CoroutineScope(Dispatchers.Main + Job())
@@ -99,7 +98,7 @@ class EPGActivity : BaseActivity() {
         startMarkedCheckLoop()
         epgHorizontalScroll.doOnLayout {
             setupEPGGrid()
-            rowAdapter.setSelections(markedPrograms.keys)
+            rowAdapter.setSelections(marks.keys())
             loadEPGForDate()
         }
     }
@@ -453,57 +452,20 @@ class EPGActivity : BaseActivity() {
             .show()
     }
 
-    private fun openArchivedPlayer(channel: Channel, program: Program): Boolean {
-        val window = ArchivePlayback.windowFor(channel, program.startTime, program.endTime, System.currentTimeMillis())
-            ?: return false
-        val intent = android.content.Intent(this, PlayerActivity::class.java).apply {
-            putExtra("channel_id", channel.id)
-            putExtra("channel_name", channel.name)
-            putExtra("stream_url", channel.streamUrl)
-            putExtra("logo_url", channel.logoUrl)
-            putExtra("archive_url", channel.archiveUrl)
-            putExtra("archive_start", window.first)
-            putExtra("archive_end", window.second)
-        }
-        startActivity(intent)
-        return true
-    }
+    private fun openArchivedPlayer(channel: Channel, program: Program): Boolean = PlayerLaunch.openArchived(this, channel, program.startTime, program.endTime, System.currentTimeMillis())
 
     private fun restoreMarks() {
-        val now = System.currentTimeMillis()
-        val stored = preferences.markedPrograms
-        val future = stored.filter { it.endTime > now }
-        if (future.size != stored.size) {
-            preferences.markedPrograms = future
-        }
-        markedPrograms.clear()
-        future.forEach { markedPrograms[it.key] = it }
-        ReminderScheduler.sync(applicationContext)
-    }
-
-    private fun persistMarks() {
-        preferences.markedPrograms = markedPrograms.values.toList()
+        marks.restore()
         ReminderScheduler.sync(applicationContext)
     }
 
     private fun toggleMark(channel: Channel, program: Program) {
         val key = EpgRowAdapter.keyOf(channel.id, program)
-        val removed = markedPrograms.remove(key)
+        val removed = marks.toggle(channel, program, key)
         if (removed != null) {
-            promptedKeys.remove(key)
             ReminderScheduler.cancel(applicationContext, removed)
-        } else {
-            markedPrograms[key] = MarkedProgram(
-                channelId = channel.id,
-                channelName = channel.name,
-                streamUrl = channel.streamUrl,
-                title = program.title,
-                startTime = program.startTime,
-                endTime = program.endTime
-            )
         }
-        persistMarks()
-        rowAdapter.setSelections(markedPrograms.keys)
+        rowAdapter.setSelections(marks.keys())
     }
 
     private fun startMarkedCheckLoop() {
@@ -516,19 +478,13 @@ class EPGActivity : BaseActivity() {
     }
 
     private fun checkMarkedPrograms() {
-        if (promptShowing || !lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) || markedPrograms.isEmpty()) return
-        val now = System.currentTimeMillis()
-        val due = markedPrograms.filter { (key, mark) ->
-            key !in promptedKeys &&
-                mark.startTime > now &&
-                mark.startTime - now <= MARK_NOTIFY_AHEAD_MS
-        }
+        if (promptShowing || !lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) return
+        val due = marks.takeDue()
         if (due.isEmpty()) return
-        due.keys.forEach { promptedKeys.add(it) }
-        due.values.forEach { mark ->
+        due.forEach { mark ->
             NotificationHelper.showUpcomingProgramNotification(this, mark)
         }
-        showMarkedPrompt(due.values.sortedBy { it.startTime })
+        showMarkedPrompt(due)
     }
 
     private fun showMarkedPrompt(due: List<MarkedProgram>) {
@@ -538,14 +494,10 @@ class EPGActivity : BaseActivity() {
             .setTitle(R.string.epg_marked_title)
             .setMessage(getString(R.string.epg_marked_message, names))
             .setPositiveButton(R.string.yes) { _, _ ->
-                val first = due.first()
-                due.forEach { mark ->
-                    markedPrograms.remove(mark.key)
-                    ReminderScheduler.cancel(applicationContext, mark)
-                }
-                persistMarks()
-                rowAdapter.setSelections(markedPrograms.keys)
-                openMarkedPlayer(first)
+                marks.consume(due)
+                due.forEach { mark -> ReminderScheduler.cancel(applicationContext, mark) }
+                rowAdapter.setSelections(marks.keys())
+                openMarkedPlayer(due.first())
             }
             .setNegativeButton(R.string.no, null)
             .setOnDismissListener { promptShowing = false }
@@ -557,23 +509,12 @@ class EPGActivity : BaseActivity() {
         if (channel != null) {
             openPlayer(channel)
         } else {
-            val intent = android.content.Intent(this, PlayerActivity::class.java).apply {
-                putExtra("channel_id", mark.channelId)
-                putExtra("channel_name", mark.channelName)
-                putExtra("stream_url", mark.streamUrl)
-            }
-            startActivity(intent)
+            startActivity(PlayerLaunch.intent(this, mark.channelId, mark.channelName, mark.streamUrl))
         }
     }
 
     private fun openPlayer(channel: Channel) {
-        val intent = android.content.Intent(this, PlayerActivity::class.java).apply {
-            putExtra("channel_id", channel.id)
-            putExtra("channel_name", channel.name)
-            putExtra("stream_url", channel.streamUrl)
-            putExtra("logo_url", channel.logoUrl)
-        }
-        startActivity(intent)
+        startActivity(PlayerLaunch.forChannel(this, channel))
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean = when (keyCode) {

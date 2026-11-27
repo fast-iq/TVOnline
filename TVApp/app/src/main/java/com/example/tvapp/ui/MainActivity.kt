@@ -378,13 +378,7 @@ class MainActivity : BaseActivity() {
     }
 
     private fun openPlayer(channel: Channel) {
-        val intent = Intent(this, PlayerActivity::class.java).apply {
-            putExtra("channel_id", channel.id)
-            putExtra("channel_name", channel.name)
-            putExtra("stream_url", channel.streamUrl)
-            putExtra("logo_url", channel.logoUrl)
-        }
-        startActivity(intent)
+        startActivity(PlayerLaunch.forChannel(this, channel))
     }
 
     private fun openSettings() {
