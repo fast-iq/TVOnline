@@ -22,8 +22,8 @@ if (!appVersion) {
 
 // ВАЖНО: имена не должны совпадать с property у defaultConfig — внутри closure
 // правая часть резолвится owner-first и 'versionCode = versionCode' присваивал null.
-def resolvedVersionName = "1.0.19"
-def resolvedVersionCode = 10019
+def resolvedVersionName = "1.0.20"
+def resolvedVersionCode = 10020
 if (appVersion != null && appVersion) {
     def m = (appVersion =~ /v?(\d+)\.(\d+)(?:\.(\d+))?/)
     if (m.find()) {
