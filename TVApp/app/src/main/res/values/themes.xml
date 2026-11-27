@@ -76,7 +76,7 @@
         <item name="tvTextSecondary">@color/midnight_text_secondary</item>
     </style>
 
-    <!-- Закат: тёплая янтарно-оранжевая, шрифт с засечками -->
+    <!-- Закат: сумрачный сливовый фон, кораллово-розовые акценты -->
     <style name="Theme.TVApp.Sunset" parent="Theme.TVApp.Base">
         <item name="tvBackground">@color/sunset_bg</item>
         <item name="tvBgTop">@color/sunset_top</item>
@@ -94,7 +94,7 @@
         <item name="tvSelected">@color/sunset_selected</item>
         <item name="tvSelectedBg">@color/sunset_selected_bg</item>
         <item name="tvWarning">@color/sunset_warning</item>
-        <item name="android:fontFamily">serif</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
     <style name="Theme.TVApp.Sunset.Black" parent="Theme.TVApp.Sunset">
@@ -103,7 +103,7 @@
         <item name="tvTextSecondary">@color/midnight_text_secondary</item>
     </style>
 
-    <!-- Світлая: светлые поверхности, тонкий шрифт; сцена плеера всё равно чёрная -->
+    <!-- Светлая: «бумажная» база, индиго-акценты; сцена плеера всё равно чёрная -->
     <style name="Theme.TVApp.Light" parent="Theme.TVApp.Base">
         <item name="tvBackground">@color/light_bg</item>
         <item name="tvBgTop">@color/light_top</item>
@@ -121,7 +121,7 @@
         <item name="tvSelected">@color/light_selected</item>
         <item name="tvSelectedBg">@color/light_selected_bg</item>
         <item name="tvWarning">@color/light_warning</item>
-        <item name="android:fontFamily">sans-serif-light</item>
+        <item name="android:fontFamily">sans-serif</item>
         <!-- В светлой теме и всплывающие диалоги светлые, а не дефолтные тёмные -->
         <item name="alertDialogTheme">@style/ThemeOverlay.TVApp.Light.Dialog.Alert</item>
     </style>

@@ -2,75 +2,88 @@
 <resources>
     <color name="black">#FF000000</color>
 
-    <!-- Палитра темы «Полночь» (значения по умолчанию) -->
-    <color name="midnight_bg">#FF070A12</color>
-    <color name="midnight_top">#FF161E33</color>
-    <color name="midnight_bottom">#FF070A12</color>
-    <color name="midnight_surface">#FF121826</color>
-    <color name="midnight_surface_high">#FF1E2739</color>
-    <color name="midnight_stroke">#2EFFFFFF</color>
-    <color name="midnight_accent">#FF7C6CFF</color>
-    <color name="midnight_accent2">#FF35D6F5</color>
-    <color name="midnight_text_primary">#FFF2F5FA</color>
-    <color name="midnight_text_secondary">#FF9AA4B8</color>
-    <color name="midnight_text_hint">#FF66718A</color>
-    <color name="midnight_live">#FFFF3B4E</color>
-    <color name="midnight_live_bg">#33FF3B4E</color>
+    <!--
+      Палитра темы «Полночь» (значения по умолчанию).
+      Освежённая база: чуть глубже синий фон, поверхности холоднее,
+      акценты электричнее — при прежнем характере темы.
+    -->
+    <color name="midnight_bg">#FF0A0F1E</color>
+    <color name="midnight_top">#FF182242</color>
+    <color name="midnight_bottom">#FF070B16</color>
+    <color name="midnight_surface">#FF141B2F</color>
+    <color name="midnight_surface_high">#FF1F2A46</color>
+    <color name="midnight_stroke">#24FFFFFF</color>
+    <color name="midnight_accent">#FF6D5BFF</color>
+    <color name="midnight_accent2">#FF3DDBFF</color>
+    <color name="midnight_text_primary">#FFF4F7FC</color>
+    <color name="midnight_text_secondary">#FF9FB0C9</color>
+    <color name="midnight_text_hint">#FF6B7A96</color>
+    <color name="midnight_live">#FFFF475D</color>
+    <color name="midnight_live_bg">#33FF475D</color>
     <color name="midnight_selected">#FF34D399</color>
     <color name="midnight_selected_bg">#1A34D399</color>
     <color name="midnight_warning">#FFFFB300</color>
 
-    <!-- Палитра темы «Изумруд» -->
-    <color name="emerald_bg">#FF04120D</color>
-    <color name="emerald_top">#FF0F2B22</color>
-    <color name="emerald_bottom">#FF04120D</color>
-    <color name="emerald_surface">#FF12291F</color>
-    <color name="emerald_surface_high">#FF1B3D2E</color>
-    <color name="emerald_stroke">#2EFFFFFF</color>
+    <!--
+      Палитра темы «Изумруд». Освежённая: глубже фон, поверхности насыщеннее,
+      второй акцент ярче — «терминальный» характер сохранён.
+    -->
+    <color name="emerald_bg">#FF071A12</color>
+    <color name="emerald_top">#FF123528</color>
+    <color name="emerald_bottom">#FF05130D</color>
+    <color name="emerald_surface">#FF123024</color>
+    <color name="emerald_surface_high">#FF1B4534</color>
+    <color name="emerald_stroke">#22FFFFFF</color>
     <color name="emerald_accent">#FF34D399</color>
-    <color name="emerald_accent2">#FF2ED8F7</color>
-    <color name="emerald_text_primary">#FFEAFBF1</color>
-    <color name="emerald_text_secondary">#FF93BFAA</color>
-    <color name="emerald_text_hint">#FF5F8571</color>
+    <color name="emerald_accent2">#FF43E6FF</color>
+    <color name="emerald_text_primary">#FFEEFBF4</color>
+    <color name="emerald_text_secondary">#FF9DC7B2</color>
+    <color name="emerald_text_hint">#FF648A76</color>
     <color name="emerald_live">#FFFF5A6E</color>
     <color name="emerald_live_bg">#33FF5A6E</color>
-    <color name="emerald_selected">#FF2ED8F7</color>
-    <color name="emerald_selected_bg">#1A2ED8F7</color>
+    <color name="emerald_selected">#FF43E6FF</color>
+    <color name="emerald_selected_bg">#1A43E6FF</color>
     <color name="emerald_warning">#FFFFD166</color>
 
-    <!-- Палитра темы «Закат» -->
-    <color name="sunset_bg">#FF120A04</color>
-    <color name="sunset_top">#FF351D10</color>
-    <color name="sunset_bottom">#FF120A04</color>
-    <color name="sunset_surface">#FF2A1710</color>
-    <color name="sunset_surface_high">#FF3C2415</color>
-    <color name="sunset_stroke">#33FFE3C9</color>
-    <color name="sunset_accent">#FFFFB454</color>
-    <color name="sunset_accent2">#FFFF7E5F</color>
-    <color name="sunset_text_primary">#FFFFF4E8</color>
-    <color name="sunset_text_secondary">#FFCBA98D</color>
-    <color name="sunset_text_hint">#FF8F7458</color>
-    <color name="sunset_live">#FFFF6B6B</color>
-    <color name="sunset_live_bg">#33FF6B6B</color>
-    <color name="sunset_selected">#FF4ADE80</color>
-    <color name="sunset_selected_bg">#1A4ADE80</color>
-    <color name="sunset_warning">#FFFFD166</color>
+    <!--
+      Палитра темы «Закат» (переиздана): сумрачный сливово-графитовый фон,
+      акценты коралловый→розовый, выбор мятный.
+    -->
+    <color name="sunset_bg">#FF140F19</color>
+    <color name="sunset_top">#FF251A2B</color>
+    <color name="sunset_bottom">#FF120D16</color>
+    <color name="sunset_surface">#FF221929</color>
+    <color name="sunset_surface_high">#FF30243A</color>
+    <color name="sunset_stroke">#26F2C9A8</color>
+    <color name="sunset_accent">#FFFF8A5C</color>
+    <color name="sunset_accent2">#FFF25C8A</color>
+    <color name="sunset_text_primary">#FFF4EFF6</color>
+    <color name="sunset_text_secondary">#FFB5A3BE</color>
+    <color name="sunset_text_hint">#FF7E6C88</color>
+    <color name="sunset_live">#FFFF5A6E</color>
+    <color name="sunset_live_bg">#33FF5A6E</color>
+    <color name="sunset_selected">#FF4FDDA4</color>
+    <color name="sunset_selected_bg">#1A4FDDA4</color>
+    <color name="sunset_warning">#FFFFB454</color>
 
-    <!-- Палитра темы «Светлая» -->
-    <color name="light_bg">#FFE7ECF5</color>
-    <color name="light_top">#FFF4F7FC</color>
-    <color name="light_bottom">#FFCBD6E8</color>
+    <!--
+      Палитра темы «Светлая» (переиздана): «бумажная» нейтральная база,
+      индиго + небесно-голубой акценты, текст на slate-шкале.
+    -->
+    <color name="light_bg">#FFF5F7FB</color>
+    <color name="light_top">#FFFFFFFF</color>
+    <color name="light_bottom">#FFE7EBF4</color>
     <color name="light_surface">#FFFFFFFF</color>
-    <color name="light_surface_high">#FFE8EDF6</color>
-    <color name="light_stroke">#2E0B1220</color>
-    <color name="light_accent">#FF6C5CE7</color>
-    <color name="light_accent2">#FF0E7C86</color>
-    <color name="light_text_primary">#FF1B2333</color>
-    <color name="light_text_secondary">#FF55617A</color>
-    <color name="light_text_hint">#FF8592AB</color>
-    <color name="light_live">#FFE0263C</color>
-    <color name="light_live_bg">#22E0263C</color>
-    <color name="light_selected">#FF0E9F6E</color>
-    <color name="light_selected_bg">#1A0E9F6E</color>
+    <color name="light_surface_high">#FFF1F4FA</color>
+    <color name="light_stroke">#1F0B1220</color>
+    <color name="light_accent">#FF4F46E5</color>
+    <color name="light_accent2">#FF0284C7</color>
+    <color name="light_text_primary">#FF101725</color>
+    <color name="light_text_secondary">#FF4A566E</color>
+    <color name="light_text_hint">#FF8C97AD</color>
+    <color name="light_live">#FFE11D48</color>
+    <color name="light_live_bg">#1AE11D48</color>
+    <color name="light_selected">#FF059669</color>
+    <color name="light_selected_bg">#1A059669</color>
     <color name="light_warning">#FFB45309</color>
 </resources>
