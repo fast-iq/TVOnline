@@ -1,4 +1,16 @@
 
+### 2026-11-27 Session 53 — Theme-switch crash fix, theme redesign, PiP remote controls (built on Linux CI-loop, no local SDK)
+
+User on v1.0.18 device: crash on theme switch; midnight/emerald «подправить на 20% в сторону современного», sunset/light «переделать»; «строка с каналом не меняет цвет»; how to start/stop PiP from remote.
+
+**Crash (`5d795ec`):** disabling the launcher `activity-alias` the app was started from kills the process even with DONT_KILL_APP (documented Android quirk; hit at Settings theme click AND at app start after update resets PM component states → TVApplication full-sync disabled the just-used alias). Fix: Settings click = save prefs + recreate ONLY; full `ThemeIcons.apply` deferred to TVApplication via ActivityLifecycleCallbacks started-count → on background, Handler.postDelayed 1200ms (kill harmless there; foreground return cancels); launch sync replaced with `ThemeIcons.enableForLaunch` (ENABLE-only, enabling is safe — brief duplicate icon until first background pass is the accepted tradeoff). TVApplication internals internal: `onAppBackgrounded/onAppForegrounded/applyLauncherIconNow`. ThemeIconsTest +2 pins (enableForLaunch never DISABLEs; deferred swap = exactly one alias). Note: recreate() momentarily zeroed started-count (old activity onStop before new onStart) — removeCallbacks on start makes it safe.
+
+**Themes (`dcd9916`):** midnight/emerald ~20% modernization (deeper/cooler bg+surfaces, accent #6D5BFF/#3DDBFF, emerald accent2 #43E6FF, character kept); sunset REBUILT plum-graphite + coral #FF8A5C→pink #F25C8A + mint selection + sans-serif-medium (was amber+serif); light REBUILT paper #F5F7FB + white surfaces + indigo #4F46E5/sky #0284C7 + slate text + sans-serif (was sans-serif-light). Launcher icons/banners for emerald/sunset/light re-tinted by hex sed (order: longest strings first; light screen E7ECF5→E9EDF7 must precede gradient E7EBF4 replacement). **Pill fix:** `bg_pill` (#CC121826), `number_overlay_bg` (#F20D1220), `progress_program` track (#FF273043) were leftover hardcoded midnight hexes — now ?attr/tvSurface/tvSurfaceHigh (that's the «строка с каналом» = currentProgramText/regionText pills). Player scrim/panel hexes stay (always-black stage).
+
+**PiP (`4531cde`):** BACK REMOVED from PIP_IGNORED_KEYS — in PiP BACK = stop (finish closes window + kills playback; no X on TV remotes). Long-press DPAD_CENTER/ENTER (event.isLongPress, currentChannel!=null) → userLeaveHint() = explicit PiP enter for HOME-less remotes. MEDIA_PLAY_PAUSE/HEADSETHOOK toggle, MEDIA_PLAY/PAUSE direct (not swallowed → live inside PiP too). PlayerActivityPipTest BACK moved to live-keys test.
+
+**Env:** this Linux box has NO JDK/Android SDK/sudo (repo was built on Windows; local.properties Windows path, gitignored). Pipeline = push to main, GitHub Actions (ktlint/test/lint/osv) is the only verifier; git identity had to be set locally (Fast-IQ/fire-burn@yandex.ru, repo-local config). Watch CI for ktlint style risks in new code.
+
 ### 2026-11-27 Session 52 — Switchable UI themes (4 palettes + fonts + per-theme launcher icons)
 
 User: «смена тем … через настройки ну и сохранять». Two commits, pipeline green after each (ktlintCheck/testDebugUnitTest/lintDebug/assembleDebug, ~190 tests).
