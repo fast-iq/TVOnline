@@ -15,6 +15,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DecodeFormat
 import com.example.tvapp.BaseActivity
 import com.example.tvapp.R
 import com.example.tvapp.data.AppPreferences
@@ -114,6 +115,8 @@ class SearchActivity : BaseActivity() {
                 }
                 Glide.with(itemView.context)
                     .load(channel.logoUrl)
+                    // Логотипу хватает RGB_565 — вдвое меньше памяти на битмап.
+                    .format(DecodeFormat.PREFER_RGB_565)
                     .placeholder(R.drawable.ic_channel_placeholder)
                     .error(R.drawable.ic_channel_placeholder)
                     .into(logo)
