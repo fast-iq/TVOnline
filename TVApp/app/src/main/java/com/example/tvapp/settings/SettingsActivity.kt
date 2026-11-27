@@ -25,7 +25,6 @@ import com.example.tvapp.data.UpdateChecker
 import com.example.tvapp.data.UpdateInfo
 import com.example.tvapp.data.UpdateResult
 import com.example.tvapp.ui.ThemeCatalog
-import com.example.tvapp.ui.ThemeIcons
 import com.example.tvapp.ui.UiTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -268,8 +267,9 @@ class SettingsActivity : BaseActivity() {
         buildOptionRow(themeOptions, labels, selected) { index ->
             val theme = themes[index]
             preferences.uiTheme = theme.id
-            ThemeIcons.apply(this, theme)
-            // Тема читается в BaseActivity.onCreate — без пересоздания активности не применить.
+            // Алиасы лаунчера НЕ трогаем отсюда: отключение «живого» алиаса
+            // убивает процесс. TVApplication переключит иконку, когда приложение
+            // уйдёт в фон. Тема читается в BaseActivity.onCreate — без recreate не применить.
             recreate()
         }
     }

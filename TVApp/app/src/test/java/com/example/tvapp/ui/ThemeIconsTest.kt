@@ -3,7 +3,10 @@ package com.example.tvapp.ui
 import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
+import com.example.tvapp.TVApplication
+import com.example.tvapp.data.AppPreferences
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -48,5 +51,36 @@ class ThemeIconsTest {
 
         assertEquals(PackageManager.COMPONENT_ENABLED_STATE_ENABLED, state("LauncherMidnight"))
         assertEquals(PackageManager.COMPONENT_ENABLED_STATE_DISABLED, state("LauncherEmerald"))
+    }
+
+    /**
+     * Прикладной краш-фикс: при ЗАПУСКЕ мы только включаем нужный алиас —
+     * отключение «живого» лаунчер-алиаса система наказывает убийством процесса.
+     */
+    @Test
+    fun enableForLaunchNeverDisablesOtherAliases() {
+        ThemeIcons.enableForLaunch(context, UiTheme.EMERALD)
+
+        assertEquals(PackageManager.COMPONENT_ENABLED_STATE_ENABLED, state("LauncherEmerald"))
+        for (alias in listOf("LauncherMidnight", "LauncherSunset", "LauncherLight")) {
+            assertTrue(
+                "алиас $alias не должен быть отключён при запуске",
+                state(alias) != PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+            )
+        }
+    }
+
+    /** Фоновый отложенный своп из TVApplication: полный apply, активен ровно один. */
+    @Test
+    fun deferredBackgroundSwapActivatesOnlySavedTheme() {
+        AppPreferences(context).uiTheme = "sunset"
+        val app = RuntimeEnvironment.getApplication() as TVApplication
+
+        app.applyLauncherIconNow()
+
+        assertEquals(PackageManager.COMPONENT_ENABLED_STATE_ENABLED, state("LauncherSunset"))
+        for (alias in listOf("LauncherMidnight", "LauncherEmerald", "LauncherLight")) {
+            assertEquals("алиас $alias должен быть выключен", PackageManager.COMPONENT_ENABLED_STATE_DISABLED, state(alias))
+        }
     }
 }

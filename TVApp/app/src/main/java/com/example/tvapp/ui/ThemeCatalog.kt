@@ -54,11 +54,13 @@ object ThemeIcons {
         UiTheme.LIGHT -> "LauncherLight"
     }
 
-    /** Включаем алиас выбранной темы, остальные гасим. DONT_KILL_APP — процесс не перезапускаем. */
+    fun aliasName(context: Context, theme: UiTheme): ComponentName = ComponentName(context, "${context.packageName}.${aliasFor(theme)}")
+
+    /** Включаем алиас выбранной темы, остальные гасим. */
     fun apply(context: Context, theme: UiTheme) {
         val pm = context.packageManager
         for (candidate in UiTheme.ordered) {
-            val alias = ComponentName(context, "${context.packageName}.${aliasFor(candidate)}")
+            val alias = aliasName(context, candidate)
             val desired = if (candidate == theme) {
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED
             } else {
@@ -67,6 +69,20 @@ object ThemeIcons {
             if (pm.getComponentEnabledSetting(alias) != desired) {
                 pm.setComponentEnabledSetting(alias, desired, PackageManager.DONT_KILL_APP)
             }
+        }
+    }
+
+    /**
+     * Безопасный для запуска вариант: ТОЛЬКО включаем нужный алиас, ничего не
+     * отключаем. Отключение видимого лаунчер-алиаса система наказывает убийством
+     * приложения (даже с DONT_KILL_APP) — полное переключение делает [apply],
+     * но только когда приложение ушло в фон.
+     */
+    fun enableForLaunch(context: Context, theme: UiTheme) {
+        val pm = context.packageManager
+        val alias = aliasName(context, theme)
+        if (pm.getComponentEnabledSetting(alias) != PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
+            pm.setComponentEnabledSetting(alias, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
         }
     }
 }
