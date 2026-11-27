@@ -9,7 +9,7 @@ User: «смена тем … через настройки ну и сохран
 
 **Gotchas:** ktlint flags even test helpers whose multi-line expression body fits one line; MainActivity still needed ContextCompat (checkSelfPermission) after color swap — grep ALL usages before deleting imports; sed `-e` replacement order matters for light variant (FFFFFF before 1A1A2E chains avoided).
 
-NEXT: v1.0.18 bump + tag.
+**v1.0.18 shipped (`f7e0307` + tag, run #219 success):** tag took 3 attempts. Fail 1 — workflow step «Set version from tag» still seded/greped `android:versionCode` in AndroidManifest.xml (attrs removed session 51) → grep exit 1; step rewritten to sed build.gradle (`cb5f9ab`). Fail 2 — `packageReleaseBundle` «Version code not found in manifest»: Groovy closure owner-first resolution made `versionCode = versionCode` in `defaultConfig` assign DefaultConfig's own null, NOT the script local (manifest attrs had masked this for a year) → locals renamed `resolvedVersionName/Code` (`f7e0307`); CI sed patterns follow the new names. Verified: merged manifest versionCode="10018"; release assets app-release.apk 4,967,315 B (signed) + aab. Run-page diagnosis recipe: runs API `id` ≠ `run_number`; jobs API anonymous works, job LOGS need auth (403) — reproduce `bundleRelease` locally instead; no python3 in git-bash → PowerShell ConvertFrom-Json via -File.
 
 ### 2026-11-26 Session 49 — D-pad header focus fix + v1.0.16 + CI hardening (Robolectric prefetch, Central mirror, dep cache)
 
