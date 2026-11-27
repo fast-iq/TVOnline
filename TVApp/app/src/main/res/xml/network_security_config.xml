@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Разумный компромисс вместо глобального usesCleartextTraffic="true":
+  http разрешён только там, где он реально нужен — на проксируется нами
+  намеренно.  Потоки (HLS) приходят с динамических CDN-доменов LimeHD,
+  часть из которых исторически отдаёт http, и статическим списком их
+  покрыть нельзя.  Зато всё, что чувствительно, ходит строго по https:
+  API-хост LimeHD (токен/устройство) и GitHub (проверка обновлений).
+-->
+<network-security-config xmlns:tools="http://schemas.android.com/tools">
+    <!-- см. комментарий: разрешён намеренно для HLS-потоков с произвольных CDN -->
+    <base-config
+        cleartextTrafficPermitted="true"
+        tools:ignore="InsecureBaseConfiguration" />
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">iptv2021.com</domain>
+        <domain includeSubdomains="true">github.com</domain>
+        <domain includeSubdomains="true">githubusercontent.com</domain>
+    </domain-config>
+</network-security-config>

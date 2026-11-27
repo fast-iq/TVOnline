@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    android:versionCode="10015"
-    android:versionName="1.0.15">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-feature
         android:name="android.software.leanback"
@@ -23,7 +21,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TVApp"
         android:banner="@drawable/tv_banner"
-        android:usesCleartextTraffic="true">
+        android:networkSecurityConfig="@xml/network_security_config">
 
         <activity
             android:name=".ui.MainActivity"
