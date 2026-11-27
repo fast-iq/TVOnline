@@ -165,6 +165,16 @@ class PlayerActivity : BaseActivity() {
                             if (timeshiftFromMs != null) returnToLive()
                         }
                     }
+
+                    override fun onAutoReturnToLive() {
+                        // Guard вернулся в эфир сам (архив залип) — синхронизируем состояние активности.
+                        runOnUiThread {
+                            if (timeshiftFromMs != null) {
+                                timeshiftFromMs = null
+                                Toast.makeText(this@PlayerActivity, R.string.timeshift_auto_live, Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
                 }
             )
 
@@ -179,7 +189,10 @@ class PlayerActivity : BaseActivity() {
                     currentChannel!!
                 }
                 playerManager.playChannel(playChannel, playUrl)
-                if (archivePlayUrl != null) timeshiftFromMs = archiveStart
+                if (archivePlayUrl != null) {
+                    timeshiftFromMs = archiveStart
+                    playerManager.playingArchive = true
+                }
                 showProgramOverlay(currentChannel!!)
             } else if (!streamUrl.isNullOrEmpty()) {
                 val url = archivePlayUrl ?: streamUrl!!
@@ -424,6 +437,7 @@ class PlayerActivity : BaseActivity() {
         val window = ArchivePlayback.windowFor(channel, fromMs, now, now) ?: return
         val url = ArchivePlayback.buildUrl(channel.archiveUrl, window.first, window.second)
         timeshiftFromMs = window.first
+        playerManager.playingArchive = true
         // В currentChannel остаётся живой канал — на него возвращаемся по конце окна/по кнопке.
         playerManager.playChannel(channel.copy(streamUrl = url, fallbackStreamUrls = emptyList()), url)
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(window.first))
@@ -433,6 +447,7 @@ class PlayerActivity : BaseActivity() {
     private fun returnToLive() {
         val channel = currentChannel ?: return
         timeshiftFromMs = null
+        playerManager.playingArchive = false
         playerManager.playChannel(channel, channel.streamUrl)
         Toast.makeText(this, R.string.timeshift_back_live, Toast.LENGTH_SHORT).show()
     }

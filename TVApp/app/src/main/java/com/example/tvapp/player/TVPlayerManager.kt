@@ -44,17 +44,22 @@ class TVPlayerManager(private val context: Context) {
     private var pendingUrl: String? = null
     private var lastWorkingUrl: String? = null
     private var manualSwitch = false
-    private var bufferingSince = 0L
-    private var recoveryCooldownUntil = 0L
     private val stallWatchdog = StallWatchdog()
+    private val bufferHealth = BufferHealth()
     private var watchdogJob: Job? = null
 
-    private val stuckBufferingMs = 8_000L
-    private val recoveryCooldownMs = 60_000L
+    /** Играем time-shift (архивное окно): при залипании guard вернёт в эфир, а не рефетчит URL. Ставит PlayerActivity. */
+    var playingArchive = false
+
+    /** Ступень авто-понижения качества (только режим AUTO): индекс в [AUTO_BITRATE_CAPS]. */
+    private var autoCapIndex = 0
 
     companion object {
         private const val TAG = "TVPlayerManager"
         private const val WATCHDOG_TICK_MS = 5_000L
+
+        /** Лестница потолков битрейта для AUTO: вниз при голодании буфера. */
+        private val AUTO_BITRATE_CAPS = intArrayOf(Int.MAX_VALUE, 2_000_000, 1_000_000, 500_000)
     }
 
     interface PlayerCallback {
@@ -65,6 +70,9 @@ class TVPlayerManager(private val context: Context) {
 
         /** Архивное (time-shift) воспроизведение дошло до конца окна. По умолчанию no-op. */
         fun onPlaybackEnded() {}
+
+        /** Time-shift намертво залип — guard сам вернулся в живой эфир; активности синхронизировать состояние. */
+        fun onAutoReturnToLive() {}
     }
 
     fun initializePlayer(playerView: PlayerView, callback: PlayerCallback? = null) {
@@ -84,16 +92,15 @@ class TVPlayerManager(private val context: Context) {
                         when (state) {
                             Player.STATE_READY -> {
                                 lastWorkingUrl = pendingUrl
-                                bufferingSince = 0L
+                                bufferHealth.reset()
                                 callback?.onPlaybackReady()
                             }
                             Player.STATE_BUFFERING -> {
                                 callback?.onBuffering(true)
-                                maybeRecoverStuckStream()
                             }
                             Player.STATE_IDLE, Player.STATE_ENDED -> {
                                 callback?.onBuffering(false)
-                                bufferingSince = 0L
+                                bufferHealth.reset()
                                 if (state == Player.STATE_ENDED) callback?.onPlaybackEnded()
                             }
                         }
@@ -155,8 +162,9 @@ class TVPlayerManager(private val context: Context) {
             while (isActive) {
                 delay(WATCHDOG_TICK_MS)
                 val player = exoPlayer ?: continue
-                if (stallWatchdog.onTick(player.isPlaying, player.currentPosition) == StallAction.RECOVER) {
-                    val channel = currentChannel ?: continue
+                val channel = currentChannel
+                // 1) Залипание эфира (position стоит) — свежий URL, как раньше.
+                if (channel != null && stallWatchdog.onTick(player.isPlaying, player.currentPosition) == StallAction.RECOVER) {
                     android.util.Log.d(TAG, "stream stalled, restarting playback")
                     callback?.onBuffering(true)
                     val fresh = try {
@@ -165,6 +173,43 @@ class TVPlayerManager(private val context: Context) {
                         null
                     }
                     if (fresh != null) playChannel(channel, fresh) else playChannel(channel, channel.streamUrl)
+                    continue
+                }
+                // 2) Залипание в BUFFERING: в эфире — рефетч URL, в архиве — возврат в эфир.
+                when (bufferHealth.onBufferingTick(player.playbackState == Player.STATE_BUFFERING, playingArchive)) {
+                    HealthAction.RETURN_TO_LIVE -> {
+                        if (channel != null) {
+                            android.util.Log.d(TAG, "archive stuck, returning to live")
+                            playingArchive = false
+                            callback?.onAutoReturnToLive()
+                            playChannel(channel, channel.streamUrl)
+                        }
+                    }
+                    HealthAction.REFRESH_URL -> {
+                        if (channel != null) {
+                            android.util.Log.d(TAG, "buffering stuck, refreshing stream URL")
+                            callback?.onBuffering(true)
+                            val fresh = try {
+                                channelRepository.refreshStreamUrl(channel.id)
+                            } catch (e: Exception) {
+                                null
+                            }
+                            if (fresh != null) playChannel(channel, fresh) else playChannel(channel, channel.streamUrl)
+                        }
+                    }
+                    else -> Unit
+                }
+                // 3) Голодание буфера в AUTO — ступенькой ниже по битрейту.
+                if (player.playbackState == Player.STATE_READY) {
+                    val lead = player.bufferedPosition - player.currentPosition
+                    val auto = preferences.qualityMode == AppPreferences.QualityMode.AUTO
+                    if (bufferHealth.onPlaybackTick(player.isPlaying, lead, auto) == HealthAction.DOWNGRADE_QUALITY) {
+                        if (autoCapIndex < AUTO_BITRATE_CAPS.size - 1) {
+                            autoCapIndex++
+                            applyQualityMode()
+                            android.util.Log.d(TAG, "buffer starving, auto quality cap -> ${AUTO_BITRATE_CAPS[autoCapIndex]}")
+                        }
+                    }
                 }
             }
         }
@@ -189,7 +234,8 @@ class TVPlayerManager(private val context: Context) {
             AppPreferences.QualityMode.MINIMUM -> 500_000
             AppPreferences.QualityMode.MEDIUM -> 2_000_000
             AppPreferences.QualityMode.MAXIMUM -> Int.MAX_VALUE
-            AppPreferences.QualityMode.AUTO -> Int.MAX_VALUE
+            // AUTO: начинаем с потолка, BufferHealth роняет ступенью вниз при голодании буфера.
+            AppPreferences.QualityMode.AUTO -> AUTO_BITRATE_CAPS[autoCapIndex]
         }
         trackSelector?.let { ts ->
             val params = ts.buildUponParameters().setMaxVideoBitrate(maxBitrate).build()
@@ -199,11 +245,14 @@ class TVPlayerManager(private val context: Context) {
 
     fun playChannel(channel: Channel, streamUrl: String? = null) {
         val url = streamUrl ?: channel.streamUrl
+        val previousChannelId = currentChannel?.id
         currentChannel = channel
         pendingUrl = url
         fallbackIndex = if (streamUrl == null) 0 else getCurrentStreamUrls().indexOf(streamUrl).coerceAtLeast(0)
-        bufferingSince = 0L
         stallWatchdog.reset()
+        bufferHealth.reset()
+        // Ступень авто-капа сбрасываем только на СМЕНЕ канала — рефетч URL тем же каналом её сохраняет.
+        if (previousChannelId != channel.id) autoCapIndex = 0
         // Выбор канала фиксируем всегда, даже если плеер ещё/уже не инициализирован.
         preferences.lastChannelId = channel.id
 
@@ -279,35 +328,9 @@ class TVPlayerManager(private val context: Context) {
         return null
     }
 
-    private fun maybeRecoverStuckStream() {
-        val now = System.currentTimeMillis()
-        if (bufferingSince == 0L) {
-            bufferingSince = now
-            return
-        }
-        if (now < recoveryCooldownUntil) return
-        if (now - bufferingSince < stuckBufferingMs) return
-        val channel = currentChannel ?: return
-        recoveryCooldownUntil = now + recoveryCooldownMs
-        android.util.Log.d(TAG, "stuck buffering ${now - bufferingSince}ms, refreshing stream URL")
-        stallWatchdog.reset()
-        scope.launch {
-            val fresh = try {
-                channelRepository.refreshStreamUrl(channel.id)
-            } catch (e: Exception) {
-                null
-            }
-            if (fresh != null) {
-                playChannel(channel, fresh)
-            } else {
-                playChannel(channel, channel.streamUrl)
-            }
-            bufferingSince = 0L
-        }
-    }
-
     fun setQualityMode(qualityMode: AppPreferences.QualityMode) {
         preferences.qualityMode = qualityMode
+        autoCapIndex = 0
         applyQualityMode()
     }
 

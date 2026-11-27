@@ -45,6 +45,7 @@
     <string name="timeshift_minutes_ago">%1$d мин назад</string>
     <string name="timeshift_started">Воспроизведение с %1$s</string>
     <string name="timeshift_back_live">Прямой эфир</string>
+    <string name="timeshift_auto_live">Запись зависла — возвращаемся в прямой эфир</string>
     <string name="timeshift_no_archive">Архив недоступен для этого канала</string>
     <string name="audio_track_title">Аудиодорожка</string>
     <string name="audio_track_auto">Авто</string>

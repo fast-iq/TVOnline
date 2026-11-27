@@ -42,6 +42,7 @@
     <string name="timeshift_minutes_ago">%1$d min ago</string>
     <string name="timeshift_started">Playing from %1$s</string>
     <string name="timeshift_back_live">Back to live</string>
+    <string name="timeshift_auto_live">Playback stalled — returning to live</string>
     <string name="timeshift_no_archive">No archive available for this channel</string>
     <string name="audio_track_title">Audio track</string>
     <string name="audio_track_auto">Auto</string>
