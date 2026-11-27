@@ -120,7 +120,7 @@ dependencies {
     implementation 'androidx.preference:preference-ktx:1.2.1'
 
     // Glide для загрузки изображений
-    implementation 'com.github.bumptech.glide:glide:4.16.0'
+    implementation 'com.github.bumptech.glide:glide:5.0.10'
 
     // media3-common тянет guava 33.3.1-android с GHSA-xxph-c9ww-hj94 (High 8.2) —
     // пиним на исправленную ветку (совместима: Android-вариант той же мажорной линии).
