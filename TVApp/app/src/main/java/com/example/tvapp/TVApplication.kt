@@ -9,6 +9,8 @@ import com.bumptech.glide.load.DecodeFormat
 import com.bumptech.glide.load.engine.cache.InternalCacheDiskCacheFactory
 import com.bumptech.glide.load.engine.cache.LruResourceCache
 import com.bumptech.glide.request.RequestOptions
+import com.example.tvapp.ui.ThemeCatalog
+import com.example.tvapp.ui.ThemeIcons
 
 class TVApplication : Application() {
 
@@ -24,7 +26,21 @@ class TVApplication : Application() {
         CrashReporter.install(this, appVersionName())
         CrashReporter.logPending(this)
         NotificationHelper.ensureChannel(this)
+        syncLauncherIcon()
         configureGlide()
+    }
+
+    /**
+     * Иконка лаунчера должна соответствовать сохранённой теме — в т.ч. после
+     * установки/обновления, когда PackageManager сбрасывает состояния компонентов
+     * на манифестные. Ошибка здесь не должна ронять приложение.
+     */
+    private fun syncLauncherIcon() {
+        try {
+            ThemeIcons.apply(this, ThemeCatalog.savedTheme(this))
+        } catch (e: Exception) {
+            Log.w("TVApplication", "launcher icon sync failed: ${e.message}")
+        }
     }
 
     /**

@@ -1,6 +1,8 @@
 package com.example.tvapp.ui
 
+import android.content.ComponentName
 import android.content.Context
+import android.content.pm.PackageManager
 import android.util.TypedValue
 import androidx.annotation.AttrRes
 import androidx.annotation.StringRes
@@ -37,6 +39,36 @@ object ThemeCatalog {
     }
 
     fun savedTheme(context: Context): UiTheme = UiTheme.fromId(AppPreferences(context.applicationContext).uiTheme)
+}
+
+/**
+ * Иконка и баннер лаунчера под текущую тему: в манифесте четыре activity-alias
+ * (.LauncherMidnight/.LauncherEmerald/.LauncherSunset/.LauncherLight), активен ровно один.
+ */
+object ThemeIcons {
+
+    private fun aliasFor(theme: UiTheme): String = when (theme) {
+        UiTheme.MIDNIGHT -> "LauncherMidnight"
+        UiTheme.EMERALD -> "LauncherEmerald"
+        UiTheme.SUNSET -> "LauncherSunset"
+        UiTheme.LIGHT -> "LauncherLight"
+    }
+
+    /** Включаем алиас выбранной темы, остальные гасим. DONT_KILL_APP — процесс не перезапускаем. */
+    fun apply(context: Context, theme: UiTheme) {
+        val pm = context.packageManager
+        for (candidate in UiTheme.ordered) {
+            val alias = ComponentName(context, "${context.packageName}.${aliasFor(candidate)}")
+            val desired = if (candidate == theme) {
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+            } else {
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+            }
+            if (pm.getComponentEnabledSetting(alias) != desired) {
+                pm.setComponentEnabledSetting(alias, desired, PackageManager.DONT_KILL_APP)
+            }
+        }
+    }
 }
 
 /** Цвет текущей темы активности по семантическому атрибуту (tv*-attr из attrs.xml). */

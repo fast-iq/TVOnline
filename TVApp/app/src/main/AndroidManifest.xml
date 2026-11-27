@@ -28,13 +28,67 @@
             android:exported="true"
             android:screenOrientation="landscape"
             android:launchMode="singleTask"
-            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|locale|layoutDirection|uiMode">
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|locale|layoutDirection|uiMode" />
+
+        <!--
+          Точка запуска: 4 алиаса с иконками/баннерами тем. Активный переключает
+          ThemeIcons (setComponentEnabledSetting) при смене темы в настройках.
+        -->
+        <activity-alias
+            android:name=".LauncherMidnight"
+            android:targetActivity=".ui.MainActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher"
+            android:banner="@drawable/tv_banner">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherEmerald"
+            android:targetActivity=".ui.MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_emerald"
+            android:banner="@drawable/tv_banner_emerald">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherSunset"
+            android:targetActivity=".ui.MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_sunset"
+            android:banner="@drawable/tv_banner_sunset">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherLight"
+            android:targetActivity=".ui.MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_light"
+            android:banner="@drawable/tv_banner_light">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
 
         <activity
             android:name=".ui.PlayerActivity"

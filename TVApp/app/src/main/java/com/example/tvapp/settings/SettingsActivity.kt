@@ -25,6 +25,7 @@ import com.example.tvapp.data.UpdateChecker
 import com.example.tvapp.data.UpdateInfo
 import com.example.tvapp.data.UpdateResult
 import com.example.tvapp.ui.ThemeCatalog
+import com.example.tvapp.ui.ThemeIcons
 import com.example.tvapp.ui.UiTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -265,8 +266,10 @@ class SettingsActivity : BaseActivity() {
         val labels = themes.map { getString(it.labelRes) }
         val selected = themes.indexOf(ThemeCatalog.savedTheme(this))
         buildOptionRow(themeOptions, labels, selected) { index ->
-            preferences.uiTheme = themes[index].id
-            // Пересоздать нельзя: тема читается в BaseActivity.onCreate до setContentView.
+            val theme = themes[index]
+            preferences.uiTheme = theme.id
+            ThemeIcons.apply(this, theme)
+            // Тема читается в BaseActivity.onCreate — без пересоздания активности не применить.
             recreate()
         }
     }
