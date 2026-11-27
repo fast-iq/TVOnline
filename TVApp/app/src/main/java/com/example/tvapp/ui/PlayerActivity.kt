@@ -14,6 +14,7 @@ import com.example.tvapp.data.ArchivePlayback
 import com.example.tvapp.data.Channel
 import com.example.tvapp.data.ChannelList
 import com.example.tvapp.player.TVPlayerManager
+import com.example.tvapp.player.TrackLabels
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -211,6 +212,14 @@ class PlayerActivity : BaseActivity() {
             onTimeshiftKey()
             true
         }
+        KeyEvent.KEYCODE_DPAD_UP -> {
+            showAudioTrackDialog()
+            true
+        }
+        KeyEvent.KEYCODE_CAPTIONS -> {
+            showSubtitleDialog()
+            true
+        }
         KeyEvent.KEYCODE_DPAD_RIGHT -> {
             switchChannel(1)
             true
@@ -332,6 +341,46 @@ class PlayerActivity : BaseActivity() {
         timeshiftFromMs = null
         playerManager.playChannel(channel, channel.streamUrl)
         Toast.makeText(this, R.string.timeshift_back_live, Toast.LENGTH_SHORT).show()
+    }
+
+    /** Диалог аудиодорожек (кнопка ВВЕРХ). */
+    private fun showAudioTrackDialog() {
+        val groups = playerManager.getAudioTrackGroups()
+        val labels = TrackLabels.audioLabels(groups, getString(R.string.track_number))
+        if (labels.isEmpty()) {
+            Toast.makeText(this, R.string.track_not_ready, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val current = TrackLabels.selectedTrackIndex(groups)
+        val items = (listOf(getString(R.string.audio_track_auto)) + labels.mapIndexed { i, l -> if (i == current) "$l ${getString(R.string.source_current)}" else l })
+            .toTypedArray()
+        android.app.AlertDialog.Builder(this)
+            .setTitle(R.string.audio_track_title)
+            .setItems(items) { _, which ->
+                playerManager.selectAudioTrack(which)
+                Toast.makeText(this, items[which], Toast.LENGTH_SHORT).show()
+            }
+            .show()
+    }
+
+    /** Диалог субтитров (клавиша CAPTIONS на пультах с ней). */
+    private fun showSubtitleDialog() {
+        val groups = playerManager.getTextTrackGroups()
+        val labels = TrackLabels.textLabels(groups, getString(R.string.track_number))
+        if (labels.isEmpty()) {
+            Toast.makeText(this, R.string.subtitle_none, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val current = TrackLabels.selectedTrackIndex(groups)
+        val items = (listOf(getString(R.string.subtitle_off)) + labels.mapIndexed { i, l -> if (i == current) "$l ${getString(R.string.source_current)}" else l })
+            .toTypedArray()
+        android.app.AlertDialog.Builder(this)
+            .setTitle(R.string.subtitle_title)
+            .setItems(items) { _, which ->
+                playerManager.selectTextTrack(which)
+                Toast.makeText(this, items[which], Toast.LENGTH_SHORT).show()
+            }
+            .show()
     }
 
     private fun showSleepTimerDialog() {

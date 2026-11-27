@@ -6,6 +6,7 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.DefaultHttpDataSource
@@ -231,6 +232,52 @@ class TVPlayerManager(private val context: Context) {
     }
 
     fun getCurrentUrlIndex(): Int = fallbackIndex
+
+    /** Аудиогруппы текущего потока (пусто до подготовки воспроизведения). */
+    fun getAudioTrackGroups(): List<androidx.media3.common.Tracks.Group> = exoPlayer?.currentTracks?.groups?.filter { it.type == C.TRACK_TYPE_AUDIO } ?: emptyList()
+
+    /** Субтитровые группы текущего потока. */
+    fun getTextTrackGroups(): List<androidx.media3.common.Tracks.Group> = exoPlayer?.currentTracks?.groups?.filter { it.type == C.TRACK_TYPE_TEXT } ?: emptyList()
+
+    /**
+     * Выбор аудиодорожки: 0 — «авто» (сброс override), иначе — порядковый
+     * номер трека в том же порядке, в котором строит подписи [TrackLabels.audioLabels].
+     * Выбор сохраняется на весь плеер (переживает переключение каналов).
+     */
+    fun selectAudioTrack(index: Int) {
+        val player = exoPlayer ?: return
+        val builder = player.trackSelectionParameters.buildUpon().clearOverrides()
+        player.trackSelectionParameters.overrides.values
+            .filter { it.getType() != C.TRACK_TYPE_AUDIO }
+            .forEach(builder::setOverrideForType)
+        if (index > 0) overrideForNthTrack(getAudioTrackGroups(), index)?.let(builder::setOverrideForType)
+        builder.setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, false)
+        player.trackSelectionParameters = builder.build()
+    }
+
+    /** Выбор субтитров: 0 — выключены, иначе — порядковый номер трека [TrackLabels.textLabels]. */
+    fun selectTextTrack(index: Int) {
+        val player = exoPlayer ?: return
+        val builder = player.trackSelectionParameters.buildUpon().clearOverrides()
+        player.trackSelectionParameters.overrides.values
+            .filter { it.getType() != C.TRACK_TYPE_TEXT }
+            .forEach(builder::setOverrideForType)
+        if (index > 0) overrideForNthTrack(getTextTrackGroups(), index)?.let(builder::setOverrideForType)
+        builder.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, index <= 0)
+        player.trackSelectionParameters = builder.build()
+    }
+
+    /** Override для n-го трека (1-базированный) перечисленных групп; null если индекс вне списка. */
+    private fun overrideForNthTrack(groups: List<androidx.media3.common.Tracks.Group>, index: Int): TrackSelectionOverride? {
+        var n = 0
+        for (group in groups) {
+            for (i in 0 until group.length) {
+                n++
+                if (n == index) return TrackSelectionOverride(group.mediaTrackGroup, i)
+            }
+        }
+        return null
+    }
 
     private fun maybeRecoverStuckStream() {
         val now = System.currentTimeMillis()

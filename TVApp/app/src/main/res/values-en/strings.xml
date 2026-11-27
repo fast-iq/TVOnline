@@ -43,6 +43,13 @@
     <string name="timeshift_started">Playing from %1$s</string>
     <string name="timeshift_back_live">Back to live</string>
     <string name="timeshift_no_archive">No archive available for this channel</string>
+    <string name="audio_track_title">Audio track</string>
+    <string name="audio_track_auto">Auto</string>
+    <string name="subtitle_title">Subtitles</string>
+    <string name="subtitle_off">Off</string>
+    <string name="subtitle_none">Subtitles are not available for this stream</string>
+    <string name="track_number">Track</string>
+    <string name="track_not_ready">Tracks appear once playback starts</string>
     <string name="source_current">(current)</string>
 
     <!-- EPG -->

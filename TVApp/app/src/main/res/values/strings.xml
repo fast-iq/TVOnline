@@ -46,6 +46,13 @@
     <string name="timeshift_started">Воспроизведение с %1$s</string>
     <string name="timeshift_back_live">Прямой эфир</string>
     <string name="timeshift_no_archive">Архив недоступен для этого канала</string>
+    <string name="audio_track_title">Аудиодорожка</string>
+    <string name="audio_track_auto">Авто</string>
+    <string name="subtitle_title">Субтитры</string>
+    <string name="subtitle_off">Выключены</string>
+    <string name="subtitle_none">Субтитры недоступны для этого потока</string>
+    <string name="track_number">Дорожка</string>
+    <string name="track_not_ready">Дорожки появятся после запуска воспроизведения</string>
     <string name="source_current">(текущий)</string>
 
     <!-- EPG -->
