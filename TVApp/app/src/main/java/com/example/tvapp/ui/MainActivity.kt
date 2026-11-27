@@ -3,6 +3,8 @@ package com.example.tvapp.ui
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.Network
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -41,6 +43,7 @@ class MainActivity : BaseActivity() {
     private lateinit var currentProgramText: TextView
     private lateinit var regionText: TextView
     private lateinit var emptyText: TextView
+    private lateinit var networkBanner: TextView
     private lateinit var settingsButton: ImageView
     private lateinit var favoritesButton: ImageView
     private lateinit var historyButton: ImageView
@@ -55,6 +58,8 @@ class MainActivity : BaseActivity() {
     private var lastFocusedChannelId: String? = null
     private var pendingFocusRestore: Boolean = false
     private var liveTickerJob: Job? = null
+    private var isOnline: Boolean = true
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     private var numberInput: NumberInputController? = null
 
@@ -68,6 +73,7 @@ class MainActivity : BaseActivity() {
         currentProgramText = findViewById(R.id.currentProgramText)
         regionText = findViewById(R.id.regionText)
         emptyText = findViewById(R.id.emptyText)
+        networkBanner = findViewById(R.id.networkBanner)
         numberInput = NumberInputController(this, findViewById(R.id.numberOverlay)) { channel ->
             selectChannelByNumber(channel)
         }
@@ -106,6 +112,7 @@ class MainActivity : BaseActivity() {
             pendingFocusRestore = true
         }
         loadChannels()
+        startNetworkMonitoring()
         requestNotificationPermissionIfNeeded()
         checkForUpdatesIfNeeded()
     }
@@ -145,6 +152,44 @@ class MainActivity : BaseActivity() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
         ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
+    }
+
+    /**
+     * Монитор связи: при пропаже сети показываем баннер «офлайн — список из кэша»,
+     * чтобы пустая/устаревшая сетка не выглядела поломкой.
+     */
+    private fun startNetworkMonitoring() {
+        val manager = getSystemService(ConnectivityManager::class.java)
+        setNetworkOnline(manager.activeNetwork != null)
+        networkCallback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                runOnUiThread { setNetworkOnline(true) }
+            }
+
+            override fun onLost(network: Network) {
+                // При нескольких интерфейсах (eth0+wifi) сеть мог унаследовать другой активный.
+                runOnUiThread { setNetworkOnline(manager.activeNetwork != null) }
+            }
+        }.also { manager.registerDefaultNetworkCallback(it) }
+    }
+
+    private fun stopNetworkMonitoring() {
+        networkCallback?.let {
+            try {
+                getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(it)
+            } catch (e: Exception) {
+                Log.w("MainActivity", "network callback unregister: ${e.message}")
+            }
+        }
+        networkCallback = null
+    }
+
+    internal fun setNetworkOnline(online: Boolean) {
+        if (isOnline == online) return
+        isOnline = online
+        networkBanner.text = getString(R.string.network_offline_banner)
+        networkBanner.visibility = if (online) View.GONE else View.VISIBLE
+        updateEmptyState()
     }
 
     private fun setupHeaderButton(id: Int, action: () -> Unit) {
@@ -242,6 +287,7 @@ class MainActivity : BaseActivity() {
         }
         emptyText.visibility = View.VISIBLE
         emptyText.text = when {
+            !isOnline && ChannelList.channels.isEmpty() -> getString(R.string.network_offline_empty)
             displayedChannels.isEmpty() && ChannelList.channels.isEmpty() -> getString(R.string.loading_channels)
             viewMode == ViewMode.FAVORITES -> getString(R.string.favorites_empty)
             viewMode == ViewMode.HISTORY -> getString(R.string.history_empty)
@@ -530,6 +576,7 @@ class MainActivity : BaseActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        stopNetworkMonitoring()
         numberInput?.release()
         scope.cancel()
     }

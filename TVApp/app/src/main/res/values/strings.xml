@@ -25,6 +25,8 @@
     <!-- Player -->
     <string name="loading_channel">Загрузка канала: %1$s…</string>
     <string name="loading_channels">Загрузка каналов…</string>
+    <string name="network_offline_banner">⚠ Нет сети — показан последний сохранённый список</string>
+    <string name="network_offline_empty">Нет подключения к сети. Проверьте интернет-соединение.</string>
     <string name="playback_error">Ошибка воспроизведения:\n%1$s</string>
     <string name="drm_badge" translatable="false">DRM</string>
     <string name="drm_playback_error">Канал защищён DRM — воспроизведение в этом приложении недоступно:\n%1$s</string>

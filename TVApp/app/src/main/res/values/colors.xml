@@ -18,6 +18,7 @@
     <color name="text_hint">#FF66718A</color>
 
     <color name="live_indicator">#FFFF3B4E</color>
+    <color name="warning">#FFFFB300</color>
     <color name="live_indicator_bg">#33FF3B4E</color>
     <color name="selected_indicator">#FF34D399</color>
     <color name="selected_indicator_bg">#1A34D399</color>
