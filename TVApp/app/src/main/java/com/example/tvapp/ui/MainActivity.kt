@@ -441,26 +441,32 @@ class MainActivity : BaseActivity() {
      * до правых кнопок фокус не доходит). С верхнего ряда карточек при прокрутке в самом
      * верху явно передаём фокус кнопкам шапки: левая половина экрана — «история»,
      * правая — «настройки» (далее кнопками влево/вправо доступны остальные).
+     * Решение принимает [DpadFocusRouter] — чистая логика, покрыта тестами.
      */
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (
-            event.keyCode == KeyEvent.KEYCODE_DPAD_UP &&
-            event.action == KeyEvent.ACTION_DOWN &&
-            event.repeatCount == 0 &&
-            ::channelsRecyclerView.isInitialized &&
-            !channelsRecyclerView.canScrollVertically(-1)
+        if (event.keyCode == KeyEvent.KEYCODE_DPAD_UP &&
+            ::channelsRecyclerView.isInitialized
         ) {
             val focused = currentFocus
-            if (focused != null && focused.parent === channelsRecyclerView && isTopmostCard(focused)) {
-                val target = if (isLeftOfScreenCenter(focused)) historyButton else settingsButton
-                if (target.requestFocus()) return true
+            val target = DpadFocusRouter.route(
+                action = event.action,
+                repeatCount = event.repeatCount,
+                gridScrolledUp = channelsRecyclerView.canScrollVertically(-1),
+                focusIsGridCard = focused != null && focused.parent === channelsRecyclerView,
+                focusIsTopmostCard = focused != null && isTopmostCard(focused),
+                focusCenterX = focused?.let { screenCenterX(it) } ?: 0,
+                screenWidth = resources.displayMetrics.widthPixels
+            )
+            if (target != HeaderFocusTarget.NONE) {
+                val button = if (target == HeaderFocusTarget.HISTORY) historyButton else settingsButton
+                if (button.requestFocus()) return true
             }
         }
         return super.dispatchKeyEvent(event)
     }
 
     /** Нет ли фокусируемой карточки строкой выше данной (заголовки категорий не фокусируются — не мешают). */
-    private fun isTopmostCard(card: View): Boolean {
+    internal fun isTopmostCard(card: View): Boolean {
         val tolerance = (4 * resources.displayMetrics.density).toInt()
         for (i in 0 until channelsRecyclerView.childCount) {
             val child = channelsRecyclerView.getChildAt(i)
@@ -469,10 +475,10 @@ class MainActivity : BaseActivity() {
         return true
     }
 
-    private fun isLeftOfScreenCenter(view: View): Boolean {
+    internal fun screenCenterX(view: View): Int {
         val loc = IntArray(2)
         view.getLocationOnScreen(loc)
-        return loc[0] + view.width / 2 < resources.displayMetrics.widthPixels / 2
+        return loc[0] + view.width / 2
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean = when (keyCode) {

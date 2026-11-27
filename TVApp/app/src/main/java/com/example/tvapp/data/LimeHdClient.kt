@@ -40,7 +40,12 @@ class LimeHdClient(context: Context) {
 
     companion object {
         private const val TAG = "LimeHdClient"
-        private const val BASE_URL = "https://pl.iptv2021.com/"
+
+        /**
+         * Базовый URL API. internal var — тестовый шов: юнит-тесты ставят заглушку
+         * (несуществующий порт), чтобы не ходить в живую сеть.
+         */
+        internal var baseUrl = "https://pl.iptv2021.com/"
         private const val APP_VERSION_NAME = "4.1.2"
         private const val APP_VERSION_CODE = "514"
         private const val INSTALL_TS = 1700000000L
@@ -57,7 +62,7 @@ class LimeHdClient(context: Context) {
             val tz = effectiveTz()
             val region = prefs.limehdRegion
             Log.d(TAG, "playlist request: tz=$tz region=$region")
-            val url = BASE_URL +
+            val url = baseUrl +
                 "api/v4/playlist?tz=$tz&region=$region&limit=0&epg=1&epgcnt=4&epg_limit=4" +
                 "&installts=$INSTALL_TS&needCategories=0&drm=0"
             val payload = createPayload()
@@ -80,7 +85,7 @@ class LimeHdClient(context: Context) {
         return try {
             val tz = effectiveTz()
             val region = prefs.limehdRegion
-            val url = BASE_URL +
+            val url = baseUrl +
                 "api/v4/epg?id=$epgId&tz=$tz&epg_from=$epgFrom&epg_limit=$epgLimit&grouping=1&region=$region&lang=ru"
             val body = JSONObject(httpGet(url, apiHeaders()) ?: return emptyList())
             parseEpg(body, channelId)
@@ -95,7 +100,7 @@ class LimeHdClient(context: Context) {
     fun getRegions(): List<LimeHdRegion> {
         cachedRegions?.let { return it }
         return try {
-            val body = httpGet(BASE_URL + "api/v4/config", apiHeaders()) ?: return emptyList()
+            val body = httpGet(baseUrl + "api/v4/config", apiHeaders()) ?: return emptyList()
             val root = JSONObject(body)
             val data = root.optJSONObject("data")
             val regionsArray = root.optJSONArray("regions") ?: data?.optJSONArray("regions")
@@ -128,7 +133,7 @@ class LimeHdClient(context: Context) {
     private fun ensureAuth() {
         if (cachedPublicKey != null) return
         try {
-            val body = httpGet(BASE_URL + "auth", apiHeaders(), true)
+            val body = httpGet(baseUrl + "auth", apiHeaders(), true)
             if (body == null) {
                 cachedPublicKey = FALLBACK_PUBLIC_KEY
                 return
