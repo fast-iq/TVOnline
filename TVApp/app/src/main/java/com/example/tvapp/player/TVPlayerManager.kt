@@ -199,6 +199,8 @@ class TVPlayerManager(private val context: Context) {
         fallbackIndex = if (streamUrl == null) 0 else getCurrentStreamUrls().indexOf(streamUrl).coerceAtLeast(0)
         bufferingSince = 0L
         stallWatchdog.reset()
+        // Выбор канала фиксируем всегда, даже если плеер ещё/уже не инициализирован.
+        preferences.lastChannelId = channel.id
 
         exoPlayer?.apply {
             clearMediaItems()
@@ -209,7 +211,6 @@ class TVPlayerManager(private val context: Context) {
             setMediaItem(mediaItem)
             prepare()
             playWhenReady = true
-            preferences.lastChannelId = channel.id
         }
     }
 
