@@ -51,8 +51,7 @@ class SettingsActivitySmokeTest {
         backupFile().delete()
     }
 
-    private fun backupFile(): File =
-        File(context.getExternalFilesDir(null) ?: context.filesDir, "tvapp_settings.json")
+    private fun backupFile(): File = File(context.getExternalFilesDir(null) ?: context.filesDir, "tvapp_settings.json")
 
     private fun launch(): SettingsActivity {
         val activity = Robolectric.buildActivity(SettingsActivity::class.java).setup().get()
