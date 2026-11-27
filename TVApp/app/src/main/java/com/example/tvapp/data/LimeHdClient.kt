@@ -18,7 +18,11 @@ import java.util.Locale
 import java.util.UUID
 import javax.crypto.Cipher
 
-class LimeHdClient(context: Context) {
+/**
+ * Клиент LimeHD API. open + internal швы на HTTP-методы — чтобы юнит-тесты
+ * подменяли транспорт заглушками (LimeHdClientFlowTest) без сети.
+ */
+open class LimeHdClient(context: Context) {
 
     private val appContext = context.applicationContext
     private val prefs = AppPreferences(appContext)
@@ -179,7 +183,7 @@ class LimeHdClient(context: Context) {
         "Accept-Encoding" to "identity"
     )
 
-    private fun httpGet(url: String, headers: Map<String, String>, updateTimeOffset: Boolean = false): String? {
+    internal open fun httpGet(url: String, headers: Map<String, String>, updateTimeOffset: Boolean = false): String? {
         val connection = URL(url).openConnection() as HttpURLConnection
         return try {
             connection.requestMethod = "GET"
@@ -199,7 +203,7 @@ class LimeHdClient(context: Context) {
         }
     }
 
-    private fun httpPostForm(url: String, body: String): String? {
+    internal open fun httpPostForm(url: String, body: String): String? {
         val connection = URL(url).openConnection() as HttpURLConnection
         return try {
             connection.requestMethod = "POST"

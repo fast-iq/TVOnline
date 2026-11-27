@@ -232,6 +232,31 @@ jobs:
       - name: Run Unit Tests
         run: cd TVApp && ./gradlew testDebugUnitTest --no-daemon
 
+      - name: Show Failed Tests Summary
+        if: failure()
+        run: |
+          # Краткий список упавших тестов прямо в лог — чтобы не скачивать артефакт ради диагностики
+          for f in TVApp/app/build/test-results/testDebugUnitTest/*.xml; do
+            [ -f "$f" ] || continue
+            if grep -q "<failure\|<error" "$f"; then
+              echo "::group::$(basename "$f")"
+              grep -o 'testcase name="[^"]*"' "$f" | head -50
+              grep -o 'message="[^"]*"' "$f" | head -20
+              echo "::endgroup::"
+            fi
+          done
+          echo "Полные отчёты — в артефакте test-results"
+
+      - name: Upload Test Results (on failure)
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: test-results
+          path: |
+            TVApp/app/build/test-results/testDebugUnitTest/
+            TVApp/app/build/reports/tests/testDebugUnitTest/
+          retention-days: 7
+
       - name: Verify APK Signature (release)
         if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
         env:
